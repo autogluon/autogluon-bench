@@ -50,10 +50,13 @@ CONTEXT_TO_PARSE = {
     "INSTANCE_TYPES": [
         INSTANCE
     ],  # can be a list of instance families or instance types
-    "COMPUTE_ENV_MAXV_CPUS": vcpu_map[INSTANCE] * MAX_MACHINE_NUM,  # total max v_cpus in batch compute environment
+    "COMPUTE_ENV_MAXV_CPUS": vcpu_map[INSTANCE]
+    * MAX_MACHINE_NUM,  # total max v_cpus in batch compute environment
     "CONTAINER_GPU": gpu_map[INSTANCE],  # GPU reserved for container
     "CONTAINER_VCPU": vcpu_map[INSTANCE],  # v_cpus reserved for container
-    "CONTAINER_MEMORY": memory_map[INSTANCE],  # memory in MB reserved for container, also used for shm_size, i.e. `shared_memory_size`
+    "CONTAINER_MEMORY": memory_map[
+        INSTANCE
+    ],  # memory in MB reserved for container, also used for shm_size, i.e. `shared_memory_size`
     "BLOCK_DEVICE_VOLUME": BLOCK_DEVICE_VOLUME,  # device attached to instance, in GB
     "LAMBDA_FUNCTION_NAME": f"{PREFIX}-batch-job-function",
     "VPC_NAME": "automm-ap-bench-batch-stack/automm-ap-bench-vpc",  # it's recommended to share a vpc for all benchmark infra, you can lookup an existing VPC name under aws console -> VPC, if you want to create a new one, assign a new name
@@ -69,6 +72,7 @@ def update_context_config(file: str):
         cdk_config.update(CONTEXT_TO_PARSE)
         json.dump(cdk_config, f, indent=2)
         f.close()
+
 
 def deploy_stack():
     update_context_config(file=CONTEXT_FILE)

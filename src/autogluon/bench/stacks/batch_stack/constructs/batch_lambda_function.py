@@ -52,7 +52,7 @@ class BatchLambdaFunction(Construct):
                             ],
                             conditions={
                                 "StringEquals": {
-                                    f"aws:ResourceTag/{prefix}": tag # resources with tag, e.g. {"automm": "vision"}
+                                    f"aws:ResourceTag/{prefix}": tag  # resources with tag, e.g. {"automm": "vision"}
                                 }
                             },
                             actions=["batch:SubmitJob"],

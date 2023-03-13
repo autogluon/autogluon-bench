@@ -1,5 +1,3 @@
-git_user: suzhoum
-git_branch: master
 module: tabular
 framework: AutoGluon:latest
 benchmark: test

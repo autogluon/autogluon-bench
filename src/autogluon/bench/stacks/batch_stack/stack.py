@@ -12,11 +12,10 @@ from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as aws_lambda
 from aws_cdk import aws_s3 as s3
-from botocore.exceptions import ClientError
-from constructs import Construct
-
 from batch_job_cdk.constructs.batch_lambda_function import BatchLambdaFunction
 from batch_job_cdk.constructs.instance_profile import InstanceProfile
+from botocore.exceptions import ClientError
+from constructs import Construct
 
 """
 Sample CDK code for creating the required infrastructure for running a AWS Batch job.
@@ -72,7 +71,7 @@ class StaticResourceStack(core.Stack):
                 removal_policy=core.RemovalPolicy.RETAIN,
             )
         return table
-    
+
     def import_or_create_vpc(self, resource, vpc_name, prefix):
         filters = [
             {
@@ -87,7 +86,6 @@ class StaticResourceStack(core.Stack):
         else:
             vpc = ec2.Vpc(self, f"{prefix}-vpc", vpc_name=vpc_name, max_azs=1)
         return vpc
-
 
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -111,8 +109,10 @@ class StaticResourceStack(core.Stack):
             resource=db, table_name=experiment_table
         )
         ec2_client = boto3.client("ec2", region_name=region)
-        self.vpc = self.import_or_create_vpc(resource=ec2_client, vpc_name=vpc_name, prefix=prefix)
-        
+        self.vpc = self.import_or_create_vpc(
+            resource=ec2_client, vpc_name=vpc_name, prefix=prefix
+        )
+
 
 class BatchJobStack(core.Stack):
     """Defines stack with:
