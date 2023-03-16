@@ -2,6 +2,7 @@ from setuptools import find_packages, setup
 
 install_requires = [
     "pandas>=1.2.5,<2.0",
+    "boto3<=1.17.74",
 ]
 
 
