@@ -38,7 +38,8 @@ update_batch_tags() {
 }
 
 echo "Running CDK deploy"
-cdk deploy --all
+cdk deploy $STATIC_RESOURCE_STACK_NAME --app=src/autogluon/bench/cloud/aws/app.py
+cdk deploy $BATCH_STACK_NAME --app=src/autogluon/bench/cloud/aws/app.py
 
 # Workaround for lack of support from CDK
 update_shm_size

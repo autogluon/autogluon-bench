@@ -1,0 +1,11 @@
+CDK_DEPLOY_ACCOUNT: dummy
+CDK_DEPLOY_REGION: dummy
+PREFIX: ag-bench-test
+MAX_MACHINE_NUM: 20
+BLOCK_DEVICE_VOLUME: 100
+RESERVED_MEMORY_SIZE: 15000
+INSTANCE: g4dn.2xlarge
+METRICS_BUCKET: autogluon-benchmark-metrics
+DATA_BUCKET: automl-mm-bench
+VPC_NAME: automm-batch-stack/automm-vpc
+LAMBDA_FUNCTION_NAME: ag-bench-test-job-function

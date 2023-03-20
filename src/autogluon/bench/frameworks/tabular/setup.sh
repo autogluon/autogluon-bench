@@ -7,7 +7,7 @@ if [ ! -d $DIR ]; then
 fi
 
 # create virtual env
-python3.8 -m venv .venv
+python3.8 -m venv $DIR/.venv
 source $DIR/.venv/bin/activate
 
 # install latest AMLB

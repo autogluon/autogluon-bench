@@ -12,8 +12,8 @@ from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as aws_lambda
 from aws_cdk import aws_s3 as s3
-from batch_job_cdk.constructs.batch_lambda_function import BatchLambdaFunction
-from batch_job_cdk.constructs.instance_profile import InstanceProfile
+from autogluon.bench.cloud.aws.batch_stack.constructs.batch_lambda_function import BatchLambdaFunction
+from autogluon.bench.cloud.aws.batch_stack.constructs.instance_profile import InstanceProfile
 from botocore.exceptions import ClientError
 from constructs import Construct
 
@@ -23,10 +23,10 @@ AWS Batch as the compute enviroment in which a docker image runs the benchmarkin
 """
 
 # Relative path to the source code for the aws batch job, from the project root
-docker_base_dir = "benchmarks"
+docker_base_dir = "."
 
 # Relative path to the source for the AWS lambda, from the project root
-lambda_script_dir = "automm_lambda"
+lambda_script_dir = "./src/autogluon/bench/cloud/aws"
 
 
 class StaticResourceStack(core.Stack):
@@ -47,31 +47,6 @@ class StaticResourceStack(core.Stack):
             )
         return bucket
 
-    def import_or_create_dynamo_db(self, resource, table_name):
-        table = resource.Table(table_name)
-        try:
-            _table_exists = table.table_status
-            print(f"The table {table_name} already exists, importing to the stack...")
-            table = dynamodb.Table.from_table_name(
-                self,
-                table_name,
-                table_name=table_name,
-            )
-        except ClientError:
-            print(f"The table {table_name} does not exist, creating a new table...")
-            table = dynamodb.Table(
-                self,
-                table_name,
-                table_name=table_name,
-                partition_key=dynamodb.Attribute(
-                    name="uuid", type=dynamodb.AttributeType.STRING
-                ),
-                billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-                point_in_time_recovery=True,
-                removal_policy=core.RemovalPolicy.RETAIN,
-            )
-        return table
-
     def import_or_create_vpc(self, resource, vpc_name, prefix):
         filters = [
             {
@@ -89,25 +64,20 @@ class StaticResourceStack(core.Stack):
 
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
-        experiment_table = self.node.try_get_context("EXPERIMENT_TABLE")
-        model_bucket_name = self.node.try_get_context("MODEL_BUCKET")
+        metrics_bucket_name = self.node.try_get_context("METRICS_BUCKET")
         data_bucket_name = self.node.try_get_context("DATA_BUCKET")
         vpc_name = self.node.try_get_context("VPC_NAME")
         prefix = self.node.try_get_context("STACK_NAME_PREFIX")
 
         region = os.environ["CDK_DEPLOY_REGION"]
         s3_resource = boto3.resource(service_name="s3", region_name=region)
-        self.model_bucket = self.import_or_create_bucket(
-            resource=s3_resource, bucket_name=model_bucket_name
+        self.metrics_bucket = self.import_or_create_bucket(
+            resource=s3_resource, bucket_name=metrics_bucket_name
         )
         self.data_bucket = s3.Bucket.from_bucket_name(
             self, data_bucket_name, bucket_name=data_bucket_name
         )
 
-        db = boto3.resource(service_name="dynamodb", region_name=region)
-        self.db_table = self.import_or_create_dynamo_db(
-            resource=db, table_name=experiment_table
-        )
         ec2_client = boto3.client("ec2", region_name=region)
         self.vpc = self.import_or_create_vpc(
             resource=ec2_client, vpc_name=vpc_name, prefix=prefix
@@ -218,12 +188,10 @@ class BatchJobStack(core.Stack):
             ],
         )
 
-        db_table = static_stack.db_table
-        model_bucket = static_stack.model_bucket
+        metrics_bucket = static_stack.metrics_bucket
         data_bucket = static_stack.data_bucket
-        db_table.grant_read_write_data(batch_instance_role)
         data_bucket.grant_read(batch_instance_role)
-        model_bucket.grant_read_write(batch_instance_role)
+        metrics_bucket.grant_read_write(batch_instance_role)
 
         batch_instance_profile = InstanceProfile(
             self, f"{prefix}-instance-profile", prefix=prefix
@@ -260,7 +228,7 @@ class BatchJobStack(core.Stack):
             ],
         )
 
-        batch_lambda_function = BatchLambdaFunction(
+        BatchLambdaFunction(
             self,
             lambda_function_name,
             prefix=prefix,
@@ -270,9 +238,7 @@ class BatchJobStack(core.Stack):
             environment={
                 "BATCH_JOB_QUEUE": job_queue.job_queue_name,
                 "BATCH_JOB_DEFINITION": job_definition.job_definition_name,
-                "DYNAMODB_TABLE_NAME": db_table.table_name,
-                "DYNAMODB_TABLE_REGION": os.environ["CDK_DEPLOY_REGION"],
-                "MODEL_BUCKET": model_bucket.bucket_name,
+                "METRICS_BUCKET": metrics_bucket.bucket_name,
                 "STACK_NAME_PREFIX": prefix,
             },
         )
