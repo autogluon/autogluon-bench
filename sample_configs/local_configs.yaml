@@ -1,0 +1,15 @@
+# Benchmark configurations
+module: tabular
+mode: local
+benchmark_name: test_local
+
+# Multimodal specific
+git_uri#branch: https://github.com/autogluon/autogluon#master
+data_path: MNIST
+
+# Tabular specific
+framework: AutoGluon
+label: stable
+amlb_benchmark: test
+amlb_task: iris
+amlb_constraint: test

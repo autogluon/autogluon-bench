@@ -1,0 +1,37 @@
+# Infra configurations
+cdk_context:
+  CDK_DEPLOY_ACCOUNT: dummy
+  CDK_DEPLOY_REGION: dummy
+
+# Benchmark configurations
+module: multimodal
+mode: aws
+benchmark_name: test_yaml
+metrics_bucket: autogluon-benchmark-metrics
+
+# Module specific configurations
+module_configs:
+  # Multimodal specific
+  multimodal:
+    git_uri#branch: 
+      - https://github.com/autogluon/autogluon#master
+    data_path:
+      - MNIST
+
+  # Tabular specific
+  # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
+  tabular:
+    framework:
+      - AutoGluon
+    label:
+      - stable
+    amlb_benchmark:
+      - test
+      - small
+    amlb_task:
+      test: null
+      small:
+        - credit-g
+        - vehicle
+    amlb_constraint:
+      - test
