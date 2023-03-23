@@ -6,7 +6,8 @@ install_requires = [
     "aws-cdk-lib>=2.0.0",
     "aws-cdk.aws-codestar-alpha>=2.0.0alpha1",
     "aws-cdk.aws-batch-alpha>=2.0.0alpha1",
-    "constructs>=10.0.0"
+    "constructs>=10.0.0",
+    "pyyaml<=6.0"
 ]
 
 

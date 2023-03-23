@@ -1,7 +1,8 @@
 # Benchmark configurations
-module: tabular
+module: multimodal
 mode: local
 benchmark_name: test_local
+metrics_bucket: autogluon-benchmark-metrics
 
 # Multimodal specific
 git_uri#branch: https://github.com/autogluon/autogluon#master

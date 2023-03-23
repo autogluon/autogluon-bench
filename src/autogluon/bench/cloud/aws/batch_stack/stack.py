@@ -5,17 +5,19 @@ import os
 import aws_cdk as core
 import boto3
 from aws_cdk import aws_batch_alpha as batch
-from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecr_assets
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as aws_lambda
 from aws_cdk import aws_s3 as s3
-from autogluon.bench.cloud.aws.batch_stack.constructs.batch_lambda_function import BatchLambdaFunction
-from autogluon.bench.cloud.aws.batch_stack.constructs.instance_profile import InstanceProfile
 from botocore.exceptions import ClientError
 from constructs import Construct
+
+from autogluon.bench.cloud.aws.batch_stack.constructs.batch_lambda_function import \
+    BatchLambdaFunction
+from autogluon.bench.cloud.aws.batch_stack.constructs.instance_profile import \
+    InstanceProfile
 
 """
 Sample CDK code for creating the required infrastructure for running a AWS Batch job.
@@ -26,7 +28,7 @@ AWS Batch as the compute enviroment in which a docker image runs the benchmarkin
 docker_base_dir = "."
 
 # Relative path to the source for the AWS lambda, from the project root
-lambda_script_dir = "./src/autogluon/bench/cloud/aws"
+lambda_script_dir = "src/autogluon/bench/cloud/aws/batch_stack/lambdas"
 
 
 class StaticResourceStack(core.Stack):
@@ -228,7 +230,7 @@ class BatchJobStack(core.Stack):
             ],
         )
 
-        BatchLambdaFunction(
+        lambda_function = BatchLambdaFunction(
             self,
             lambda_function_name,
             prefix=prefix,
@@ -242,6 +244,7 @@ class BatchJobStack(core.Stack):
                 "STACK_NAME_PREFIX": prefix,
             },
         )
+        metrics_bucket.grant_read_write(lambda_function._lambda_function)
 
         # Output the ARN for manually updating tagging
         core.CfnOutput(

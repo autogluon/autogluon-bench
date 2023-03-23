@@ -135,4 +135,5 @@ dmypy.json
 
 
 # Custom config
-custom_configs.yaml
+/*.yaml
+cdk.context.json

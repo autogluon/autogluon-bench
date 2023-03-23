@@ -1,3 +1,7 @@
+<div align="left">
+  <img src="https://user-images.githubusercontent.com/16392542/77208906-224aa500-6aba-11ea-96bd-e81806074030.png" width="350">
+</div>
+
 # AutoGluon-Bench
 
 ## Setup
@@ -20,18 +24,13 @@ pip install -e .
 Currently, `tabular` makes use of the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework, so we will supply the required and optional arguments when running benchmark for tabular. It can only run on the stable and latest(master) build of the framework at the moment. In order to benchmark on a custom branch, changes need to be made on AMLB.
 
 ```
-python ./runbenchmarks.py  --module tabular --mode local  --benchmark_name local_test --framework AutoGluon --label stable --amlb_benchmark test --amlb_constraint test --amlb_task iris
+python ./runbenchmarks.py  --config_file path/to/local_config_file
 ```
+A sample local config file is available for reference at `./sample_configs/local_configs.yaml`. All keys should have single value.
 
-where `--amlb_task` is optional, and corresponds to `--task` argument in AMLB. You can refer to [Quickstart of AMLB](https://github.com/openml/automlbenchmark#quickstart) for more details.
+Note that `multimodal` benchmarking directly calls the `MultiModalPredictor` without the extra layer of [AMLB](https://github.com/openml/automlbenchmark), so the set of arguments we call is different from that of running `tabular`. Currently, we support benchmarking `multimodal` on custom branch of the main repository or any forked repository.
 
-On the other hand, `multimodal` benchmarking directly calls the `MultiModalPredictor` without the extra layer of [AMLB](https://github.com/openml/automlbenchmark), so the set of arguments we call is different from that of running `tabular`. Currently, we support benchmarking `multimodal` on custom branch of the main repository or any forked repository.
-
-```
-python ./runbenchmarks.py --module multimodal --mode local --git_uri https://github.com/autogluon/autogluon.git --git_branch master --data_path MNIST --benchmark_name local_test
-```
 To customize the benchmarking experiment, including adding more hyperparameters, and evaluate on more metrics, you can refer to `./src/autogluon/bench/frameworks/multimodal/exec.py`.
-
 
 Results are saved under `$WORKING_DIR/benchmark_runs/$module/{$benchmark_name}_{$timestamp}`
 
@@ -74,16 +73,12 @@ where:
 - `VPC_NAME` is used to look up an existing VPC.
 - `LAMBDA_FUNCTION_NAME` lambda function to submit jobs to AWS Batch.
 
+The configs can be overridden by a custom config file defined by `--config_file` under `cdk_context` key. Please refer to `./sample_configs/cloud_configs.yaml` for reference. Note that in `AWS` mode, we support running multiple benchmarking jobs at the same time, so you can have a list of values for each key in the module specific keys.
 
-The configs can be overridden by a custom config file defined by `--config_file`:
+To deploy the stack and run the benchmarking jobs with one command:
+
 ```
-python runbenchmarks.py --mode "aws" --config_file custom_configs.yaml
+python ./runbenchmarks.py  --config_file path/to/cloud_config_file
 ```
 
-The above command will deploy the infrastructure automatically and create a lambda_function with the `LAMBDA_FUNCTION_NAME` of your choice.
-
-At the moment, you can run the below command to start benchmarking jobs on AWS:
-```
-./lambda_invoke.sh
-```
-Integration with the API is under active development.
+The above command will deploy the infrastructure automatically and create a lambda_function with the `LAMBDA_FUNCTION_NAME` of your choice. The lambda function will then be invoked automatically with the cloud config file you provided, and submit AWS Batch jobs to the job queue (named with the `PREFIX` you provided).

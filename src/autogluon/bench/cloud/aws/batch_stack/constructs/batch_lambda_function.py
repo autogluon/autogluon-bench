@@ -64,11 +64,21 @@ class BatchLambdaFunction(Construct):
 
         self._lambda_function = _lambda.Function(
             self,
-            "lambda-function",
+            id,
             function_name=function_name,
             runtime=_lambda.Runtime.PYTHON_3_8,
             environment=environment,
-            code=_lambda.Code.from_asset(code_path),
+            code=_lambda.Code.from_asset(
+                code_path,
+                bundling=core.BundlingOptions(
+                    image=_lambda.Runtime.PYTHON_3_8.bundling_image,
+                    command=[
+                        "bash",
+                        "-c",
+                        "pip install --no-cache -r requirements.txt -t /asset-output && cp -au . /asset-output",
+                    ],
+                ),
+            ),
             handler="lambda_function.handler",
             timeout=core.Duration.seconds(timeout),
             role=self._lambda_function_role,
