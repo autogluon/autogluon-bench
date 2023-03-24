@@ -5,9 +5,7 @@ from autogluon.bench.benchmark import Benchmark
 
 
 class MultiModalBenchmark(Benchmark):
-    def __init__(
-        self, benchmark_name: str, root_dir: str = "./benchmark_runs/multimodal/"
-    ):
+    def __init__(self, benchmark_name: str, root_dir: str = "./benchmark_runs/multimodal/"):
         super().__init__(
             benchmark_name=benchmark_name,
             root_dir=root_dir,
@@ -23,9 +21,7 @@ class MultiModalBenchmark(Benchmark):
         command = [setup_script_path, git_uri, git_branch, self.benchmark_dir]
         result = subprocess.run(command)
         if result.stdout:
-            print(
-                f"Successfully set up the environment under {self.benchmark_dir}/.venv"
-            )
+            print(f"Successfully set up the environment under {self.benchmark_dir}/.venv")
         elif result.stderr:
             print(result.stderr)
 

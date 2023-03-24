@@ -11,13 +11,10 @@ from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as aws_lambda
 from aws_cdk import aws_s3 as s3
-from botocore.exceptions import ClientError
 from constructs import Construct
 
-from autogluon.bench.cloud.aws.batch_stack.constructs.batch_lambda_function import \
-    BatchLambdaFunction
-from autogluon.bench.cloud.aws.batch_stack.constructs.instance_profile import \
-    InstanceProfile
+from autogluon.bench.cloud.aws.batch_stack.constructs.batch_lambda_function import BatchLambdaFunction
+from autogluon.bench.cloud.aws.batch_stack.constructs.instance_profile import InstanceProfile
 
 """
 Sample CDK code for creating the required infrastructure for running a AWS Batch job.
@@ -36,9 +33,7 @@ class StaticResourceStack(core.Stack):
         bucket = resource.Bucket(bucket_name)
         if bucket.creation_date:
             print(f"The bucket {bucket_name} already exists, importing to the stack...")
-            bucket = s3.Bucket.from_bucket_name(
-                self, bucket_name, bucket_name=bucket_name
-            )
+            bucket = s3.Bucket.from_bucket_name(self, bucket_name, bucket_name=bucket_name)
         else:
             print(f"The bucket {bucket_name} does not exist, creating a new bucket...")
             bucket = s3.Bucket(
@@ -73,36 +68,27 @@ class StaticResourceStack(core.Stack):
 
         region = os.environ["CDK_DEPLOY_REGION"]
         s3_resource = boto3.resource(service_name="s3", region_name=region)
-        self.metrics_bucket = self.import_or_create_bucket(
-            resource=s3_resource, bucket_name=metrics_bucket_name
-        )
-        self.data_bucket = s3.Bucket.from_bucket_name(
-            self, data_bucket_name, bucket_name=data_bucket_name
-        )
+        self.metrics_bucket = self.import_or_create_bucket(resource=s3_resource, bucket_name=metrics_bucket_name)
+        self.data_bucket = s3.Bucket.from_bucket_name(self, data_bucket_name, bucket_name=data_bucket_name)
 
         ec2_client = boto3.client("ec2", region_name=region)
-        self.vpc = self.import_or_create_vpc(
-            resource=ec2_client, vpc_name=vpc_name, prefix=prefix
-        )
+        self.vpc = self.import_or_create_vpc(resource=ec2_client, vpc_name=vpc_name, prefix=prefix)
 
 
 class BatchJobStack(core.Stack):
     """Defines stack with:
     - New Compute Environment with
-        - Batch Instance Role (read access to S3, read-write access to DynamoDB)
+        - Batch Instance Role (read access to S3)
         - Launch Template
         - Security Group
         - VPC
         - Job Definition (with customized container)
         - Job Queue
-    - Use existing or create new DynamoDB table
     - Use existing or create new S3 bucket
     - New Lambda function to run training
     """
 
-    def __init__(
-        self, scope: Construct, id: str, static_stack: StaticResourceStack, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, id: str, static_stack: StaticResourceStack, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
         prefix = self.node.try_get_context("STACK_NAME_PREFIX")
         tag = self.node.try_get_context("STACK_NAME_TAG")
@@ -136,9 +122,7 @@ class BatchJobStack(core.Stack):
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
         )
 
-        docker_container_image = ecs.ContainerImage.from_docker_image_asset(
-            docker_image_asset
-        )
+        docker_container_image = ecs.ContainerImage.from_docker_image_asset(docker_image_asset)
 
         container = batch.JobDefinitionContainer(
             image=docker_container_image,
@@ -147,9 +131,7 @@ class BatchJobStack(core.Stack):
             memory_limit_mib=container_memory,
             # Bug that this parameter is not rending in the CF stack under cdk.out
             # https://github.com/aws/aws-cdk/issues/13023
-            linux_params=ecs.LinuxParameters(
-                self, f"{prefix}-linux_params", shared_memory_size=container_memory
-            ),
+            linux_params=ecs.LinuxParameters(self, f"{prefix}-linux_params", shared_memory_size=container_memory),
         )
 
         job_definition = batch.JobDefinition(
@@ -184,9 +166,7 @@ class BatchJobStack(core.Stack):
                 iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             ),
             managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name(
-                    "service-role/AmazonEC2ContainerServiceforEC2Role"
-                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonEC2ContainerServiceforEC2Role"),
             ],
         )
 
@@ -195,9 +175,7 @@ class BatchJobStack(core.Stack):
         data_bucket.grant_read(batch_instance_role)
         metrics_bucket.grant_read_write(batch_instance_role)
 
-        batch_instance_profile = InstanceProfile(
-            self, f"{prefix}-instance-profile", prefix=prefix
-        )
+        batch_instance_profile = InstanceProfile(self, f"{prefix}-instance-profile", prefix=prefix)
         batch_instance_profile.attach_role(batch_instance_role)
 
         compute_environment = batch.ComputeEnvironment(
@@ -223,11 +201,7 @@ class BatchJobStack(core.Stack):
             self,
             f"{prefix}-job-queue",
             priority=1,
-            compute_environments=[
-                batch.JobQueueComputeEnvironment(
-                    compute_environment=compute_environment, order=1
-                )
-            ],
+            compute_environments=[batch.JobQueueComputeEnvironment(compute_environment=compute_environment, order=1)],
         )
 
         lambda_function = BatchLambdaFunction(
@@ -253,6 +227,4 @@ class BatchJobStack(core.Stack):
             value=compute_environment.compute_environment_arn,
         )
         core.CfnOutput(self, "JobQueueARN", value=job_queue.job_queue_arn)
-        core.CfnOutput(
-            self, "JobDefinitionARN", value=job_definition.job_definition_arn
-        )
+        core.CfnOutput(self, "JobDefinitionARN", value=job_definition.job_definition_arn)

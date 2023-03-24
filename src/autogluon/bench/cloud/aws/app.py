@@ -4,8 +4,7 @@ import os
 
 from aws_cdk import App, Environment, Tags
 
-from autogluon.bench.cloud.aws.batch_stack.stack import (BatchJobStack,
-                                                         StaticResourceStack)
+from autogluon.bench.cloud.aws.batch_stack.stack import BatchJobStack, StaticResourceStack
 
 
 def get_mandatory_env(name):
@@ -29,9 +28,7 @@ batch_stack_name = app.node.try_get_context("BATCH_STACK_NAME")
 
 env = Environment(account=cdk_default_account, region=cdk_default_region)
 static_resource_stack = StaticResourceStack(app, static_resource_stack_name, env=env)
-batch_stack = BatchJobStack(
-    app, batch_stack_name, env=env, static_stack=static_resource_stack
-)
+batch_stack = BatchJobStack(app, batch_stack_name, env=env, static_stack=static_resource_stack)
 batch_stack.add_dependency(static_resource_stack)
 
 # Stack-level tag which expects to be propogated to resources

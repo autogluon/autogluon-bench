@@ -65,7 +65,7 @@ def handler(event, context):
     module_configs:
         # Multimodal specific
         multimodal:
-            git_uri#branch: 
+            git_uri#branch:
                 - https://github.com/autogluon/autogluon#master
             data_path:
                 - MNIST
@@ -105,46 +105,29 @@ def handler(event, context):
     common_configs = configs
     common_configs["mode"] = "local"
     metrics_bucket = common_configs["metrics_bucket"]
-    common_configs = {
-        key: [value] if not isinstance(value, list) else value
-        for key, value in common_configs.items()
-    }
+    common_configs = {key: [value] if not isinstance(value, list) else value for key, value in common_configs.items()}
 
     if common_configs["module"][0] == "tabular":
         amlb_benchmarks = module_configs.pop("amlb_benchmark", [])
         amlb_tasks = module_configs.pop("amlb_task", {})
 
     # Generate and print all combinations
-    for common_combination in product(
-        *[common_configs[key] for key in common_configs.keys()]
-    ):
-        for module_combination in product(
-            *[module_configs[key] for key in module_configs.keys()]
-        ):
+    for common_combination in product(*[common_configs[key] for key in common_configs.keys()]):
+        for module_combination in product(*[module_configs[key] for key in module_configs.keys()]):
             if common_configs["module"][0] == "tabular":
                 for amlb_benchmark in amlb_benchmarks:
                     amlb_task_values = amlb_tasks[amlb_benchmark]
                     if amlb_task_values is None:
                         amlb_task_values = [None]
                     for amlb_task in amlb_task_values:
-                        combination = (
-                            common_combination
-                            + module_combination
-                            + (amlb_benchmark, amlb_task)
-                        )
+                        combination = common_combination + module_combination + (amlb_benchmark, amlb_task)
                         keys = (
-                            list(common_configs.keys())
-                            + list(module_configs.keys())
-                            + ["amlb_benchmark", "amlb_task"]
+                            list(common_configs.keys()) + list(module_configs.keys()) + ["amlb_benchmark", "amlb_task"]
                         )
                         local_configs = dict(zip(keys, combination))
                         config_uid = uuid.uuid1().hex
-                        config_local_path = save_configs(
-                            configs=local_configs, uid=config_uid
-                        )
-                        config_s3_path = upload_config(
-                            bucket=metrics_bucket, file=config_local_path
-                        )
+                        config_local_path = save_configs(configs=local_configs, uid=config_uid)
+                        config_s3_path = upload_config(bucket=metrics_bucket, file=config_local_path)
                         job_name = f"%s-%s-%s" % (
                             local_configs["benchmark_name"],
                             local_configs["module"],
@@ -165,9 +148,7 @@ def handler(event, context):
                 local_configs = dict(zip(keys, combination))
                 config_uid = uuid.uuid1().hex
                 config_local_path = save_configs(configs=local_configs, uid=config_uid)
-                config_s3_path = upload_config(
-                    bucket=metrics_bucket, file=config_local_path
-                )
+                config_s3_path = upload_config(bucket=metrics_bucket, file=config_local_path)
                 job_name = f"%s-%s-%s" % (
                     local_configs["benchmark_name"],
                     local_configs["module"],

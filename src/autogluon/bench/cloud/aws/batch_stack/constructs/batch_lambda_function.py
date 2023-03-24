@@ -38,9 +38,7 @@ class BatchLambdaFunction(Construct):
             "lambda-function-role",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name(
-                    "service-role/AWSLambdaBasicExecutionRole"
-                )
+                iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
             ],
             inline_policies={
                 "SubmitBatchForLambda": iam.PolicyDocument(

@@ -26,22 +26,16 @@ def construct_context(custom_configs: dict = {}):
         "BATCH_STACK_NAME": f"{prefix}-batch-stack",
         "METRICS_BUCKET": configs["METRICS_BUCKET"],  # bucket to upload metrics
         "DATA_BUCKET": configs["DATA_BUCKET"],  # bucket to download data
-        "INSTANCE_TYPES": [
-            configs["INSTANCE"]
-        ],  # can be a list of instance families or instance types
+        "INSTANCE_TYPES": [configs["INSTANCE"]],  # can be a list of instance families or instance types
         "COMPUTE_ENV_MAXV_CPUS": vcpu_map[configs["INSTANCE"]]
         * configs["MAX_MACHINE_NUM"],  # total max v_cpus in batch compute environment
         "CONTAINER_GPU": gpu_map[configs["INSTANCE"]],  # GPU reserved for container
-        "CONTAINER_VCPU": vcpu_map[
-            configs["INSTANCE"]
-        ],  # v_cpus reserved for container
+        "CONTAINER_VCPU": vcpu_map[configs["INSTANCE"]],  # v_cpus reserved for container
         "CONTAINER_MEMORY": memory_map[configs["INSTANCE"]]
         - configs[
             "RESERVED_MEMORY_SIZE"
         ],  # memory in MB reserved for container, also used for shm_size, i.e. `shared_memory_size`
-        "BLOCK_DEVICE_VOLUME": configs[
-            "BLOCK_DEVICE_VOLUME"
-        ],  # device attached to instance, in GB
+        "BLOCK_DEVICE_VOLUME": configs["BLOCK_DEVICE_VOLUME"],  # device attached to instance, in GB
         "LAMBDA_FUNCTION_NAME": f"{prefix}-batch-job-function",
         "VPC_NAME": configs[
             "VPC_NAME"

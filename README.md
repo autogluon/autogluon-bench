@@ -7,7 +7,7 @@
 ## Setup
 
 ```
-git clone https://github.com/suzhoum/autogluon-bench.git
+git clone https://github.com/autogluon/autogluon-bench.git
 cd autogluon-bench
 git checkout poc_0.0.1
 

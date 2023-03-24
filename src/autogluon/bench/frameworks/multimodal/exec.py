@@ -4,9 +4,10 @@ import os
 from datetime import datetime
 from typing import List
 
+from sklearn.model_selection import train_test_split
+
 from autogluon.core.utils.loaders import load_pd
 from autogluon.multimodal import MultiModalPredictor
-from sklearn.model_selection import train_test_split
 
 
 def get_args():
@@ -49,10 +50,11 @@ def load_dataset(
         test_data = data.MNIST("./data", train=False, download=True)
         train_data = _convert_torchvision_dataset(train_data)
         test_data = _convert_torchvision_dataset(test_data).sample(frac=0.1)
-        return train_data, test_data
     else:
         df = load_pd.load(data_path)
         train_data, test_data = train_test_split(df, test_size=0.2, random_state=42)
+
+    return train_data, test_data
 
 
 def save_metrics(metrics_path: str, metrics):

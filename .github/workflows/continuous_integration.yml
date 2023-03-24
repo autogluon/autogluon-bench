@@ -2,11 +2,8 @@ name: Continuous Integration
 
 on:
   push:
-
-permissions:
-  id-token: write
-  contents: read
-  pull-requests: write  # For removing tags from the PR
+  pull_request_target:
+    types: [opened]
 
 defaults:
   run:

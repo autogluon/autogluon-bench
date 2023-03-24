@@ -13,7 +13,7 @@ class Benchmark(ABC):
 
     @abstractmethod
     def run(self):
-        pass
+        raise NotImplementedError
 
     def upload_metrics(self, s3_bucket: str, s3_dir: str):
         import boto3
@@ -30,6 +30,4 @@ class Benchmark(ABC):
                 # upload the file to S3
                 s3.upload_file(local_path, s3_bucket, s3_path)
 
-        print(
-            f"Metrics under {self.metrics_dir} has been saved to {s3_bucket}/{s3_dir}."
-        )
+        print(f"Metrics under {self.metrics_dir} has been saved to {s3_bucket}/{s3_dir}.")

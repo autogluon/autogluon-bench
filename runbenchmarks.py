@@ -53,9 +53,9 @@ def upload_config(bucket: str, file: str):
     return f"s3://{bucket}/{s3_path}"
 
 
-def download_config(s3_path: str):
+def download_config(s3_path: str, dir: str="/tmp"):
     s3 = boto3.client("s3")
-    file_path = os.path.join("/tmp", s3_path.split("/")[-1])
+    file_path = os.path.join(dir, s3_path.split("/")[-1])
     bucket = s3_path.strip("s3://").split("/")[0]
     s3_path = s3_path.split(bucket)[-1].lstrip("/")
     s3.download_file(bucket, s3_path, file_path)
@@ -87,12 +87,12 @@ def run():
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(bucket=configs["metrics_bucket"], file=args.config_file)
         invoke_lambda(configs=infra_configs, config_file=config_s3_path) # lambda_invoke script to run benchmarks
-        # destroy_stack()
+        # TODO: destroy_stack()
     elif configs["mode"] == "local":
         run_benchmark(configs)
     else:
         raise NotImplementedError
-    
- 
+
+
 if __name__ == '__main__':
     run()

@@ -20,9 +20,7 @@ class InstanceProfile(Construct):
         self._roles.append(role.role_name)
 
     def _create_instance(self):
-        return iam.CfnInstanceProfile(
-            self, self._id + f"{self._prefix}-cfn-instance-profile", roles=self._roles
-        )
+        return iam.CfnInstanceProfile(self, self._id + f"{self._prefix}-cfn-instance-profile", roles=self._roles)
 
     def __init__(self, scope: Construct, id: str, prefix: str):
         super().__init__(scope, id)
