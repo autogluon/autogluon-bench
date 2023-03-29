@@ -39,7 +39,8 @@ def get_kwargs(module: str, configs):
                 "framework": f'{configs["framework"]}:{configs["label"]}',
                 "benchmark": configs["amlb_benchmark"],
                 "constraint": configs["amlb_constraint"],
-                "task": configs["amlb_task"],
+                "task": configs.get("amlb_task"),
+                "custom_branch": configs.get("amlb_custom_branch"),
             },
         }
 

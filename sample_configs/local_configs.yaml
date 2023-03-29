@@ -14,3 +14,4 @@ label: stable
 amlb_benchmark: test
 amlb_task: iris
 amlb_constraint: test
+amlb_custom_branch: https://github.com/gidler/autogluon#gidler_master_w_logging

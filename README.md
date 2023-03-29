@@ -21,7 +21,9 @@ pip install -e .
 
 ## Run benchmarkings locally
 
-Currently, `tabular` makes use of the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework, so we will supply the required and optional arguments when running benchmark for tabular. It can only run on the stable and latest(master) build of the framework at the moment. In order to benchmark on a custom branch, changes need to be made on AMLB.
+Currently, `tabular` makes use of the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via configuration file. Sample configuration files are provided in the `sample_configs` directory.
+
+A custom branch of autogluon can be benchmarked by specifying the `amlb_custom_branch` configuration of the form: `https://github.com/REPO/autogluon#BRANCH`
 
 ```
 python ./runbenchmarks.py  --config_file path/to/local_config_file
