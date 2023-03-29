@@ -37,6 +37,9 @@ update_batch_tags() {
     done
 }
 
+ECR_REPO=763104351884.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPO
+
 echo "Running CDK deploy"
 cdk deploy $STATIC_RESOURCE_STACK_NAME
 cdk deploy $BATCH_STACK_NAME

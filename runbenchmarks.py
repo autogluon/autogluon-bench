@@ -20,29 +20,47 @@ def get_args():
     return args
     
 
-def run_benchmark(configs: dict):
-    if configs["module"] == "multimodal":
-        benchmark = MultiModalBenchmark(benchmark_name=configs["benchmark_name"])
+def get_kwargs(module: str, configs):
+    if module == "multimodal":
         git_uri, git_branch = configs["git_uri#branch"].split("#")
-        benchmark.setup(git_uri=git_uri, git_branch=git_branch)
-        benchmark.run(data_path=configs["data_path"])
-        if configs.get("metrics_bucket", None):
-            benchmark.upload_metrics(s3_bucket=configs["metrics_bucket"], s3_dir=f'{configs["module"]}/{benchmark.benchmark_name}')
-    elif configs["module"] == "tabular":
-        benchmark = TabularBenchmark(
-            benchmark_name=configs["benchmark_name"], 
-        )
-        benchmark.setup()
-        benchmark.run(
-            framework=f'{configs["framework"]}:{configs["label"]}',
-            benchmark=configs["amlb_benchmark"],
-            constraint=configs["amlb_constraint"],
-            task=configs["amlb_task"]
-        )
-        if configs["metrics_bucket"] is not None:
-            benchmark.upload_metrics(s3_bucket=configs["metrics_bucket"], s3_dir=f'{configs["module"]}/{benchmark.benchmark_name}')
-    elif configs["module"] == "ts":
+        return {
+            "setup_kwargs": {
+                "git_uri": git_uri,
+                "git_branch": git_branch,
+            },
+            "run_kwargs": {
+                "data_path": configs["data_path"],
+            },
+        }
+    elif module == "tabular":
+        return {
+            "setup_kwargs": {},
+            "run_kwargs": {
+                "framework": f'{configs["framework"]}:{configs["label"]}',
+                "benchmark": configs["amlb_benchmark"],
+                "constraint": configs["amlb_constraint"],
+                "task": configs["amlb_task"],
+            },
+        }
+
+
+def run_benchmark(configs: dict):
+    module_to_benchmark = {
+        "multimodal": MultiModalBenchmark,
+        "tabular": TabularBenchmark,
+    }
+    module_name = configs["module"]
+    benchmark_class = module_to_benchmark.get(module_name, None)
+    if benchmark_class is None:
         raise NotImplementedError
+    
+    benchmark = benchmark_class(benchmark_name=configs["benchmark_name"])
+    module_kwargs = get_kwargs(module=module_name, configs=configs)
+    benchmark.setup(**module_kwargs.get("setup_kwargs", {}))
+    benchmark.run(**module_kwargs.get("run_kwargs", {}))
+
+    if configs.get("metrics_bucket", None):
+        benchmark.upload_metrics(s3_bucket=configs["metrics_bucket"], s3_dir=f'{module_name}/{benchmark.benchmark_name}')
     
 
 def upload_config(bucket: str, file: str):

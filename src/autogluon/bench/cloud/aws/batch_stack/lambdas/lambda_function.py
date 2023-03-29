@@ -42,6 +42,22 @@ def save_configs(configs: dict, uid: str):
     return config_file_path
 
 
+def process_combination(combination, keys, metrics_bucket, batch_job_queue, batch_job_definition):
+    local_configs = dict(zip(keys, combination))
+    config_uid = uuid.uuid1().hex
+    config_local_path = save_configs(configs=local_configs, uid=config_uid)
+    config_s3_path = upload_config(bucket=metrics_bucket, file=config_local_path)
+    job_name = f"{local_configs['benchmark_name']}-{local_configs['module']}-{config_uid}"
+    env = [{"name": "config_file", "value": config_s3_path}]
+
+    submit_batch_job(
+        env=env,
+        job_name=job_name,
+        job_queue=batch_job_queue,
+        job_definition=batch_job_definition,
+    )
+
+
 def handler(event, context):
     """
     Execution entrypoint for AWS Lambda.
@@ -112,6 +128,35 @@ def handler(event, context):
         amlb_tasks = module_configs.pop("amlb_task", {})
 
     # Generate and print all combinations
+    for common_combination in product(*[common_configs[key] for key in common_configs.keys()]):
+        for module_combination in product(*[module_configs[key] for key in module_configs.keys()]):
+            keys = list(common_configs.keys()) + list(module_configs.keys())
+            combination = common_combination + module_combination
+
+            if common_configs["module"][0] == "tabular":
+                for amlb_benchmark in amlb_benchmarks:
+                    amlb_task_values = amlb_tasks[amlb_benchmark]
+                    if amlb_task_values is None:
+                        amlb_task_values = [None]
+                    for amlb_task in amlb_task_values:
+                        extended_combination = combination + (amlb_benchmark, amlb_task)
+                        extended_keys = keys + ["amlb_benchmark", "amlb_task"]
+                        process_combination(
+                            extended_combination,
+                            extended_keys,
+                            metrics_bucket,
+                            batch_job_queue,
+                            batch_job_definition,
+                        )
+            else:
+                process_combination(
+                    combination,
+                    keys,
+                    metrics_bucket,
+                    batch_job_queue,
+                    batch_job_definition,
+                )
+
     for common_combination in product(*[common_configs[key] for key in common_configs.keys()]):
         for module_combination in product(*[module_configs[key] for key in module_configs.keys()]):
             if common_configs["module"][0] == "tabular":
