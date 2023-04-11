@@ -62,20 +62,26 @@ class StaticResourceStack(core.Stack):
             vpc = ec2.Vpc(self, f"{prefix}-vpc", vpc_name=vpc_name, max_azs=1)
         return vpc
 
-    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
-        super().__init__(scope, id, **kwargs)
-        metrics_bucket_name = self.node.try_get_context("METRICS_BUCKET")
-        data_bucket_name = self.node.try_get_context("DATA_BUCKET")
-        vpc_name = self.node.try_get_context("VPC_NAME")
-        prefix = self.node.try_get_context("STACK_NAME_PREFIX")
-
+    def create_s3_resources(self):
         region = os.environ["CDK_DEPLOY_REGION"]
         s3_resource = boto3.resource(service_name="s3", region_name=region)
-        self.metrics_bucket = self.import_or_create_bucket(resource=s3_resource, bucket_name=metrics_bucket_name)
-        self.data_bucket = s3.Bucket.from_bucket_name(self, data_bucket_name, bucket_name=data_bucket_name)
+        self.metrics_bucket = self.import_or_create_bucket(resource=s3_resource, bucket_name=self.metrics_bucket_name)
+        self.data_bucket = s3.Bucket.from_bucket_name(self, self.data_bucket_name, bucket_name=self.data_bucket_name)
 
+    def create_vpc_resources(self):
+        region = os.environ["CDK_DEPLOY_REGION"]
         ec2_client = boto3.client("ec2", region_name=region)
-        self.vpc = self.import_or_create_vpc(resource=ec2_client, vpc_name=vpc_name, prefix=prefix)
+        self.vpc = self.import_or_create_vpc(resource=ec2_client, vpc_name=self.vpc_name, prefix=self.prefix)
+
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+        self.metrics_bucket_name = self.node.try_get_context("METRICS_BUCKET")
+        self.data_bucket_name = self.node.try_get_context("DATA_BUCKET")
+        self.vpc_name = self.node.try_get_context("VPC_NAME")
+        self.prefix = self.node.try_get_context("STACK_NAME_PREFIX")
+
+        self.create_s3_resources()
+        self.create_vpc_resources()
 
 
 class BatchJobStack(core.Stack):
