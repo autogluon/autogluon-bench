@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import os
 from datetime import datetime
 from typing import List
@@ -8,6 +9,8 @@ from sklearn.model_selection import train_test_split
 
 from autogluon.core.utils.loaders import load_pd
 from autogluon.multimodal import MultiModalPredictor
+
+logger = logging.getLogger(__name__)
 
 
 def get_args():
@@ -63,7 +66,7 @@ def save_metrics(metrics_path: str, metrics):
     file = os.path.join(metrics_path, "metrics.json")
     with open(file, "w") as f:
         json.dump(metrics, f, indent=2)
-        print(f"metrics saved to {metrics_path}")
+        logger.info("Metrics saved to %s.", metrics_path)
     f.close()
 
 

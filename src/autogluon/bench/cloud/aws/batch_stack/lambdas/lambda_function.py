@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from itertools import product
@@ -8,6 +9,8 @@ import yaml
 aws_batch = boto3.client("batch")
 s3 = boto3.client("s3")
 
+logger = logging.getLogger(__name__)
+
 
 def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: str):
     container_overrides = {"environment": env}
@@ -17,7 +20,7 @@ def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: s
         jobDefinition=job_definition,
         containerOverrides=container_overrides,
     )
-    print(response)
+    logger.info(response)
 
 
 def download_config(s3_path: str):

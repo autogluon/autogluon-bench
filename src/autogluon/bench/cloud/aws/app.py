@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 
 from aws_cdk import App, Environment, Tags
 
 from autogluon.bench.cloud.aws.batch_stack.stack import BatchJobStack, StaticResourceStack
+
+logger = logging.getLogger(__name__)
 
 
 def get_mandatory_env(name):
@@ -18,7 +21,7 @@ def get_mandatory_env(name):
 
 cdk_default_account = get_mandatory_env("CDK_DEPLOY_ACCOUNT")
 cdk_default_region = get_mandatory_env("CDK_DEPLOY_REGION")
-print("Deploying the stack to ", cdk_default_account, cdk_default_region)
+logger.info("Deploying the stack to %s %s", cdk_default_account, cdk_default_region)
 
 app = App()
 prefix = app.node.try_get_context("STACK_NAME_PREFIX")

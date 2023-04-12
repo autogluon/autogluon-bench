@@ -1,7 +1,10 @@
+import logging
 import os
 import subprocess
 
 from autogluon.bench.benchmark import Benchmark
+
+logger = logging.getLogger(__name__)
 
 
 class TabularBenchmark(Benchmark):
@@ -19,9 +22,9 @@ class TabularBenchmark(Benchmark):
         command = [setup_script_path, self.benchmark_dir]
         result = subprocess.run(command)
         if result.stdout:
-            print(f"Successfully set up the environment under {self.benchmark_dir}/.venv")
+            logging.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
         elif result.stderr:
-            print(result.stderr)
+            logging.error(result.stderr)
 
     def run(
         self,

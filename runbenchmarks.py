@@ -4,11 +4,15 @@ import json
 import os
 import time
 import yaml
+import logging
 from autogluon.bench.cloud.aws.run_deploy import deploy_stack
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import \
     MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import \
     TabularBenchmark
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def get_args():
@@ -90,7 +94,7 @@ def invoke_lambda(configs: dict, config_file: str):
         InvocationType='RequestResponse',
         Payload=json.dumps(payload)
     )
-    print(f'AWS Batch jobs submitted by {configs["LAMBDA_FUNCTION_NAME"]}.')
+    logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])
 
 
 def run():
