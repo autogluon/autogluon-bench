@@ -36,7 +36,7 @@ class MultiModalBenchmark(Benchmark):
             exec_path,
             "--data_path",
             data_path,
-            "--metrics_dir",
-            self.metrics_dir,
+            "--benchmark_dir",
+            self.benchmark_dir,
         ]
         subprocess.run(command)

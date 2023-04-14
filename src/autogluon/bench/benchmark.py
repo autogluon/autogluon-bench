@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import time
 from abc import ABC, abstractmethod
 
@@ -13,6 +14,7 @@ class Benchmark(ABC):
         self.benchmark_name = benchmark_name + "_" + formatted_time
         self.benchmark_dir = os.path.join(root_dir, self.benchmark_name)
         self.metrics_dir = os.path.join(self.benchmark_dir, "results")
+        self.benchmark_dir_s3 = None
 
     @abstractmethod
     def run(self):
@@ -22,6 +24,7 @@ class Benchmark(ABC):
         import boto3
 
         logging.info("Saving metrics to S3 Bucket %s...", s3_bucket)
+        self.benchmark_dir_s3 = f"s3://{s3_bucket}/{s3_dir}"
         s3 = boto3.client("s3")
         for root, dirs, files in os.walk(self.metrics_dir):
             for filename in files:
@@ -34,3 +37,15 @@ class Benchmark(ABC):
                 s3.upload_file(local_path, s3_bucket, s3_path)
 
         logging.info("Metrics under %s has been saved to %s/%s.", self.metrics_dir, s3_bucket, s3_dir)
+
+    def cleanup_metrics(self):
+        shutil.rmtree(self.benchmark_dir)
+        if self.benchmark_dir_s3 is not None:
+            import boto3
+
+            s3 = boto3.resource("s3")
+            bucket_name = self.benchmark_dir_s3.split("//")[-1].split("/")[0]
+            benchmark_dir = self.benchmark_dir_s3.split(bucket_name)[-1].lstrip("/")
+            bucket = s3.Bucket(bucket_name)
+            bucket.objects.filter(Prefix=benchmark_dir).delete()
+            s3.Object(bucket_name, self.benchmark_dir_s3).delete()

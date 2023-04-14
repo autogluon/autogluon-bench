@@ -1,11 +1,12 @@
 import argparse
 import boto3
 import json
+import logging
 import os
 import time
 import yaml
 import logging
-from autogluon.bench.cloud.aws.run_deploy import deploy_stack
+from autogluon.bench.cloud.aws.run_deploy import deploy_stack, destroy_stack
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import \
     MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import \
@@ -19,6 +20,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--config_file', type=str, help='Path to custom config file.')
+    parser.add_argument('--remove_resources', action='store_true')
 
     args = parser.parse_args()
     return args
@@ -90,13 +92,38 @@ def invoke_lambda(configs: dict, config_file: str):
     payload = {
         "config_file": config_file
     }
-    lambda_client.invoke(
+    response = lambda_client.invoke(
         FunctionName=configs["LAMBDA_FUNCTION_NAME"],
         InvocationType='RequestResponse',
         Payload=json.dumps(payload)
     )
     logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])
+    
+    job_ids = json.loads(response['Payload'].read().decode('utf-8'))['job_ids']
+    return job_ids
 
+def wait_for_jobs_to_complete(batch_client, job_ids: list):
+    logger.info("Waiting for jobs to complete...")
+    while True:
+        all_jobs_completed = True
+        failed_jobs = []
+
+        for job_id in job_ids:
+            response = batch_client.describe_jobs(jobs=[job_id])
+            job = response["jobs"][0]
+            job_status = job["status"]
+
+            if job_status == "FAILED":
+                failed_jobs.append(job_id)
+            elif job_status not in ["SUCCEEDED", "FAILED"]:
+                all_jobs_completed = False
+
+        if all_jobs_completed:
+            break
+        else:
+            time.sleep(60)  # Poll job statuses every 60 seconds
+
+    return failed_jobs
 
 def run():
     args = get_args()
@@ -109,8 +136,15 @@ def run():
     if configs["mode"] == "aws":
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(bucket=configs["metrics_bucket"], file=args.config_file)
-        invoke_lambda(configs=infra_configs, config_file=config_s3_path) # lambda_invoke script to run benchmarks
-        # TODO: destroy_stack()
+        job_ids = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
+        batch_client = boto3.client("batch", infra_configs["CDK_DEPLOY_REGION"])
+        failed_jobs = wait_for_jobs_to_complete(batch_client=batch_client, job_ids=job_ids)
+        
+        if args.remove_resources:
+            if failed_jobs:
+                logger.warning("Warning: Some jobs have failed: {failed_jobs}. Resources are not being removed.")
+            else:
+                destroy_stack(configs=infra_configs)
     elif configs["mode"] == "local":
         run_benchmark(configs)
     else:

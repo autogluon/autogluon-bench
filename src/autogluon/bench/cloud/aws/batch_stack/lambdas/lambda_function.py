@@ -22,6 +22,7 @@ def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: s
     )
     logger.info("Job %s submitted to AWS Batch queue %s.", job_name, job_queue)
     logger.info(response)
+    return response["jobId"]
 
 
 def download_config(s3_path: str):
@@ -54,12 +55,13 @@ def process_combination(combination, keys, metrics_bucket, batch_job_queue, batc
     job_name = f"{local_configs['benchmark_name']}-{local_configs['module']}-{config_uid}"
     env = [{"name": "config_file", "value": config_s3_path}]
 
-    submit_batch_job(
+    job_id = submit_batch_job(
         env=env,
         job_name=job_name,
         job_queue=batch_job_queue,
         job_definition=batch_job_definition,
     )
+    return job_id
 
 
 def handler(event, context):
@@ -131,7 +133,8 @@ def handler(event, context):
         amlb_benchmarks = module_configs.pop("amlb_benchmark", [])
         amlb_tasks = module_configs.pop("amlb_task", {})
 
-    # Generate and print all combinations
+    # Generate all combinations and submit jobs
+    job_ids = []
     for common_combination in product(*[common_configs[key] for key in common_configs.keys()]):
         for module_combination in product(*[module_configs[key] for key in module_configs.keys()]):
             keys = list(common_configs.keys()) + list(module_configs.keys())
@@ -145,21 +148,23 @@ def handler(event, context):
                     for amlb_task in amlb_task_values:
                         extended_combination = combination + (amlb_benchmark, amlb_task)
                         extended_keys = keys + ["amlb_benchmark", "amlb_task"]
-                        process_combination(
+                        job_id = process_combination(
                             extended_combination,
                             extended_keys,
                             metrics_bucket,
                             batch_job_queue,
                             batch_job_definition,
                         )
+                        job_ids.append(job_id)
             else:
-                process_combination(
+                job_id = process_combination(
                     combination,
                     keys,
                     metrics_bucket,
                     batch_job_queue,
                     batch_job_definition,
                 )
+                job_ids.append(job_id)
 
     for common_combination in product(*[common_configs[key] for key in common_configs.keys()]):
         for module_combination in product(*[module_configs[key] for key in module_configs.keys()]):
@@ -213,4 +218,4 @@ def handler(event, context):
                     job_definition=batch_job_definition,
                 )
 
-    return "Lambda execution finished"
+    return {"Lambda execution finished": True, "job_ids": job_ids}
