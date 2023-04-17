@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 
 import aws_cdk as core
@@ -27,15 +28,17 @@ docker_base_dir = "."
 # Relative path to the source for the AWS lambda, from the project root
 lambda_script_dir = "src/autogluon/bench/cloud/aws/batch_stack/lambdas"
 
+logger = logging.getLogger(__name__)
+
 
 class StaticResourceStack(core.Stack):
     def import_or_create_bucket(self, resource, bucket_name):
         bucket = resource.Bucket(bucket_name)
         if bucket.creation_date:
-            print(f"The bucket {bucket_name} already exists, importing to the stack...")
+            logger.warning("The bucket %s already exists, importing to the stack...", bucket_name)
             bucket = s3.Bucket.from_bucket_name(self, bucket_name, bucket_name=bucket_name)
         else:
-            print(f"The bucket {bucket_name} does not exist, creating a new bucket...")
+            logger.warning("The bucket %s does not exist, creating a new bucket...", bucket_name)
             bucket = s3.Bucket(
                 self,
                 bucket_name,

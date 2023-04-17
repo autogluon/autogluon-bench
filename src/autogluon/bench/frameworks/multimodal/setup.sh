@@ -14,10 +14,13 @@ git clone --depth 1 --single-branch --branch ${BRANCH} --recurse-submodules ${GI
 python3.8 -m venv $DIR/.venv
 source $DIR/.venv/bin/activate
 
-pip install --upgrade pip
-pip install --upgrade setuptools wheel
+python3 -m pip install --upgrade pip
+python3 -m pip install --upgrade setuptools wheel
 
 cd $DIR/autogluon
-./full_install.sh
+
+python3 -m pip install -e multimodal
+python3 -m mim install -q mmcv-full
+
 
 

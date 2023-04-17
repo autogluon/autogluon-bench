@@ -1,7 +1,10 @@
+import logging
 import os
 import subprocess
 
 from autogluon.bench.benchmark import Benchmark
+
+logger = logging.getLogger(__name__)
 
 
 class MultiModalBenchmark(Benchmark):
@@ -21,9 +24,9 @@ class MultiModalBenchmark(Benchmark):
         command = [setup_script_path, git_uri, git_branch, self.benchmark_dir]
         result = subprocess.run(command)
         if result.stdout:
-            print(f"Successfully set up the environment under {self.benchmark_dir}/.venv")
+            logger.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
         elif result.stderr:
-            print(result.stderr)
+            logger.error(result.stderr)
 
     def run(self, data_path: str):
         PY_EXC_PATH = self.benchmark_dir + "/.venv/bin/python"
