@@ -11,7 +11,7 @@ repo_name=$(basename -s .git $(echo $GIT_URI))
 git clone --depth 1 --single-branch --branch ${BRANCH} --recurse-submodules ${GIT_URI} $DIR/$repo_name
 
 # create virtual env
-python3.8 -m venv $DIR/.venv
+python3.10 -m venv $DIR/.venv
 source $DIR/.venv/bin/activate
 
 python3 -m pip install --upgrade pip

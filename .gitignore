@@ -50,6 +50,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+results.xml
 *.cover
 *.py,cover
 .hypothesis/
@@ -137,3 +138,4 @@ dmypy.json
 # Custom config
 /*.yaml
 cdk.context.json
+

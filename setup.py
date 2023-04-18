@@ -9,9 +9,13 @@ install_requires = [
     "pyyaml>=5.4,<=6.0"
 ]
 
+extras_require = {}
+test_requirements = ["pytest", "tox"]
+extras_require["tests"] = test_requirements
 
 setup(
     install_requires=install_requires,
+    extras_require=extras_require,
     name = 'autogluon.bench',
     packages = find_packages("src"),
     package_dir ={"": "src"},

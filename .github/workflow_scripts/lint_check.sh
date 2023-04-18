@@ -4,7 +4,7 @@ set -ex
 
 source $(dirname "$0")/env_setup.sh
 
-setup_build_env
+setup_lint_env
 
-black --check --diff src/
-isort --check --diff src/
+black --check --diff src/ tests/
+isort --check --diff src/ tests/

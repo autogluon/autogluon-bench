@@ -1,5 +1,9 @@
-function setup_build_env {
+function setup_lint_env {
     python3 -m pip install --upgrade pip
     python3 -m pip install "black>=22.3,<23.0"
-    python3 -m pip install isort>=5.10
+    python3 -m pip install "isort>=5.10"
+}
+
+function install_bench_test {
+    python3 -m pip install --upgrade -e ./[tests]
 }
