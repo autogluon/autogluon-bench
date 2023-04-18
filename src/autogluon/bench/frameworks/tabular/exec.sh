@@ -1,33 +1,32 @@
 #!/bin/bash
 
-framework=${1:-"AutoGluon:latest"}
-benchmark=${2:-"test"}
-constraint=${3:-"test"}
-DIR=${4:-"./benchmark_runs/tabular/test"}  # from root of project
+framework=${1}
+benchmark=${2}
+constraint=${3}
+DIR=${4}  # from root of project
+shift 4
 
-OPTIONS=$(getopt -o "" -l "task:" --name "$0" -- "$@")
-eval set -- "$OPTIONS"
-while true; do
-  case $1 in
-    --task)
-      task="$2"
-      shift 2
-      ;;
-    --)
-      shift
-      break
-      ;;
-    *)
-      echo "Invalid option: $1"
-      exit 1
-      ;;
-  esac
+while getopts "t:c:" opt; do
+    case $opt in
+        t) task=$OPTARG;;
+        c) custom_dir=$OPTARG;;
+        :\?) echo "Error: invaled option -$OPTARG"; exit1;;
+        :) echo "Error: option -$OPTARG requires an argument"; exit1;;
+    esac
 done
+
+amlb_args="$framework $benchmark $constraint -s force"
+
+if [ -n "$task" ]; then
+    amlb_args+=" -t $task"
+fi
+
+if [ -n "$custom_dir" ]; then
+    cp -r $custom_dir $DIR
+    amlb_args+=" -u $custom_dir"
+fi
 
 cd $DIR
 source .venv/bin/activate
-if [ -n "$task" ]; then
-    python ./automlbenchmark/runbenchmark.py $framework $benchmark $constraint -t $task -s force
-else
-    python ./automlbenchmark/runbenchmark.py $framework $benchmark $constraint -s force
-fi
+
+python ./automlbenchmark/runbenchmark.py  $amlb_args
