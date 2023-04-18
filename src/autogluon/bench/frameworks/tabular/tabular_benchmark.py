@@ -48,7 +48,7 @@ class TabularBenchmark(Benchmark):
 
         if custom_branch is not None:
 
-            custom_repo, custom_branch_name = tuple(custom_branch.split('#'))
+            custom_repo, custom_branch_name = tuple(custom_branch.split("#"))
 
             temp_dirpath = tempfile.mkdtemp()
             custom_framework_name = "AutoGluon_dev"
@@ -57,25 +57,20 @@ class TabularBenchmark(Benchmark):
             custom_config_contents = {
                 "frameworks": {
                     "definition_file": ["{root}/resources/frameworks.yaml", "{user}/frameworks.yaml"],
-                    "allow_duplicates": "true"
+                    "allow_duplicates": "true",
                 }
             }
 
             with open(os.path.join(temp_dirpath, "config.yaml"), "w") as fo:
-               yaml.dump(custom_config_contents, fo)
+                yaml.dump(custom_config_contents, fo)
 
             custom_framework_contents = {
-                custom_framework_name: {
-                    "extends": "AutoGluon",
-                    "repo": custom_repo,
-                    "version": custom_branch_name
-                }
+                custom_framework_name: {"extends": "AutoGluon", "repo": custom_repo, "version": custom_branch_name}
             }
 
             with open(os.path.join(temp_dirpath, "frameworks.yaml"), "w") as fo:
-               yaml.dump(custom_framework_contents, fo)
+                yaml.dump(custom_framework_contents, fo)
 
             command += ["-c", temp_dirpath]
 
         subprocess.run(command)
-
