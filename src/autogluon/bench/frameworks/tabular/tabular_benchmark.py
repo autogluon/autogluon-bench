@@ -1,7 +1,8 @@
 import os
 import subprocess
-import yaml
 import tempfile
+
+import yaml
 
 from autogluon.bench.benchmark import Benchmark
 
