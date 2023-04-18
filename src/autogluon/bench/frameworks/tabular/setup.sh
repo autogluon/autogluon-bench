@@ -13,5 +13,5 @@ source $DIR/.venv/bin/activate
 # install latest AMLB
 pip install --upgrade pip
 pip install --upgrade setuptools wheel
-git -c clone --depth 1 --branch stable https://github.com/openml/automlbenchmark.git $DIR/automlbenchmark
+git clone --depth 1 --branch stable https://github.com/openml/automlbenchmark.git $DIR/automlbenchmark
 pip install -r $DIR/automlbenchmark/requirements.txt
