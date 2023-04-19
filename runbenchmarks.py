@@ -26,7 +26,17 @@ def get_args():
     return args
     
 
-def get_kwargs(module: str, configs):
+def get_kwargs(module: str, configs: dict):
+    """Returns a dictionary of keyword arguments to be used for setting up and running the benchmark.
+
+    Args:
+        module (str): The name of the module to benchmark (either "multimodal" or "tabular").
+        configs (dict): A dictionary of configuration options for the benchmark.
+
+    Returns:
+        A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
+    """
+
     if module == "multimodal":
         git_uri, git_branch = configs["git_uri#branch"].split("#")
         return {
@@ -52,6 +62,12 @@ def get_kwargs(module: str, configs):
 
 
 def run_benchmark(configs: dict):
+    """Runs a benchmark based on the provided configuration options.
+
+    Args:
+        configs (dict): A dictionary of configuration options for the benchmark.
+    """
+
     module_to_benchmark = {
         "multimodal": MultiModalBenchmark,
         "tabular": TabularBenchmark,
@@ -71,6 +87,16 @@ def run_benchmark(configs: dict):
     
 
 def upload_config(bucket: str, file: str):
+    """Uploads a configuration file to an S3 bucket.
+
+    Args:
+        bucket (str): The name of the S3 bucket to upload the file to.
+        file (str): The path to the local file to upload.
+
+    Returns:
+        The S3 path of the uploaded file.
+    """
+
     s3 = boto3.client("s3")
     file_name = f'{file.split("/")[-1].split(".")[0]}_{time.strftime("%Y%m%dT%H%M%S", time.localtime())}.yaml'
     s3_path = f"configs/{file_name}"
@@ -79,6 +105,16 @@ def upload_config(bucket: str, file: str):
 
 
 def download_config(s3_path: str, dir: str="/tmp"):
+    """Downloads a configuration file from an S3 bucket.
+
+    Args:
+        s3_path (str): The S3 path of the file to download.
+        dir (str): The local directory to download the file to (default: "/tmp").
+
+    Returns:
+        The local path of the downloaded file.
+    """
+
     s3 = boto3.client("s3")
     file_path = os.path.join(dir, s3_path.split("/")[-1])
     bucket = s3_path.strip("s3://").split("/")[0]
@@ -88,6 +124,13 @@ def download_config(s3_path: str, dir: str="/tmp"):
 
 
 def invoke_lambda(configs: dict, config_file: str):
+    """Invokes an AWS Lambda function to run benchmarks based on the provided configuration options.
+
+    Args:
+        configs (dict): A dictionary of configuration options for the AWS infrastructure.
+        config_file (str): The path of the configuration file to use for running the benchmarks.
+    """
+
     lambda_client = boto3.client("lambda", configs["CDK_DEPLOY_REGION"])
     payload = {
         "config_file": config_file
@@ -126,6 +169,8 @@ def wait_for_jobs_to_complete(batch_client, job_ids: list):
     return failed_jobs
 
 def run():
+    """Main function that runs the benchmark based on the provided configuration options."""
+
     args = get_args()
     configs = {}
     if args.config_file.startswith("s3"):

@@ -21,6 +21,16 @@ class Benchmark(ABC):
         raise NotImplementedError
 
     def upload_metrics(self, s3_bucket: str, s3_dir: str):
+        """Uploads benchmark metrics to an S3 bucket.
+
+        Args:
+            s3_bucket (str): The name of the S3 bucket to upload the metrics to.
+            s3_dir (str): The S3 path of the directory to upload the metrics to.
+
+        Returns:
+            None
+        """
+
         import boto3
 
         logging.info("Saving metrics to S3 Bucket %s...", s3_bucket)

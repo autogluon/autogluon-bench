@@ -31,7 +31,19 @@ logger = logging.getLogger(__name__)
 
 
 class StaticResourceStack(core.Stack):
+    """
+    Defines a stack for creating and importing static resources, such as S3 buckets and VPCs.
+    :param scope: the Construct scope.
+    """
+
     def import_or_create_bucket(self, resource, bucket_name):
+        """
+        Imports an S3 bucket if it already exists or creates a new one if it doesn't exist.
+
+        :param resource: A boto3 S3 resource object.
+        :param bucket_name: The name of the S3 bucket.
+        :return: An S3 bucket object.
+        """
         bucket = resource.Bucket(bucket_name)
         if bucket.creation_date:
             logger.warning("The bucket %s already exists, importing to the stack...", bucket_name)
@@ -47,6 +59,14 @@ class StaticResourceStack(core.Stack):
         return bucket
 
     def import_or_create_vpc(self, resource, vpc_name, prefix):
+        """
+        Imports an EC2 VPC if it already exists or creates a new one if it doesn't exist.
+
+        :param resource: A boto3 EC2 client object.
+        :param vpc_name: The name of the VPC.
+        :param prefix: The prefix to use for the VPC.
+        :return: An EC2 VPC object.
+        """
         filters = [
             {
                 "Name": "tag:Name",
@@ -62,12 +82,18 @@ class StaticResourceStack(core.Stack):
         return vpc
 
     def create_s3_resources(self):
+        """
+        Creates S3 bucket resources.
+        """
         region = os.environ["CDK_DEPLOY_REGION"]
         s3_resource = boto3.resource(service_name="s3", region_name=region)
         self.metrics_bucket = self.import_or_create_bucket(resource=s3_resource, bucket_name=self.metrics_bucket_name)
         self.data_bucket = s3.Bucket.from_bucket_name(self, self.data_bucket_name, bucket_name=self.data_bucket_name)
 
     def create_vpc_resources(self):
+        """
+        Creates VPC resources.
+        """
         region = os.environ["CDK_DEPLOY_REGION"]
         ec2_client = boto3.client("ec2", region_name=region)
         self.vpc = self.import_or_create_vpc(resource=ec2_client, vpc_name=self.vpc_name, prefix=self.prefix)
@@ -97,6 +123,14 @@ class BatchJobStack(core.Stack):
     """
 
     def __init__(self, scope: Construct, id: str, static_stack: StaticResourceStack, **kwargs) -> None:
+        """
+        Initializes the BatchJobStack.
+
+        :param scope: The scope of the stack.
+        :param id: The ID of the stack.
+        :param static_stack: A StaticResourceStack object.
+        :param kwargs: Keyword arguments.
+        """
         super().__init__(scope, id, **kwargs)
         prefix = self.node.try_get_context("STACK_NAME_PREFIX")
         tag = self.node.try_get_context("STACK_NAME_TAG")

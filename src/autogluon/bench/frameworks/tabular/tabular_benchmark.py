@@ -11,6 +11,25 @@ logger = logging.getLogger(__name__)
 
 
 class TabularBenchmark(Benchmark):
+    """A benchmark class for AutoGluon Tabular.
+
+    Args:
+        benchmark_name (str): The name of the benchmark.
+        root_dir (str): The root directory for storing benchmark results (default: "./benchmark_runs/tabular/").
+
+    Attributes:
+        benchmark_name (str): The name of the benchmark.
+        root_dir (str): The root directory for storing benchmark results.
+        module (str): The name of the benchmark module (in this case, "tabular").
+
+    Methods:
+        setup(): Sets up the benchmark environment.
+        run(): Runs the benchmark.
+
+    Raises:
+        subprocess.CalledProcessError: If the setup or execution scripts encounter an error.
+    """
+
     def __init__(self, benchmark_name: str, root_dir: str = "./benchmark_runs/tabular/"):
         super().__init__(
             benchmark_name=benchmark_name,
@@ -21,6 +40,7 @@ class TabularBenchmark(Benchmark):
     def setup(
         self,
     ):
+        """Sets up the virtual environment for tabular benchmark."""
         setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
         command = [setup_script_path, self.benchmark_dir]
         result = subprocess.run(command)
@@ -37,7 +57,18 @@ class TabularBenchmark(Benchmark):
         task: str = None,
         custom_branch: str = None,
     ):
+        """Runs the tabular benchmark.
 
+        Args:
+            framework (str): The name of the framework to use (default: "AutoGluon:latest").
+            benchmark (str): The name of the benchmark to run (default: "test").
+            constraint (str): The name of the constraint to use (default: "test").
+            task (str): The name of the task to run (default: None).
+            custom_branch (str): The name of the custom branch to use (default: None).
+
+        Returns:
+            None
+        """
         exec_script_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.sh"
         command = [
             exec_script_path,
