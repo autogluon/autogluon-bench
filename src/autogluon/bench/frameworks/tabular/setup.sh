@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 DIR=${1:-"./benchmark_runs/tabular/test"}  # from root of project
 
 if [ ! -d $DIR ]; then

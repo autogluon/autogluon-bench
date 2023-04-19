@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 GIT_URI=${1:-"https://github.com/autogluon/autogluon.git"}
 BRANCH=${2:-"master"}
 DIR=${3:-"./benchmark_runs/multimodal/test"}  # from root of benchmark run

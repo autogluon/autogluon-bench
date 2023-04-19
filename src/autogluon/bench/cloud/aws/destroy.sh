@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 STATIC_RESOURCE_STACK_NAME=$1
 BATCH_STACK_NAME=$2
 

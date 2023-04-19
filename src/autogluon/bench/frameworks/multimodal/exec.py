@@ -21,7 +21,7 @@ def get_args():
         type=str,
         help="Can be one of: dataset name, local path, S3 path, AMLB task ID/name",
     )
-    parser.add_argument("--benchmark_dir", type=str, help="Directory to save metrics.")
+    parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
 
     args = parser.parse_args()
     return args
