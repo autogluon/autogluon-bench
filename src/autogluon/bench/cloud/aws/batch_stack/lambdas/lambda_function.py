@@ -13,6 +13,18 @@ logger = logging.getLogger(__name__)
 
 
 def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: str):
+    """
+    Submits a Batch job with the given environment variables, job name, job queue and job definition.
+
+    Args:
+        env (List[Dict[str, Any]]): List of dictionaries containing environment variables.
+        job_name (str): Name of the job.
+        job_queue (str): Name of the job queue.
+        job_definition (str): Name of the job definition.
+
+    Returns:
+        str: Job ID.
+    """
     container_overrides = {"environment": env}
     response = aws_batch.submit_job(
         jobName=job_name,
@@ -26,6 +38,15 @@ def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: s
 
 
 def download_config(s3_path: str):
+    """
+    Downloads a file from S3 bucket with the given path.
+
+    Args:
+        s3_path (str): Path of the file in the S3 bucket.
+
+    Returns:
+        str: Local path of the downloaded file.
+    """
     file_path = os.path.join("/tmp", s3_path.split("/")[-1])
     bucket = s3_path.strip("s3://").split("/")[0]
     s3_path = s3_path.split(bucket)[-1].lstrip("/")
@@ -34,6 +55,16 @@ def download_config(s3_path: str):
 
 
 def upload_config(bucket: str, file: str):
+    """
+    Uploads a file to the given S3 bucket.
+
+    Args:
+        bucket (str): Name of the bucket.
+        file (str): Local path of the file to upload.
+
+    Returns:
+        str: S3 path of the uploaded file.
+    """
     file_name = f'{file.split("/")[-1].split(".")[0]}.yaml'
     s3_path = f"configs/{file_name}"
     s3.upload_file(file, bucket, s3_path)
@@ -41,6 +72,16 @@ def upload_config(bucket: str, file: str):
 
 
 def save_configs(configs: dict, uid: str):
+    """
+    Saves the given dictionary of configs to a YAML file with the given UID as a part of the filename.
+
+    Args:
+        configs (Dict[str, Any]): Dictionary of configurations to be saved.
+        uid (str): UID to be added to the filename of the saved file.
+
+    Returns:
+        str: Local path of the saved file.
+    """
     config_file_path = os.path.join("/tmp", f"cloud_configs_split_{uid}.yaml")
     with open(config_file_path, "w+") as f:
         yaml.dump(configs, f, default_flow_style=False)
@@ -48,6 +89,19 @@ def save_configs(configs: dict, uid: str):
 
 
 def process_combination(combination, keys, metrics_bucket, batch_job_queue, batch_job_definition):
+    """
+    Processes a combination of configurations by generating and submitting Batch jobs.
+
+    Args:
+        combination (Tuple): tuple of configurations to process.
+        keys (List[str]): list of keys of the configurations.
+        metrics_bucket (str): name of the bucket to upload metrics to.
+        batch_job_queue (str): name of the Batch job queue to submit jobs to.
+        batch_job_definition (str): name of the Batch job definition to use for submitting jobs.
+
+    Returns:
+        str: job id of the submitted batch job.
+    """
     local_configs = dict(zip(keys, combination))
     config_uid = uuid.uuid1().hex
     config_local_path = save_configs(configs=local_configs, uid=config_uid)
