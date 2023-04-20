@@ -19,7 +19,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-## Run benchmarkings locally
+## Run benchmarks locally
 
 Currently, `tabular` makes use of the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via configuration file. Sample configuration files are provided in the `sample_configs` directory.
 
@@ -37,7 +37,7 @@ To customize the benchmarking experiment, including adding more hyperparameters,
 Results are saved under `$WORKING_DIR/benchmark_runs/$module/{$benchmark_name}_{$timestamp}`
 
 
-## Run benchmarkings on AWS
+## Run benchmarks on AWS
 
 The infrastructure is built on AWS CDK, where a AWS Batch compute environment is setup to run the benchmarkings. 
 
@@ -84,3 +84,42 @@ python ./runbenchmarks.py  --config_file path/to/cloud_config_file
 ```
 
 The above command will deploy the infrastructure automatically and create a lambda_function with the `LAMBDA_FUNCTION_NAME` of your choice. The lambda function will then be invoked automatically with the cloud config file you provided, and submit AWS Batch jobs to the job queue (named with the `PREFIX` you provided).
+
+
+## Evaluating bechmark runs
+
+Innixma's `autogluon-benchmark` repository can be used to evaluate tabular benchmark runs whose results are in S3.
+Using these utilities is ad-hoc at this time, but in a coming release we will integrate this capability into `autogluon-bench` and support evaulation of multimodal benchmarks.
+
+### Evaluation Steps
+
+Clone the `autogluon-benchmark` repository:
+```
+git clone https://github.com/gidler/autogluon-benchmark.git
+```
+
+Confirm that AWS credentials are setup for the AWS account that has the benchmark results in S3.
+
+Run the `aggregate_all.py` script
+```
+python scripts/aggregate_all.py --s3_bucket {AWS_BUCKET} --s3_prefix {AWS_PREFIX} --version_name {BENCHMARK_VERSION_NAME}
+
+# example: python scripts/aggregate_all.py --s3_bucket autogluon-benchmark-metrics --s3_prefix tabular/ --version_name test_local_20230330T180916
+```
+
+This will create a new file in S3 with this signature:
+```
+s3://{AWS_BUCKET}/aggregated/{AWS_PREFIX}/{BENCHMARK_VERSION_NAME}/results.csv
+```
+
+Run the `run_generate_clean_openml` python utility. You will need to manually set the `run_name_arg` and `path_prefix` variables in the script.
+```
+python autogluon_benchmark/evaluation/runners/run_generate_clean_openml.py 
+```
+This will create a local file of results in the `data/results/input/prepared/openml/` directory.
+
+Run the `benchmark_evaluation` python script. You will need to manually update the `frameworks_run` and `paths` variables in the script.
+```
+python autogluon_benchmark/evaluation/runners/run_evaluation_openml.py
+```
+
