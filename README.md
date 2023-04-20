@@ -12,7 +12,7 @@ cd autogluon-bench
 git checkout poc_0.0.1
 
 # create virtual env
-python3.10 -m venv .venv
+python3.9 -m venv .venv
 source .venv/bin/activate
 
 # install autogluon-bench

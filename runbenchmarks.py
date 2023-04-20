@@ -142,7 +142,7 @@ def run():
         
         if args.remove_resources:
             if failed_jobs:
-                logger.warning("Warning: Some jobs have failed: {failed_jobs}. Resources are not being removed.")
+                logger.warning("Warning: Some jobs have failed: %s. Resources are not being removed.", failed_jobs)
             else:
                 destroy_stack(configs=infra_configs)
     elif configs["mode"] == "local":
