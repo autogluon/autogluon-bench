@@ -33,16 +33,18 @@ logger = logging.getLogger(__name__)
 class StaticResourceStack(core.Stack):
     """
     Defines a stack for creating and importing static resources, such as S3 buckets and VPCs.
-    :param scope: the Construct scope.
     """
 
     def import_or_create_bucket(self, resource, bucket_name):
         """
         Imports an S3 bucket if it already exists or creates a new one if it doesn't exist.
 
-        :param resource: A boto3 S3 resource object.
-        :param bucket_name: The name of the S3 bucket.
-        :return: An S3 bucket object.
+        Args:
+            resource: A boto3 S3 resource object.
+            bucket_name: The name of the S3 bucket.
+
+        Returns:
+            An S3 bucket object.
         """
         bucket = resource.Bucket(bucket_name)
         if bucket.creation_date:
@@ -62,10 +64,13 @@ class StaticResourceStack(core.Stack):
         """
         Imports an EC2 VPC if it already exists or creates a new one if it doesn't exist.
 
-        :param resource: A boto3 EC2 client object.
-        :param vpc_name: The name of the VPC.
-        :param prefix: The prefix to use for the VPC.
-        :return: An EC2 VPC object.
+        Args:
+            resource: A boto3 EC2 client object.
+            vpc_name: The name of the VPC.
+            prefix: The prefix to use for the VPC.
+
+        Returns:
+            An EC2 VPC object.
         """
         filters = [
             {
@@ -110,26 +115,24 @@ class StaticResourceStack(core.Stack):
 
 
 class BatchJobStack(core.Stack):
-    """Defines stack with:
-    - New Compute Environment with
-        - Batch Instance Role (read access to S3)
-        - Launch Template
-        - Security Group
-        - VPC
-        - Job Definition (with customized container)
-        - Job Queue
-    - Use existing or create new S3 bucket
-    - New Lambda function to run training
-    """
-
     def __init__(self, scope: Construct, id: str, static_stack: StaticResourceStack, **kwargs) -> None:
         """
-        Initializes the BatchJobStack.
+        Defines a stack with the following:
+        - A new Compute Environment with
+            - Batch Instance Role (read access to S3)
+            - Launch Template
+            - Security Group
+            - VPC
+            - Job Definition (with customized container)
+            - Job Queue
+        - An existing or new S3 bucket
+        - A new Lambda function to run training.
 
-        :param scope: The scope of the stack.
-        :param id: The ID of the stack.
-        :param static_stack: A StaticResourceStack object.
-        :param kwargs: Keyword arguments.
+        Args:
+            scope (constructs.Construct): The scope of the stack.
+            id (str): The ID of the stack.
+            static_stack (StaticResourceStack): A StaticResourceStack object.
+            **kwargs: Keyword arguments.
         """
         super().__init__(scope, id, **kwargs)
         prefix = self.node.try_get_context("STACK_NAME_PREFIX")

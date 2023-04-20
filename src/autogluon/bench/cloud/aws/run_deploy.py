@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+from typing import Optional
 
 import yaml
 
@@ -10,7 +11,7 @@ CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 CONTEXT_FILE = "./cdk.context.json"
 
 
-def construct_context(custom_configs: dict = {}):
+def construct_context(custom_configs: dict):
     """
     Constructs the AWS Cloud Development Kit (CDK) context using a combination of default configuration
     settings and custom settings, and writes the context to a JSON file. Also sets environment variables for
@@ -67,7 +68,7 @@ def construct_context(custom_configs: dict = {}):
     return context_to_parse
 
 
-def deploy_stack(configs: dict = {}):
+def deploy_stack(custom_configs: Optional[dict] = None):
     """
     Deploys the AWS CloudFormation stack containing the benchmarking infrastructure by calling the deploy.sh
     script and passing it the required command line arguments. Constructs the CDK context using the custom
@@ -75,12 +76,13 @@ def deploy_stack(configs: dict = {}):
     custom settings are provided.
 
     Args:
-        configs (dict, optional): A dictionary containing custom configuration settings. Defaults to {}.
+        configs (dict, optional): A dictionary containing custom configuration settings. Defaults to None.
 
     Returns:
         dict: A dictionary containing the CDK context settings used for the deployment.
     """
-    infra_configs = construct_context(custom_configs=configs)
+    custom_configs = {} if custom_configs is None else custom_configs
+    infra_configs = construct_context(custom_configs=custom_configs)
 
     subprocess.check_call(
         [

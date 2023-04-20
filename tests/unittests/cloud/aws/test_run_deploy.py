@@ -36,6 +36,6 @@ class TestRunDeploy(unittest.TestCase):
             "CONTAINER_MEMORY": 10000,
         }
 
-        deploy_stack(configs={})
+        deploy_stack()
         mock_construct_context.assert_called_once()
         mock_check_call.assert_called_once()
