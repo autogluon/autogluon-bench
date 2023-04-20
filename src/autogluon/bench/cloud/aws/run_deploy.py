@@ -61,7 +61,7 @@ def deploy_stack(configs: dict = {}):
 
     subprocess.check_call(
         [
-            CURRENT_DIR + "/deploy.sh",
+            os.path.join(CURRENT_DIR, "deploy.sh"),
             infra_configs["STACK_NAME_PREFIX"],
             infra_configs["STACK_NAME_TAG"],
             infra_configs["STATIC_RESOURCE_STACK_NAME"],
@@ -70,3 +70,13 @@ def deploy_stack(configs: dict = {}):
         ]
     )
     return infra_configs
+
+
+def destroy_stack(configs: dict):
+    subprocess.check_call(
+        [
+            os.path.join(CURRENT_DIR, "destroy.sh"),
+            configs["STATIC_RESOURCE_STACK_NAME"],
+            configs["BATCH_STACK_NAME"],
+        ]
+    )

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 framework=${1}
 benchmark=${2}
 constraint=${3}

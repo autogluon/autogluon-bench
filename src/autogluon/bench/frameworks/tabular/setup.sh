@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 DIR=${1:-"./benchmark_runs/tabular/test"}  # from root of project
 
 if [ ! -d $DIR ]; then
@@ -7,7 +9,7 @@ if [ ! -d $DIR ]; then
 fi
 
 # create virtual env
-python3.10 -m venv $DIR/.venv
+python3.9 -m venv $DIR/.venv
 source $DIR/.venv/bin/activate
 
 # install latest AMLB

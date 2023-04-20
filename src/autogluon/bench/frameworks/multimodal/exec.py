@@ -21,7 +21,7 @@ def get_args():
         type=str,
         help="Can be one of: dataset name, local path, S3 path, AMLB task ID/name",
     )
-    parser.add_argument("--metrics_dir", type=str, help="Directory to save metrics.")
+    parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
 
     args = parser.parse_args()
     return args
@@ -72,7 +72,7 @@ def save_metrics(metrics_path: str, metrics):
 
 def run(
     data_path: str,
-    metrics_dir: str,
+    benchmark_dir: str,
     problem_type: str = None,
     label: str = "label",
     presets: str = "best_quality",
@@ -87,6 +87,7 @@ def run(
         label=label,
         problem_type=problem_type,
         presets=presets,
+        path=os.path.join(benchmark_dir, "models"),
     )
     predictor.fit(
         train_data=train_data,
@@ -100,9 +101,9 @@ def run(
         "scores": scores,
         "timestamp": timestamp.strftime("%H:%M:%S"),
     }
-    save_metrics(metrics_dir, metrics)
+    save_metrics(os.path.join(benchmark_dir, "results"), metrics)
 
 
 if __name__ == "__main__":
     args = get_args()
-    run(data_path=args.data_path, metrics_dir=args.metrics_dir)
+    run(data_path=args.data_path, benchmark_dir=args.benchmark_dir)

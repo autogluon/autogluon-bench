@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 STACK_NAME_PREFIX=$1
 STACK_NAME_TAG=$2
 STATIC_RESOURCE_STACK_NAME=$3

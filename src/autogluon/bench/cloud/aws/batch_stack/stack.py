@@ -7,10 +7,9 @@ import aws_cdk as core
 import boto3
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ec2 as ec2
-from aws_cdk import aws_ecr_assets
+from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_iam as iam
-from aws_cdk import aws_lambda as aws_lambda
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
@@ -124,7 +123,7 @@ class BatchJobStack(core.Stack):
         # Currently CDK can only push to the default repo aws-cdk/assets
         # https://github.com/aws/aws-cdk/issues/12597
         # TODO: use https://github.com/cdklabs/cdk-docker-image-deployment
-        docker_image_asset = aws_ecr_assets.DockerImageAsset(
+        docker_image_asset = ecr_assets.DockerImageAsset(
             self,
             f"{prefix}-ecr-docker-image-asset",
             directory=docker_base_dir,
@@ -237,3 +236,9 @@ class BatchJobStack(core.Stack):
         )
         core.CfnOutput(self, "JobQueueARN", value=job_queue.job_queue_arn)
         core.CfnOutput(self, "JobDefinitionARN", value=job_definition.job_definition_arn)
+        core.CfnOutput(
+            self,
+            "EcrRepositoryName",
+            value=docker_image_asset.repository.repository_name,
+        )
+        core.CfnOutput(self, "ImageUri", value=docker_image_asset.image_uri)
