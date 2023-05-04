@@ -45,7 +45,10 @@ def get_kwargs(module: str, configs: dict):
                 "git_branch": git_branch,
             },
             "run_kwargs": {
-                "data_path": configs["data_path"],
+                "dataset_name": configs["dataset_name"],
+                "presets": configs.get("presets"),
+                "hyperparameters": configs.get("hyperparameters"),
+                "time_limit": configs.get("time_limit"),
             },
         }
     elif module == "tabular":

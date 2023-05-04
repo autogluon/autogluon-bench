@@ -4,7 +4,6 @@ import os
 from autogluon.common.loaders import load_zip
 
 from .constants import _OBJECT_DETECTION
-from .registry import multimodal_dataset_registry
 from .utils import get_data_home_dir, get_repo_url
 
 
@@ -29,7 +28,6 @@ class BaseObjectDetectionDataset(abc.ABC):
         return _OBJECT_DETECTION
 
 
-@multimodal_dataset_registry.register("tiny_motorbike")
 class TinyMotorbike(BaseObjectDetectionDataset):
     _SOURCE = ("",)
     _INFO = {
@@ -38,6 +36,7 @@ class TinyMotorbike(BaseObjectDetectionDataset):
             "sha1sum": "45c883b2feb0721d6eef29055fa28fb46b6e5346",
         },
     }
+    _registry_name = "tiny_motorbike"
 
     def __init__(self, split="train"):
         self._split = f"{split}val" if split == "train" else split
@@ -57,3 +56,7 @@ class TinyMotorbike(BaseObjectDetectionDataset):
     @property
     def metric(self):
         return "map"
+
+__all__ = [
+    'TinyMotorbike'
+]

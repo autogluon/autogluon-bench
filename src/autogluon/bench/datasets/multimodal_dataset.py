@@ -18,7 +18,6 @@ from .constants import (
     _TEXT,
     _TEXT_SIMILARITY,
 )
-from .registry import multimodal_dataset_registry
 from .utils import get_data_home_dir, get_repo_url
 
 
@@ -78,7 +77,6 @@ class BaseMatcherDataset(BaseMultiModalDataset):
         pass
 
 
-@multimodal_dataset_registry.register("shopee")
 class Shopee(BaseImageDataset):
     _SOURCE = ("",)
     _INFO = {
@@ -87,6 +85,7 @@ class Shopee(BaseImageDataset):
             "sha1sum": "59dffcfd0921cf0aa97215550dee3d1e3de656ca",
         },
     }
+    _registry_name = "shopee"
 
     def __init__(self, split="train"):
         self._split = split
@@ -127,7 +126,6 @@ class Shopee(BaseImageDataset):
         return _MULTICLASS
 
 
-@multimodal_dataset_registry.register("stanford_online_image2image")
 class StanfordOnline(BaseMatcherDataset):
     _SOURCE = ("https://cvgl.stanford.edu/projects/lifted_struct/",)
     _INFO = {
@@ -136,6 +134,7 @@ class StanfordOnline(BaseMatcherDataset):
             "sha1sum": "4951af1dfcceb54b9b8f2126e995668e1b139cec",
         },
     }
+    _registry_name = "stanford_online"
 
     def __init__(self, split="train"):
         self._split = split
@@ -179,12 +178,12 @@ class StanfordOnline(BaseMatcherDataset):
         return _IMAGE_SIMILARITY
 
 
-@multimodal_dataset_registry.register("flickr30k")
 class Flickr30k(BaseMatcherDataset):
     _SOURCE = ("https://paperswithcode.com/dataset/flickr30k",)
     _INFO = {
         "data": {"url": get_repo_url() + "flickr30k.zip", "sha1sum": "13d879429cff00022966324ab486d3317017d706"},
     }
+    _registry_name = "flickr30k"
 
     def __init__(self, split="train"):
         self._split = split
@@ -236,7 +235,6 @@ class Flickr30k(BaseMatcherDataset):
         return _IMAGE_TEXT_SIMILARITY
 
 
-@multimodal_dataset_registry.register("snli")
 class SNLI(BaseMatcherDataset):
     _SOURCE = ("https://nlp.stanford.edu/projects/snli/",)
     _INFO = {
@@ -246,6 +244,7 @@ class SNLI(BaseMatcherDataset):
         },
         "test": {"url": get_repo_url() + "snli/snli_test.csv", "sha1sum": "87d304ad75b3d64f0f58e316befc7aeba4729b8f"},
     }
+    _registry_name = "snli"
 
     def __init__(self, split="train"):
         self._split = split
@@ -283,7 +282,6 @@ class SNLI(BaseMatcherDataset):
         return _TEXT_SIMILARITY
 
 
-@multimodal_dataset_registry.register("mit_movies")
 class MitMovies(BaseMultiModalDataset):
     _SOURCE = ("https://groups.csail.mit.edu/sls/downloads/movie/",)
     _INFO = {
@@ -296,6 +294,7 @@ class MitMovies(BaseMultiModalDataset):
             "sha1sum": "99040f5f9d4990f62498ad0deeebc472a97e7885",
         },
     }
+    _registry_name = "mit_movies"
 
     def __init__(self, split="train"):
         self._split = split
@@ -324,7 +323,6 @@ class MitMovies(BaseMultiModalDataset):
         return self._data
 
 
-@multimodal_dataset_registry.register("women_clothing_review")
 class WomenClothingReview(BaseMultiModalDataset):
     _SOURCE = ("https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews",)
     _INFO = {
@@ -337,6 +335,7 @@ class WomenClothingReview(BaseMultiModalDataset):
             "sha1sum": "fbc84f757b8a08210a772613ca8342f3990eb1f7",
         },
     }
+    _registry_name = "women_clothing_review"
 
     def __init__(self, split="train"):
         self._split = split
@@ -382,7 +381,6 @@ class WomenClothingReview(BaseMultiModalDataset):
         return _REGRESSION
 
 
-@multimodal_dataset_registry.register("melbourne_airbnb")
 class MelBourneAirBnb(BaseMultiModalDataset):
     _SOURCE = ("https://www.kaggle.com/tylerx/melbourne-airbnb-open-data",)
     _INFO = {
@@ -395,6 +393,7 @@ class MelBourneAirBnb(BaseMultiModalDataset):
             "sha1sum": "c28611514b659295fe4b345c3995005719499946",
         },
     }
+    _registry_name = "melbourne_airbnb"
 
     def __init__(self, split="train"):
         self._split = split
@@ -454,7 +453,6 @@ class MelBourneAirBnb(BaseMultiModalDataset):
         return _MULTICLASS
 
 
-@multimodal_dataset_registry.register("ae_price_prediction")
 class AEPricePrediction(BaseMultiModalDataset):
     _SOURCE = "https://www.kaggle.com/PromptCloudHQ/innerwear-data-from-victorias-secret-and-others"
     _INFO = {
@@ -467,6 +465,7 @@ class AEPricePrediction(BaseMultiModalDataset):
             "sha1sum": "7bebcaae48410386f610fd7a9c37ba0e89602858",
         },
     }
+    _registry_name = "ae_price_prediction"
 
     def __init__(self, split="train"):
         super().__init__()
@@ -508,7 +507,6 @@ class AEPricePrediction(BaseMultiModalDataset):
         return _REGRESSION
 
 
-@multimodal_dataset_registry.register("imdb_genre_prediction")
 class IMDBGenrePrediction(BaseMultiModalDataset):
     _SOURCE = "https://www.kaggle.com/PromptCloudHQ/imdb-data"
     _INFO = {
@@ -521,6 +519,7 @@ class IMDBGenrePrediction(BaseMultiModalDataset):
             "sha1sum": "0e435e917159542d725d21135cfa514ae936d2c1",
         },
     }
+    _registry_name = "imdb_genre_prediction"
 
     def __init__(self, split="train"):
         super().__init__()
@@ -562,7 +561,6 @@ class IMDBGenrePrediction(BaseMultiModalDataset):
         return _BINARY
 
 
-@multimodal_dataset_registry.register("jc_penney_products")
 class JCPennyCategory(BaseMultiModalDataset):
     _SOURCE = "https://www.kaggle.com/PromptCloudHQ/all-jc-penny-products"
     _INFO = {
@@ -575,6 +573,7 @@ class JCPennyCategory(BaseMultiModalDataset):
             "sha1sum": "23bca284354deec13a11ef7bd726d35a01eb1332",
         },
     }
+    _registry_name = "jc_penney_products"
 
     def __init__(self, split="train"):
         super().__init__()
@@ -616,7 +615,6 @@ class JCPennyCategory(BaseMultiModalDataset):
         return _REGRESSION
 
 
-@multimodal_dataset_registry.register("news_popularity")
 class NewsPopularity(BaseMultiModalDataset):
     _SOURCE = "https://archive.ics.uci.edu/ml/datasets/online+news+popularity"
     _INFO = {
@@ -629,6 +627,7 @@ class NewsPopularity(BaseMultiModalDataset):
             "sha1sum": "297253bdca18f6aafbaee0262be430126c1f9044",
         },
     }
+    _registry_name = "news_popularity"
 
     def __init__(self, split="train"):
         super().__init__()
@@ -670,7 +669,6 @@ class NewsPopularity(BaseMultiModalDataset):
         return _REGRESSION
 
 
-@multimodal_dataset_registry.register("news_channel")
 class NewsChannel(BaseMultiModalDataset):
     _SOURCE = "https://archive.ics.uci.edu/ml/datasets/online+news+popularity"
     _INFO = {
@@ -683,6 +681,7 @@ class NewsChannel(BaseMultiModalDataset):
             "sha1sum": "a71516784ce6e168bd9933e9ec50080f65cb05fd",
         },
     }
+    _registry_name = "news_channel"
 
     def __init__(self, split="train"):
         super().__init__()
@@ -724,4 +723,9 @@ class NewsChannel(BaseMultiModalDataset):
         return _MULTICLASS
 
 
-print(multimodal_dataset_registry.list_keys())
+__all__ = [
+    'Shopee', 'StanfordOnline', 'Flickr30k', 'SNLI', 'MitMovies',
+    'WomenClothingReview', 'MelBourneAirBnb', 'AEPricePrediction',
+    'IMDBGenrePrediction', 'JCPennyCategory', 'NewsPopularity',
+    'NewsChannel'
+]

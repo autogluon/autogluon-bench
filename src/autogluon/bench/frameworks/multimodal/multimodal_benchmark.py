@@ -1,6 +1,8 @@
+import json
 import logging
 import os
 import subprocess
+from typing import Optional
 
 from autogluon.bench.benchmark import Benchmark
 
@@ -51,7 +53,13 @@ class MultiModalBenchmark(Benchmark):
         elif result.stderr:
             logger.error(result.stderr)
 
-    def run(self, data_path: str):
+    def run(
+        self,
+        data_path: str,
+        presets: Optional[str] = None,
+        hyperparameters: Optional[dict] = None,
+        time_limit: Optional[int] = None,
+    ):
         """
         Runs the benchmark on a given dataset.
 
@@ -71,4 +79,10 @@ class MultiModalBenchmark(Benchmark):
             "--benchmark_dir",
             self.benchmark_dir,
         ]
+        if presets is not None and len(presets) > 0:
+            command += ["--presets", presets]
+        if hyperparameters is not None:
+            command += ["--hyperparameters", json.dumps(hyperparameters)]
+        if time_limit is not None:
+            command += ["--time_limit", str(time_limit)]
         subprocess.run(command)

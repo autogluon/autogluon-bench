@@ -88,6 +88,3 @@ class Registry:
             The created object
         """
         return self.get(name)(*args, **kwargs)
-
-
-multimodal_dataset_registry = Registry("multimodal_datasets")
