@@ -139,3 +139,5 @@ dmypy.json
 /*.yaml
 cdk.context.json
 
+src/autogluon/bench/version.py
+VERSION.minor
