@@ -24,6 +24,10 @@ python3 -m pip install -U -e .
 
 cd $DIR/$repo_name
 
-./full_install.sh
+python3 -m pip install -e common/[tests]
+python3 -m pip install -e core/[all,tests]
+python3 -m pip install -e features/
+python3 -m pip install -e multimodal/[tests]
+
 python3 -m mim install -q mmcv-full
 python3 -m pip install "mmdet>=2.28, <3.0.0"

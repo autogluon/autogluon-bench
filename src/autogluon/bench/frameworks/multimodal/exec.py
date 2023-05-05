@@ -13,7 +13,7 @@ from autogluon.bench.datasets.constants import (
     _OBJECT_DETECTION,
     _TEXT_SIMILARITY,
 )
-from autogluon.bench.datasets.registry import multimodal_dataset_registry
+from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
 from autogluon.multimodal import MultiModalPredictor
 
 logger = logging.getLogger(__name__)
@@ -23,9 +23,9 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--data_path",
+        "--dataset_name",
         type=str,
-        help="Can be one of: dataset name, local path, S3 path, AMLB task ID/name",
+        help="Dataset that has been registered with multimodal_dataset_registry.",
     )
 
     parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
@@ -40,18 +40,18 @@ def get_args():
 
 
 def load_dataset(
-    data_path: str,  # dataset name
+    dataset_name: str,  # dataset name
 ):
     """Loads and preprocesses a dataset.
 
     Args:
-        data_path (str): The name of the dataset to load.
+        dataset_name (str): The name of the dataset to load.
 
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame]: A tuple containing the training and test datasets.
     """
-    train_data = multimodal_dataset_registry.create(data_path, "train")
-    test_data = multimodal_dataset_registry.create(data_path, "test")
+    train_data = multimodal_dataset_registry.create(dataset_name, "train")
+    test_data = multimodal_dataset_registry.create(dataset_name, "test")
 
     return train_data, test_data
 
@@ -92,7 +92,7 @@ def save_metrics(metrics_path: str, metrics):
 
 
 def run(
-    data_path: str,
+    dataset_name: str,
     benchmark_dir: str,
     time_limit: Optional[int] = None,
     presets: Optional[str] = None,
@@ -101,7 +101,13 @@ def run(
     """Runs the AutoGluon multimodal benchmark on a given dataset.
 
     Args:
-        data_path (str): The path to the dataset to use for training and evaluation.
+        dataset_name (str): Dataset that has been registered with multimodal_dataset_registry.
+                            
+                            To get a list of datasets:
+                            
+                            from autogluon.bench.datasets.registry import multimodal_dataset_registry
+                            multimodal_dataset_registry.list_keys()
+
         benchmark_dir (str): The path to the directory where benchmarking artifacts should be saved.
         time_limit (int): The maximum amount of time (in seconds) to spend training the predictor (default: 10).
         presets (str): The name of the AutoGluon preset to use (default: "None").
@@ -110,7 +116,7 @@ def run(
     Returns:
         None
     """
-    train_data, test_data = load_dataset(data_path=data_path)
+    train_data, test_data = load_dataset(dataset_name=dataset_name)
 
     try:
         label_column = train_data.label_columns[0]
@@ -175,7 +181,7 @@ if __name__ == "__main__":
         args.hyperparameters = json.loads(args.hyperparameters)
 
     run(
-        data_path=args.data_path,
+        dataset_name=args.dataset_name,
         benchmark_dir=args.benchmark_dir,
         time_limit=args.time_limit,
         presets=args.presets,

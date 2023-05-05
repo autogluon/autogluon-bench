@@ -55,7 +55,7 @@ class MultiModalBenchmark(Benchmark):
 
     def run(
         self,
-        data_path: str,
+        dataset_name: str,
         presets: Optional[str] = None,
         hyperparameters: Optional[dict] = None,
         time_limit: Optional[int] = None,
@@ -64,8 +64,12 @@ class MultiModalBenchmark(Benchmark):
         Runs the benchmark on a given dataset.
 
         Args:
-            data_path (str): The path to the dataset to use for training and evaluation.
-
+            dataset_name (str): Dataset that has been registered with multimodal_dataset_registry.
+                            
+                                To get a list of datasets:
+                                
+                                from autogluon.bench.datasets.registry import multimodal_dataset_registry
+                                multimodal_dataset_registry.list_keys()
         Returns:
             None
         """
@@ -74,8 +78,8 @@ class MultiModalBenchmark(Benchmark):
         command = [
             PY_EXC_PATH,
             exec_path,
-            "--data_path",
-            data_path,
+            "--dataset_name",
+            dataset_name,
             "--benchmark_dir",
             self.benchmark_dir,
         ]

@@ -143,7 +143,7 @@ def handler(event, context):
         multimodal:
             git_uri#branch:
                 - https://github.com/autogluon/autogluon#master
-            data_path:
+            dataset_name:
                 - MNIST
 
         # Tabular specific
