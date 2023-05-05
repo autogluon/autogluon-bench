@@ -1,25 +1,9 @@
-from .multimodal_dataset import *
-from .object_detection_dataset import *
+from . import multimodal_dataset, object_detection_dataset
 from .registry import Registry
-
-multimodal_datasets = [
-    Shopee,
-    StanfordOnline,
-    Flickr30k,
-    SNLI,
-    MitMovies,
-    WomenClothingReview,
-    MelBourneAirBnb,
-    AEPricePrediction,
-    IMDBGenrePrediction,
-    JCPennyCategory,
-    NewsPopularity,
-    NewsChannel,
-    TinyMotorbike,
-]
 
 multimodal_dataset_registry = Registry("multimodal_dataset")
 
-
-for dataset in multimodal_datasets:
-    multimodal_dataset_registry.register(dataset._registry_name, dataset)
+for data_classes in [multimodal_dataset, object_detection_dataset]:
+    for class_name in data_classes.__all__:
+        dataset_class = getattr(data_classes, class_name)
+        multimodal_dataset_registry.register(dataset_class._registry_name, dataset_class)

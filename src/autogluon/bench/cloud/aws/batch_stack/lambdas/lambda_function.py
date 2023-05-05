@@ -141,10 +141,14 @@ def handler(event, context):
     module_configs:
         # Multimodal specific
         multimodal:
-            git_uri#branch:
-                - https://github.com/autogluon/autogluon#master
-            dataset_name:
-                - MNIST
+            git_uri#branch: https://github.com/autogluon/autogluon#master
+            dataset_name: melbourne_airbnb
+            presets: medium_quality
+            hyperparameters:
+            optimization.learning_rate: 0.0005
+            optimization.max_epochs: 5
+            time_limit: 10
+
 
         # Tabular specific
         # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details

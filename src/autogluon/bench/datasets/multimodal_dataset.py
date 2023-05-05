@@ -20,6 +20,21 @@ from .constants import (
 )
 from .utils import get_data_home_dir, get_repo_url
 
+__all__ = [
+    "Shopee",
+    "StanfordOnline",
+    "Flickr30k",
+    "SNLI",
+    "MitMovies",
+    "WomenClothingReview",
+    "MelBourneAirBnb",
+    "AEPricePrediction",
+    "IMDBGenrePrediction",
+    "JCPennyCategory",
+    "NewsPopularity",
+    "NewsChannel",
+]
+
 
 def _path_expander(path, base_folder):
     path_l = path.split(";")
@@ -78,7 +93,7 @@ class BaseMatcherDataset(BaseMultiModalDataset):
 
 
 class Shopee(BaseImageDataset):
-    _SOURCE = ("",)
+    _SOURCE = ""
     _INFO = {
         "data": {
             "url": get_repo_url() + "vision_datasets/shopee.zip",
@@ -127,7 +142,7 @@ class Shopee(BaseImageDataset):
 
 
 class StanfordOnline(BaseMatcherDataset):
-    _SOURCE = ("https://cvgl.stanford.edu/projects/lifted_struct/",)
+    _SOURCE = "https://cvgl.stanford.edu/projects/lifted_struct/"
     _INFO = {
         "data": {
             "url": get_repo_url() + "Stanford_Online_Products.zip",
@@ -179,7 +194,7 @@ class StanfordOnline(BaseMatcherDataset):
 
 
 class Flickr30k(BaseMatcherDataset):
-    _SOURCE = ("https://paperswithcode.com/dataset/flickr30k",)
+    _SOURCE = "https://paperswithcode.com/dataset/flickr30k"
     _INFO = {
         "data": {"url": get_repo_url() + "flickr30k.zip", "sha1sum": "13d879429cff00022966324ab486d3317017d706"},
     }
@@ -236,7 +251,7 @@ class Flickr30k(BaseMatcherDataset):
 
 
 class SNLI(BaseMatcherDataset):
-    _SOURCE = ("https://nlp.stanford.edu/projects/snli/",)
+    _SOURCE = "https://nlp.stanford.edu/projects/snli/"
     _INFO = {
         "train": {
             "url": get_repo_url() + "snli/snli_train.csv",
@@ -283,7 +298,7 @@ class SNLI(BaseMatcherDataset):
 
 
 class MitMovies(BaseMultiModalDataset):
-    _SOURCE = ("https://groups.csail.mit.edu/sls/downloads/movie/",)
+    _SOURCE = "https://groups.csail.mit.edu/sls/downloads/movie/"
     _INFO = {
         "train": {
             "url": get_repo_url() + "ner/mit-movies/train_v2.csv",
@@ -324,7 +339,7 @@ class MitMovies(BaseMultiModalDataset):
 
 
 class WomenClothingReview(BaseMultiModalDataset):
-    _SOURCE = ("https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews",)
+    _SOURCE = "https://www.kaggle.com/nicapotato/womens-ecommerce-clothing-reviews"
     _INFO = {
         "train": {
             "url": get_repo_url() + "women_clothing_review/train.pq",
@@ -382,7 +397,7 @@ class WomenClothingReview(BaseMultiModalDataset):
 
 
 class MelBourneAirBnb(BaseMultiModalDataset):
-    _SOURCE = ("https://www.kaggle.com/tylerx/melbourne-airbnb-open-data",)
+    _SOURCE = "https://www.kaggle.com/tylerx/melbourne-airbnb-open-data"
     _INFO = {
         "train": {
             "url": get_repo_url() + "airbnb_melbourne/train.pq",
@@ -721,19 +736,3 @@ class NewsChannel(BaseMultiModalDataset):
     @property
     def problem_type(self):
         return _MULTICLASS
-
-
-__all__ = [
-    "Shopee",
-    "StanfordOnline",
-    "Flickr30k",
-    "SNLI",
-    "MitMovies",
-    "WomenClothingReview",
-    "MelBourneAirBnb",
-    "AEPricePrediction",
-    "IMDBGenrePrediction",
-    "JCPennyCategory",
-    "NewsPopularity",
-    "NewsChannel",
-]
