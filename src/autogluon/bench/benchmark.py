@@ -36,6 +36,11 @@ class Benchmark(ABC):
         logging.info("Saving metrics to S3 Bucket %s...", s3_bucket)
         self.benchmark_dir_s3 = f"s3://{s3_bucket}/{s3_dir}"
         s3 = boto3.client("s3")
+
+        if len(os.listdir(self.metrics_dir)) == 0:
+            logger.warning("No metrics were created.")
+            return
+
         for root, dirs, files in os.walk(self.metrics_dir):
             for filename in files:
                 local_path = os.path.join(root, filename)

@@ -19,10 +19,15 @@ source $DIR/.venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install --upgrade setuptools wheel
 
-cd $DIR/autogluon
+# install autogluon-bench as source, this script should be run from the root of path_to/autogluon-bench
+python3 -m pip install -U -e .
 
-python3 -m pip install -e multimodal
+cd $DIR/$repo_name
+
+python3 -m pip install -e common/[tests]
+python3 -m pip install -e core/[all,tests]
+python3 -m pip install -e features/
+python3 -m pip install -e multimodal/[tests]
+
 python3 -m mim install -q mmcv-full
-
-
-
+python3 -m pip install "mmdet>=2.28, <3.0.0"

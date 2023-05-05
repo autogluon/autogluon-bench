@@ -6,7 +6,12 @@ metrics_bucket: autogluon-benchmark-metrics
 
 # Multimodal specific
 git_uri#branch: https://github.com/autogluon/autogluon#master
-data_path: MNIST
+dataset_name: melbourne_airbnb
+presets: medium_quality
+hyperparameters:
+  optimization.learning_rate: 0.0005
+  optimization.max_epochs: 5
+time_limit: 10
 
 # Tabular specific
 framework: AutoGluon

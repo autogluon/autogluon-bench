@@ -15,9 +15,20 @@ module_configs:
   multimodal:
     git_uri#branch: 
       - https://github.com/autogluon/autogluon#master
-    data_path:
-      - MNIST
-
+    dataset_name:
+      - shopee
+      - stanford_online
+    presets:
+      - medium_quality
+      - high_quality
+    time_limit:
+      - 10
+    hyperparameters:
+      - optimization.max_epochs: 2
+        optimization.learning_rate: 0.005
+      - optimization.max_epochs: 5
+        optimization.learning_rate: 0.0005
+  
   # Tabular specific
   # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
   tabular:

@@ -1,6 +1,8 @@
+import json
 import logging
 import os
 import subprocess
+from typing import Optional
 
 from autogluon.bench.benchmark import Benchmark
 
@@ -51,13 +53,23 @@ class MultiModalBenchmark(Benchmark):
         elif result.stderr:
             logger.error(result.stderr)
 
-    def run(self, data_path: str):
+    def run(
+        self,
+        dataset_name: str,
+        presets: Optional[str] = None,
+        hyperparameters: Optional[dict] = None,
+        time_limit: Optional[int] = None,
+    ):
         """
         Runs the benchmark on a given dataset.
 
         Args:
-            data_path (str): The path to the dataset to use for training and evaluation.
+            dataset_name (str): Dataset that has been registered with multimodal_dataset_registry.
 
+                                To get a list of datasets:
+
+                                from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
+                                multimodal_dataset_registry.list_keys()
         Returns:
             None
         """
@@ -66,9 +78,15 @@ class MultiModalBenchmark(Benchmark):
         command = [
             PY_EXC_PATH,
             exec_path,
-            "--data_path",
-            data_path,
+            "--dataset_name",
+            dataset_name,
             "--benchmark_dir",
             self.benchmark_dir,
         ]
+        if presets is not None and len(presets) > 0:
+            command += ["--presets", presets]
+        if hyperparameters is not None:
+            command += ["--hyperparameters", json.dumps(hyperparameters)]
+        if time_limit is not None:
+            command += ["--time_limit", str(time_limit)]
         subprocess.run(command)
