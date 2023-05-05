@@ -5,8 +5,6 @@ import os
 from datetime import datetime
 from typing import Optional
 
-import numpy as np
-
 from autogluon.bench.datasets.constants import (
     _IMAGE_SIMILARITY,
     _IMAGE_TEXT_SIMILARITY,
@@ -14,6 +12,7 @@ from autogluon.bench.datasets.constants import (
     _TEXT_SIMILARITY,
 )
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
+from autogluon.bench.frameworks.utils import NumpyEncoder
 from autogluon.multimodal import MultiModalPredictor
 
 logger = logging.getLogger(__name__)
@@ -54,18 +53,6 @@ def load_dataset(
     test_data = multimodal_dataset_registry.create(dataset_name, "test")
 
     return train_data, test_data
-
-
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return super(NumpyEncoder, self).default(obj)
 
 
 def save_metrics(metrics_path: str, metrics):

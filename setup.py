@@ -108,13 +108,13 @@ install_requires = [
     "aws-cdk.aws-batch-alpha>=2.0.0a1,<2.70.0a0",
     "constructs>=10.0.0,<10.1.289",
     "pyyaml>=5.4,<=6.0",
-    "tqdm",
-    "requests",
-    "pyarrow",
+    "tqdm>4.60.0,<=4.65.0",
+    "requests>2.20.0,<=2.30.0",
+    "pyarrow>11.0.0,<=12.0.0",
 ]
 
-extras_require = dict()
 test_requirements = ["pytest", "tox"]
+extras_require = {}
 extras_require["tests"] = test_requirements
 
 if __name__ == "__main__":

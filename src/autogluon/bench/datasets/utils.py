@@ -3,10 +3,10 @@ import os
 
 def get_home_dir():
     """Get home directory"""
-    _home_dir = os.environ.get("AUTOGLUON_BENCH_HOME", os.path.join("~", ".autogluon_bench"))
+    home_dir = os.environ.get("AUTOGLUON_BENCH_HOME", os.path.join("~", ".autogluon_bench"))
     # expand ~ to actual path
-    _home_dir = os.path.expanduser(_home_dir)
-    return _home_dir
+    home_dir = os.path.expanduser(home_dir)
+    return home_dir
 
 
 def get_data_home_dir():

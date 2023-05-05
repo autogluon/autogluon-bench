@@ -20,6 +20,7 @@ from .constants import (
 )
 from .utils import get_data_home_dir, get_repo_url
 
+# Add dataset class names here
 __all__ = [
     "Shopee",
     "StanfordOnline",
