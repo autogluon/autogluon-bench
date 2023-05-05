@@ -29,13 +29,13 @@ A custom branch of autogluon can be benchmarked by specifying the `amlb_custom_b
 ```
 python ./runbenchmarks.py  --config_file path/to/local_config_file
 ```
-A sample local config file is available for reference at `./sample_configs/local_configs.yaml`. When running `tabular` benchmark, `Benchmark Configurations` and `Tabular Specific` configurations are required to set. All keys should have single value.
+A sample local config file is available for reference at `./sample_configs/local_configs.yaml`. When running a `tabular` benchmark, `Benchmark Configurations` and `Tabular Specific` configurations are required to be set. All keys should have a single value.
 
 ### Multimodal
 
-Currently, we support benchmarking `multimodal` on a custom branch. Note that `multimodal` benchmarking directly calls the `MultiModalPredictor` without the extra layer of [AMLB](https://github.com/openml/automlbenchmark), so the set of arguments we call is different from that of running `tabular`. 
+Currently, we support benchmarking `multimodal` on a custom branch. Note that `multimodal` benchmarking directly calls the `MultiModalPredictor` without the extra layer of [AMLB](https://github.com/openml/automlbenchmark), so the set of arguments required is different from that of running `tabular`. 
 
-We also support adding more dataset to your benchmarking jobs. We provided some sample datasets in `./src/autogluon/bench/datasets/multimodal_dataset.py` and `./src/autogluon/bench/datasets/object_detection_dataset.py`. You can add your custom datasets following the pattern, and add the dataset name in `cloud_configs.yaml` or `local_configs.yaml` `dataset_name`. 
+We also support adding additional datasets to your benchmarking jobs. We provided some sample datasets in `./src/autogluon/bench/datasets/multimodal_dataset.py` and `./src/autogluon/bench/datasets/object_detection_dataset.py`. You can add custom datasets following the samples provided and then specify `dataset_name` in `cloud_configs.yaml` or `local_configs.yaml`. 
 
 To customize the benchmarking experiment, including adding more hyperparameters, and evaluate on more metrics, you can refer to `./src/autogluon/bench/frameworks/multimodal/exec.py`.
 
