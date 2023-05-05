@@ -57,6 +57,5 @@ class TinyMotorbike(BaseObjectDetectionDataset):
     def metric(self):
         return "map"
 
-__all__ = [
-    'TinyMotorbike'
-]
+
+__all__ = ["TinyMotorbike"]

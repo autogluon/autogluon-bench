@@ -65,10 +65,10 @@ class MultiModalBenchmark(Benchmark):
 
         Args:
             dataset_name (str): Dataset that has been registered with multimodal_dataset_registry.
-                            
+
                                 To get a list of datasets:
-                                
-                                from autogluon.bench.datasets.registry import multimodal_dataset_registry
+
+                                from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
                                 multimodal_dataset_registry.list_keys()
         Returns:
             None

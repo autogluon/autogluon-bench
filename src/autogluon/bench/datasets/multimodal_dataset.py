@@ -724,8 +724,16 @@ class NewsChannel(BaseMultiModalDataset):
 
 
 __all__ = [
-    'Shopee', 'StanfordOnline', 'Flickr30k', 'SNLI', 'MitMovies',
-    'WomenClothingReview', 'MelBourneAirBnb', 'AEPricePrediction',
-    'IMDBGenrePrediction', 'JCPennyCategory', 'NewsPopularity',
-    'NewsChannel'
+    "Shopee",
+    "StanfordOnline",
+    "Flickr30k",
+    "SNLI",
+    "MitMovies",
+    "WomenClothingReview",
+    "MelBourneAirBnb",
+    "AEPricePrediction",
+    "IMDBGenrePrediction",
+    "JCPennyCategory",
+    "NewsPopularity",
+    "NewsChannel",
 ]
