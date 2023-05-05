@@ -1,22 +1,22 @@
 # Benchmark configurations
-module: multimodal
-mode: local
-benchmark_name: test_local
-metrics_bucket: autogluon-benchmark-metrics
+module: multimodal  # required
+mode: local  # required
+benchmark_name: test_local  # required
+metrics_bucket: autogluon-benchmark-metrics  # optional
 
 # Multimodal specific
-git_uri#branch: https://github.com/autogluon/autogluon#master
-dataset_name: melbourne_airbnb
-presets: medium_quality
-hyperparameters:
+git_uri#branch: https://github.com/autogluon/autogluon#master  # required
+dataset_name: melbourne_airbnb  # required
+presets: medium_quality  # optional
+hyperparameters:  # optional
   optimization.learning_rate: 0.0005
   optimization.max_epochs: 5
-time_limit: 10
+time_limit: 10  # optional
 
 # Tabular specific
-framework: AutoGluon
-label: stable
-amlb_benchmark: test
-amlb_task: iris
-amlb_constraint: test
-amlb_custom_branch: https://github.com/gidler/autogluon#gidler_master_w_logging
+framework: AutoGluon  # required
+label: stable  # required
+amlb_benchmark: test  # optional
+amlb_task: iris  # optional
+amlb_constraint: test  # optional
+amlb_custom_branch: https://github.com/gidler/autogluon#gidler_master_w_logging  # optional

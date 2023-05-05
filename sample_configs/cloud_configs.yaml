@@ -1,15 +1,21 @@
 # Infra configurations
 cdk_context:
-  CDK_DEPLOY_ACCOUNT: dummy
-  CDK_DEPLOY_REGION: dummy
+  CDK_DEPLOY_ACCOUNT: dummy  # required, update with your AWS account
+  CDK_DEPLOY_REGION: dummy  # required, update with your desired region
 
 # Benchmark configurations
-module: multimodal
-mode: aws
-benchmark_name: test_yaml
-metrics_bucket: autogluon-benchmark-metrics
+module: multimodal  # required
+mode: aws  # required
+benchmark_name: test_yaml  # required
+metrics_bucket: autogluon-benchmark-metrics  # required
 
 # Module specific configurations
+# 
+# Each key consists of a list of configurations,
+# and we will generate the combination of the key-configuration
+# and save each split (same format as ./local_config.yaml) to metrics_bucket
+#
+# Refer to ./local_configs.yaml for more information on required/optional configs
 module_configs:
   # Multimodal specific
   multimodal:
