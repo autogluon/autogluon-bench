@@ -120,6 +120,10 @@ install_requires = [
     "requests>2.20.0,<=2.30.0",
     "pyarrow>11.0.0,<=12.0.0",
     "wheel>0.38.0,<=0.40.0",
+    "ray[default]>=2.3.0,<2.4.0",
+    "fsspec>=2023.5.0",
+    "s3fs>=0.4.2",
+    "matplotlib>=3.4,<3.7",
 ]
 
 test_requirements = ["pytest", "pytest-mock", "tox"]
