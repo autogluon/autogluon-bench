@@ -4,6 +4,8 @@ import shutil
 import time
 from abc import ABC, abstractmethod
 
+import yaml
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +56,13 @@ class Benchmark(ABC):
         logging.info("Metrics under %s has been saved to %s/%s.", self.metrics_dir, s3_bucket, s3_dir)
 
     def cleanup_metrics(self):
+        """
+        Remove benchmark metrics from local and S3 storage.
+
+        This method removes the directory specified by `self.benchmark_dir` from the local file system.
+        If `self.benchmark_dir_s3` is also specified, it removes the corresponding directory from S3.
+
+        """
         shutil.rmtree(self.benchmark_dir)
         if self.benchmark_dir_s3 is not None:
             import boto3
@@ -64,3 +73,16 @@ class Benchmark(ABC):
             bucket = s3.Bucket(bucket_name)
             bucket.objects.filter(Prefix=benchmark_dir).delete()
             s3.Object(bucket_name, self.benchmark_dir_s3).delete()
+
+    def save_configs(self, configs: dict, file_name: str = "configs.yaml"):
+        """
+        Save a config dictionary to a YAML file.
+
+        Args:
+            configs (dict): The dictionary of configs to be saved.
+            file_name (str): The name of the file to save. Defaults to "configs.yaml".
+        """
+        os.makedirs(self.metrics_dir, exist_ok=True)
+        configs_path = os.path.join(self.metrics_dir, file_name)
+        with open(configs_path, "w+") as f:
+            yaml.dump(configs, f, default_flow_style=False)

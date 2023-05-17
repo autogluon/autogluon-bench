@@ -82,6 +82,8 @@ class MultiModalBenchmark(Benchmark):
             dataset_name,
             "--benchmark_dir",
             self.benchmark_dir,
+            "--metrics_dir",
+            self.metrics_dir,
         ]
         if presets is not None and len(presets) > 0:
             command += ["--presets", presets]

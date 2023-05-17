@@ -102,6 +102,7 @@ version = update_version(version, use_file_if_exists=False, create_file=True)
 
 install_requires = [
     "autogluon.common>=0.7,<1.0",
+    "awscliv2>=2.2.0,<2.3.0",
     "pandas>=1.2.5,<2.0",
     "boto3>=1.26.0,<1.26.99",
     "aws-cdk-lib>=2.0.0,<2.70.0",

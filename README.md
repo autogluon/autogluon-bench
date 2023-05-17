@@ -39,7 +39,7 @@ We also support adding additional datasets to your benchmarking jobs. We provide
 
 To customize the benchmarking experiment, including adding more hyperparameters, and evaluate on more metrics, you can refer to `./src/autogluon/bench/frameworks/multimodal/exec.py`.
 
-Results are saved under `$WORKING_DIR/benchmark_runs/$module/{$benchmark_name}_{$timestamp}`
+Results are saved under `{WORKING_DIR}/{benchmark_root_dir}/{module}/{benchmark_name}_{timestamp}`.
 
 
 ## Run benchmarks on AWS
@@ -51,9 +51,9 @@ In order to run AWS CDK and build containers, the following setup is required to
 ```
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash  # replace bash with other shell (e.g. zsh) if you are using a different one
 source ~/.bashrc
-nvm install 18.13.0  # install Node.js
+nvm install 18.16.0  # install Node.js
 npm install -g aws-cdk  # install aws-cdk
-cdk --version  # verify the installation
+cdk --version  # verify the installation, you might need to update the Node.js version depending on the log.
 ```
 
 The default configurations of the infrastructure is located at `./src/autogluon/bench/cloud/aws/default_config.yaml`.
@@ -80,7 +80,9 @@ where:
 - `VPC_NAME` is used to look up an existing VPC.
 - `LAMBDA_FUNCTION_NAME` lambda function to submit jobs to AWS Batch.
 
-The configs can be overridden by a custom config file defined by `--config_file` under `cdk_context` key. Please refer to `./sample_configs/cloud_configs.yaml` for reference. Note that in `AWS` mode, we support running multiple benchmarking jobs at the same time, so you can have a list of values for each key in the module specific keys.
+The configs can be overridden by a custom config file defined by `--config_file` under `cdk_context` key. Please refer to `./sample_configs/cloud_configs.yaml` for reference. 
+
+Note that in `AWS` mode, we support running multiple benchmarking jobs at the same time, so you can have a list of values for each key in the module specific keys. Each combination of configs gets saved and uploaded to the `METRICS_BUCKET` you provided in S3, and stored under `S3://{METRICS_BUCKET}/configs/{BENCHMARK_NAME}/{BENCHMARK_NAME}_split_{UID}.yaml`, where the `UID` is an unique ID assigned to the split. 
 
 To deploy the stack and run the benchmarking jobs with one command:
 
@@ -88,7 +90,9 @@ To deploy the stack and run the benchmarking jobs with one command:
 python ./runbenchmarks.py  --config_file path/to/cloud_config_file
 ```
 
-The above command will deploy the infrastructure automatically and create a lambda_function with the `LAMBDA_FUNCTION_NAME` of your choice. The lambda function will then be invoked automatically with the cloud config file you provided, and submit AWS Batch jobs to the job queue (named with the `PREFIX` you provided).
+The above command will deploy the infrastructure automatically and create a lambda_function with the `LAMBDA_FUNCTION_NAME` of your choice. The lambda function will then be invoked automatically with the cloud config file you provided, and submit AWS Batch jobs to the job queue (named with the `PREFIX` you provided). The infrasturture created is by default retained for future use. To remove the resources, use the option `--remove_resources` in the above command.
+
+You can then check the benchmarking job logs in the job queue. Each job has an `UID` attached to the name which you can use to identify the config split we mentioned above. After the jobs are completed and go to `SUCCEEDED` status in the job queue, you can expect to see metrics saved under `S3://{METRICS_BUCKET}/{module}/{benchmark_name}_{UID}_{timestamp}`.
 
 
 ## Evaluating bechmark runs
