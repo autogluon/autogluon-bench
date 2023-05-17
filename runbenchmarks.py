@@ -3,6 +3,7 @@ import boto3
 import json
 import logging
 import os
+import re
 import time
 import yaml
 import logging
@@ -11,6 +12,7 @@ from autogluon.bench.frameworks.multimodal.multimodal_benchmark import \
     MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import \
     TabularBenchmark
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -64,7 +66,7 @@ def get_kwargs(module: str, configs: dict):
         }
 
 
-def run_benchmark(configs: dict):
+def run_benchmark(configs: dict, split_id: Optional[str] = None):
     """Runs a benchmark based on the provided configuration options.
 
     Args:
@@ -76,14 +78,17 @@ def run_benchmark(configs: dict):
         "tabular": TabularBenchmark,
     }
     module_name = configs["module"]
+    benchmark_name = configs["benchmark_name"]
+    if split_id:
+        benchmark_name=f"{benchmark_name}_{split_id}"
     benchmark_class = module_to_benchmark.get(module_name, None)
     if benchmark_class is None:
         raise NotImplementedError
-    
-    benchmark = benchmark_class(benchmark_name=configs["benchmark_name"])
+    benchmark = benchmark_class(benchmark_name=benchmark_name)
     module_kwargs = get_kwargs(module=module_name, configs=configs)
     benchmark.setup(**module_kwargs.get("setup_kwargs", {}))
     benchmark.run(**module_kwargs.get("run_kwargs", {}))
+    benchmark.save_configs(configs=configs)
 
     if configs.get("metrics_bucket", None):
         benchmark.upload_metrics(s3_bucket=configs["metrics_bucket"], s3_dir=f'{module_name}/{benchmark.benchmark_name}')
@@ -143,10 +148,10 @@ def invoke_lambda(configs: dict, config_file: str):
         InvocationType='RequestResponse',
         Payload=json.dumps(payload)
     )
+    response = json.loads(response['Payload'].read().decode('utf-8'))
     logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])
     
-    job_ids = json.loads(response['Payload'].read().decode('utf-8'))['job_ids']
-    return job_ids
+    return response
 
 def wait_for_jobs_to_complete(batch_client, job_ids: list):
     logger.info("Waiting for jobs to complete...")
@@ -171,6 +176,17 @@ def wait_for_jobs_to_complete(batch_client, job_ids: list):
 
     return failed_jobs
 
+def _get_split_id(file_name: str):
+    if "split" in file_name:
+        file_name = os.path.basename(file_name)
+        match = re.search(r'([a-f0-9]{32})', file_name)
+        if match:
+            return match.group(1)
+        else:
+            return None
+    
+    return None
+
 def run():
     """Main function that runs the benchmark based on the provided configuration options."""
 
@@ -184,17 +200,18 @@ def run():
     if configs["mode"] == "aws":
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(bucket=configs["metrics_bucket"], file=args.config_file)
-        job_ids = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
+        lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
         batch_client = boto3.client("batch", infra_configs["CDK_DEPLOY_REGION"])
-        failed_jobs = wait_for_jobs_to_complete(batch_client=batch_client, job_ids=job_ids)
         
         if args.remove_resources:
+            failed_jobs = wait_for_jobs_to_complete(batch_client=batch_client, job_ids=lambda_response["job_ids"])
             if failed_jobs:
                 logger.warning("Warning: Some jobs have failed: %s. Resources are not being removed.", failed_jobs)
             else:
                 destroy_stack(configs=infra_configs)
     elif configs["mode"] == "local":
-        run_benchmark(configs)
+        split_id = _get_split_id(args.config_file)
+        run_benchmark(configs=configs, split_id=split_id)
     else:
         raise NotImplementedError
 
