@@ -78,9 +78,13 @@ def run_benchmark(configs: dict, split_id: Optional[str] = None):
         "tabular": TabularBenchmark,
     }
     module_name = configs["module"]
-    benchmark_name = configs["benchmark_name"]
-    if split_id:
+    default_benchmark_name = "ag_bench"
+    benchmark_name = configs.get("benchmark_name", default_benchmark_name)
+    if benchmark_name is None:
+        benchmark_name = default_benchmark_name
+    if split_id is not None:
         benchmark_name=f"{benchmark_name}_{split_id}"
+        
     benchmark_class = module_to_benchmark.get(module_name, None)
     if benchmark_class is None:
         raise NotImplementedError
