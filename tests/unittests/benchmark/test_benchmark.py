@@ -1,8 +1,10 @@
 import os
+import tempfile
 import unittest
 from unittest.mock import MagicMock
 
 import pytest
+import yaml
 
 from autogluon.bench.benchmark import Benchmark
 
@@ -42,3 +44,17 @@ def test_upload_metrics(benchmark, temp_dir):
 
         s3_path = mock_upload_file.call_args[0][2]
         assert s3_path.startswith(f"{s3_dir}/file.txt")
+
+
+def test_save_configs():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        benchmark = TempBenchmark("test_benchmark", temp_dir)
+        data = {"key": "value"}
+        benchmark.save_configs(configs=data, file_name="test.yaml")
+
+        file_path = os.path.join(benchmark.metrics_dir, "test.yaml")
+        assert os.path.isfile(file_path)
+
+        with open(file_path, "r") as f:
+            loaded_data = yaml.safe_load(f)
+        assert loaded_data == data
