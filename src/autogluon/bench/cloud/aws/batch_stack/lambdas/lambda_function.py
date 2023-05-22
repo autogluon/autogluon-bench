@@ -54,7 +54,7 @@ def download_config(s3_path: str):
     return file_path
 
 
-def upload_config(bucket: str, file: str):
+def upload_config(bucket: str, benchmark_name: str, file: str):
     """
     Uploads a file to the given S3 bucket.
 
@@ -66,7 +66,7 @@ def upload_config(bucket: str, file: str):
         str: S3 path of the uploaded file.
     """
     file_name = f'{file.split("/")[-1].split(".")[0]}.yaml'
-    s3_path = f"configs/{file_name}"
+    s3_path = f"configs/{benchmark_name}/{file_name}"
     s3.upload_file(file, bucket, s3_path)
     return f"s3://{bucket}/{s3_path}"
 
@@ -82,7 +82,8 @@ def save_configs(configs: dict, uid: str):
     Returns:
         str: Local path of the saved file.
     """
-    config_file_path = os.path.join("/tmp", f"cloud_configs_split_{uid}.yaml")
+    benchmark_name = configs["benchmark_name"]
+    config_file_path = os.path.join("/tmp", f"{benchmark_name}_split_{uid}.yaml")
     with open(config_file_path, "w+") as f:
         yaml.dump(configs, f, default_flow_style=False)
     return config_file_path
@@ -105,7 +106,9 @@ def process_combination(combination, keys, metrics_bucket, batch_job_queue, batc
     local_configs = dict(zip(keys, combination))
     config_uid = uuid.uuid1().hex
     config_local_path = save_configs(configs=local_configs, uid=config_uid)
-    config_s3_path = upload_config(bucket=metrics_bucket, file=config_local_path)
+    config_s3_path = upload_config(
+        bucket=metrics_bucket, benchmark_name=local_configs["benchmark_name"], file=config_local_path
+    )
     job_name = f"{local_configs['benchmark_name']}-{local_configs['module']}-{config_uid}"
     env = [{"name": "config_file", "value": config_s3_path}]
 
@@ -115,7 +118,7 @@ def process_combination(combination, keys, metrics_bucket, batch_job_queue, batc
         job_queue=batch_job_queue,
         job_definition=batch_job_definition,
     )
-    return job_id
+    return {job_id: config_s3_path}
 
 
 def handler(event, context):
@@ -192,7 +195,7 @@ def handler(event, context):
         amlb_tasks = module_configs.pop("amlb_task", {})
 
     # Generate all combinations and submit jobs
-    job_ids = []
+    job_configs = []
     for common_combination in product(*[common_configs[key] for key in common_configs.keys()]):
         for module_combination in product(*[module_configs[key] for key in module_configs.keys()]):
             keys = list(common_configs.keys()) + list(module_configs.keys())
@@ -206,74 +209,26 @@ def handler(event, context):
                     for amlb_task in amlb_task_values:
                         extended_combination = combination + (amlb_benchmark, amlb_task)
                         extended_keys = keys + ["amlb_benchmark", "amlb_task"]
-                        job_id = process_combination(
+                        job_config = process_combination(
                             extended_combination,
                             extended_keys,
                             metrics_bucket,
                             batch_job_queue,
                             batch_job_definition,
                         )
-                        job_ids.append(job_id)
+                        job_configs.append(job_config)
             else:
-                job_id = process_combination(
+                job_config = process_combination(
                     combination,
                     keys,
                     metrics_bucket,
                     batch_job_queue,
                     batch_job_definition,
                 )
-                job_ids.append(job_id)
+                job_configs.append(job_config)
 
-    for common_combination in product(*[common_configs[key] for key in common_configs.keys()]):
-        for module_combination in product(*[module_configs[key] for key in module_configs.keys()]):
-            if common_configs["module"][0] == "tabular":
-                for amlb_benchmark in amlb_benchmarks:
-                    amlb_task_values = amlb_tasks[amlb_benchmark]
-                    if amlb_task_values is None:
-                        amlb_task_values = [None]
-                    for amlb_task in amlb_task_values:
-                        combination = common_combination + module_combination + (amlb_benchmark, amlb_task)
-                        keys = (
-                            list(common_configs.keys()) + list(module_configs.keys()) + ["amlb_benchmark", "amlb_task"]
-                        )
-                        local_configs = dict(zip(keys, combination))
-                        config_uid = uuid.uuid1().hex
-                        config_local_path = save_configs(configs=local_configs, uid=config_uid)
-                        config_s3_path = upload_config(bucket=metrics_bucket, file=config_local_path)
-                        job_name = f"%s-%s-%s" % (
-                            local_configs["benchmark_name"],
-                            local_configs["module"],
-                            config_uid,
-                        )
-                        env = [
-                            {"name": "config_file", "value": config_s3_path},
-                        ]
-                        submit_batch_job(
-                            env=env,
-                            job_name=job_name,
-                            job_queue=batch_job_queue,
-                            job_definition=batch_job_definition,
-                        )
-            else:
-                combination = common_combination + module_combination
-                keys = list(common_configs.keys()) + list(module_configs.keys())
-                local_configs = dict(zip(keys, combination))
-                config_uid = uuid.uuid1().hex
-                config_local_path = save_configs(configs=local_configs, uid=config_uid)
-                config_s3_path = upload_config(bucket=metrics_bucket, file=config_local_path)
-                job_name = f"%s-%s-%s" % (
-                    local_configs["benchmark_name"],
-                    local_configs["module"],
-                    config_uid,
-                )
-                env = [
-                    {"name": "config_file", "value": config_s3_path},
-                ]
-                submit_batch_job(
-                    env=env,
-                    job_name=job_name,
-                    job_queue=batch_job_queue,
-                    job_definition=batch_job_definition,
-                )
-
-    return {"Lambda execution finished": True, "job_ids": job_ids}
+    response = {
+        "Lambda execution finished": True,
+        "job_configs": job_configs,
+    }
+    return response

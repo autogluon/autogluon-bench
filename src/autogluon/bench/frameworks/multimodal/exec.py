@@ -28,6 +28,7 @@ def get_args():
     )
 
     parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
+    parser.add_argument("--metrics_dir", type=str, help="Directory to save benchmarking metrics.")
     parser.add_argument(
         "--time_limit", type=int, default=None, help="Time limit for the AutoGluon benchmark (in seconds)."
     )
@@ -81,6 +82,7 @@ def save_metrics(metrics_path: str, metrics):
 def run(
     dataset_name: str,
     benchmark_dir: str,
+    metrics_dir: str,
     time_limit: Optional[int] = None,
     presets: Optional[str] = None,
     hyperparameters: Optional[dict] = None,
@@ -159,7 +161,7 @@ def run(
         "scores": scores,
         "timestamp": timestamp.strftime("%H:%M:%S"),
     }
-    save_metrics(os.path.join(benchmark_dir, "results"), metrics)
+    save_metrics(metrics_dir, metrics)
 
 
 if __name__ == "__main__":
@@ -170,6 +172,7 @@ if __name__ == "__main__":
     run(
         dataset_name=args.dataset_name,
         benchmark_dir=args.benchmark_dir,
+        metrics_dir=args.metrics_dir,
         time_limit=args.time_limit,
         presets=args.presets,
         hyperparameters=args.hyperparameters,
