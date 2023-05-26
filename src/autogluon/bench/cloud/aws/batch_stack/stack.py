@@ -5,6 +5,7 @@ import os
 
 import aws_cdk as core
 import boto3
+import pkg_resources
 from aws_cdk import aws_batch_alpha as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecr_assets as ecr_assets
@@ -22,10 +23,15 @@ AWS Batch as the compute enviroment in which a docker image runs the benchmarkin
 """
 
 # Relative path to the source code for the aws batch job, from the project root
-docker_base_dir = "."
+resource_package = "autogluon.bench"
+resource_path = "Dockerfile"
+dockerfile_path = pkg_resources.resource_filename(resource_package, resource_path)
+docker_base_dir = os.path.dirname(dockerfile_path)
 
 # Relative path to the source for the AWS lambda, from the project root
-lambda_script_dir = "src/autogluon/bench/cloud/aws/batch_stack/lambdas"
+resource_package = "autogluon.bench.cloud.aws"
+resource_path = "batch_stack/lambdas"
+lambda_script_dir = pkg_resources.resource_filename(resource_package, resource_path)
 
 logger = logging.getLogger(__name__)
 
