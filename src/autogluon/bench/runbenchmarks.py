@@ -5,28 +5,16 @@ import logging
 import os
 import re
 import time
+from typing import List, Optional
 import yaml
-import logging
-from autogluon.bench.cloud.aws.run_deploy import deploy_stack, destroy_stack
-from autogluon.bench.frameworks.multimodal.multimodal_benchmark import \
-    MultiModalBenchmark
-from autogluon.bench.frameworks.tabular.tabular_benchmark import \
-    TabularBenchmark
-from typing import Optional
+from typing_extensions import Annotated
 
+from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
+from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
+app = typer.Typer()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-def get_args():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--config_file', type=str, help='Path to custom config file.')
-    parser.add_argument('--remove_resources', action='store_true')
-
-    args = parser.parse_args()
-    return args
-    
 
 def get_kwargs(module: str, configs: dict):
     """Returns a dictionary of keyword arguments to be used for setting up and running the benchmark.
@@ -157,8 +145,55 @@ def invoke_lambda(configs: dict, config_file: str):
     
     return response
 
-def wait_for_jobs_to_complete(batch_client, job_ids: list):
-    logger.info("Waiting for jobs to complete...")
+
+@app.command()
+def get_job_status(
+    job_ids: Optional[List[str]] = typer.Option(None, "--job-ids", help="List of job ids, separated by space."),
+    cdk_deploy_region: Optional[str] = typer.Option(None, "--cdk_deploy_region", help="AWS region that the Batch jobs run in."),
+    config_file: Optional[str] = typer.Option(None, "--config-file", help="Path to YAML config file containing job ids.")
+):
+    """
+    Query the status of AWS Batch job ids. 
+get_job_status
+    The job ids can either be passed in directly or read from a YAML configuration file.
+    
+    Args:
+        job_ids (list[str], optional):
+            A list of job ids to query the status for. 
+        cdk_deploy_region (str, optional):
+            AWS region that the Batch jobs run in.
+        config_file (str, optional):
+            A path to a YAML config file containing job ids. The YAML file should have the structure:
+                job_configs:
+                    <job_id>: <job_config>
+                    <job_id>: <job_config>
+                    ...
+
+    Returns:
+        dict
+            A dictionary containing the status of the queried job ids.
+    """
+    if config_file is not None:
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+            job_ids = list(config.get('job_configs', {}).keys())
+            cdk_deploy_region = config.get('CDK_DEPLOY_REGION', cdk_deploy_region)
+    
+    if job_ids is None or cdk_deploy_region is None:
+        raise ValueError("Either job_ids or cdk_deploy_region must be provided or configured in the config_file.")
+    
+    batch_client = boto3.client('batch', region_name=cdk_deploy_region)
+
+    status_dict = {}
+
+    for job_id in job_ids:
+        response = batch_client.describe_jobs(jobs=[job_id])
+        job = response['jobs'][0]
+        status_dict[job_id] = job['status']
+    
+    logger.info(status_dict)
+    return status_dict
+
     while True:
         all_jobs_completed = True
         failed_jobs = []
@@ -191,14 +226,18 @@ def _get_split_id(file_name: str):
     
     return None
 
-def run():
+
+@app.command()
+def run(
+    config_file: Annotated[str, typer.Argument(help="Path to custom config file.")],
+    remove_resources: Annotated[bool, typer.Option("--remove_resources", help="Remove resources after run.")] = False,
+):
     """Main function that runs the benchmark based on the provided configuration options."""
 
-    args = get_args()
     configs = {}
-    if args.config_file.startswith("s3"):
-        args.config_file = download_config(s3_path=args.config_file)
-    with open(args.config_file, "r") as f:
+    if config_file.startswith("s3"):
+        config_file = download_config(s3_path=config_file)
+    with open(config_file, "r") as f:
         configs = yaml.safe_load(f)
 
     if configs["mode"] == "aws":
@@ -214,11 +253,6 @@ def run():
             else:
                 destroy_stack(configs=infra_configs)
     elif configs["mode"] == "local":
-        split_id = _get_split_id(args.config_file)
-        run_benchmark(configs=configs, split_id=split_id)
+        split_id = _get_split_id(config_file)
     else:
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    run()

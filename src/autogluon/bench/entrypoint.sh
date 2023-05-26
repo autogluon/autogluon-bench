@@ -1,4 +1,3 @@
 #!/bin/bash
 
-python runbenchmarks.py \
---config_file $config_file \
+agbench run $config_file

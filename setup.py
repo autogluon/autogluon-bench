@@ -94,6 +94,10 @@ def default_setup_args(*, version):
             "Bug Reports": "https://github.com/autogluon/autogluon-bench/issues",
             "Source": "https://github.com/autogluon/autogluon-bench/",
         },
+        entry_points="""
+            [console_scripts]
+            agbench=autogluon.bench.main:app
+        """,
     )
     return setup_args
 
@@ -111,6 +115,7 @@ install_requires = [
     "constructs>=10.0.0,<10.1.289",
     "pyyaml>=5.4,<=6.0",
     "tqdm>4.60.0,<=4.65.0",
+    "typer>=0.9.0,<1.0.0",
     "requests>2.20.0,<=2.30.0",
     "pyarrow>11.0.0,<=12.0.0",
 ]

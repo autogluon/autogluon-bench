@@ -1,14 +1,21 @@
 import json
 import os
+import shutil
 import subprocess
+import tempfile
 from typing import Optional
 
+import pkg_resources
+import typer
 import yaml
 
 from autogluon.bench.cloud.aws.constants import gpu_map, memory_map, vcpu_map
 
 CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 CONTEXT_FILE = "./cdk.context.json"
+
+app = typer.Typer()
+
 
 
 def construct_context(custom_configs: dict):
@@ -97,11 +104,29 @@ def deploy_stack(configs: Optional[dict] = None):
     return infra_configs
 
 
-def destroy_stack(configs: dict):
+@app.command()
+def destroy_stack(
+    static_resource_stack: str = typer.Argument(..., help="The static resource stack name."),
+    batch_stack: str = typer.Argument(..., help="The batch stack name."),
+    cdk_deploy_account: str = typer.Argument(..., help="The CDK deploy account ID."),
+    cdk_deploy_region: str = typer.Argument(..., help="The CDK deploy region.")
+):
+    """
+    This function destroys AWS CloudFormation stacks using the AWS Cloud Development Kit (CDK).
+
+    It first sets up the necessary environment variables for the CDK, then calls a shell script
+    that uses the CDK to destroy the specified static resource stack and batch stack. Finally, it 
+    removes the temporary directory that was used to deploy the CDK app.
+
+    If you have previously deployed with `agbench run CONFIG_FILE,` 
+    you can find the AWS configs saved under {root_dir}/{module}/{prefix}_{timestamp}/aws_configs.yaml"
+    """
+    os.environ["CDK_DEPLOY_ACCOUNT"] = cdk_deploy_account
+    os.environ["CDK_DEPLOY_REGION"] = cdk_deploy_region
     subprocess.check_call(
         [
             os.path.join(CURRENT_DIR, "destroy.sh"),
-            configs["STATIC_RESOURCE_STACK_NAME"],
-            configs["BATCH_STACK_NAME"],
+            static_resource_stack,
+            batch_stack,
         ]
     )
