@@ -2,9 +2,10 @@
 
 set -eo pipefail
 
-GIT_URI=${1:-"https://github.com/autogluon/autogluon.git"}
-BRANCH=${2:-"master"}
-DIR=${3:-"./benchmark_runs/multimodal/test"}  # from root of benchmark run
+GIT_URI=$1
+BRANCH=$2
+DIR=$3  # from root of benchmark run
+AG_BENCH_VER=$4
 
 if [ ! -d $DIR ]; then
   mkdir -p $DIR
@@ -19,8 +20,7 @@ source $DIR/.venv/bin/activate
 python3 -m pip install --upgrade pip
 python3 -m pip install --upgrade setuptools wheel
 
-# install autogluon-bench as source, this script should be run from the root of path_to/autogluon-bench
-python3 -m pip install -U -e .
+python3 -m pip install autogluon.bench==$AG_BENCH_VER
 
 cd $DIR/$repo_name
 
