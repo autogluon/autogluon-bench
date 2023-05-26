@@ -12,7 +12,7 @@ from autogluon.bench.datasets.constants import (
     _TEXT_SIMILARITY,
 )
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
-from autogluon.bench.frameworks.utils import NumpyEncoder
+from autogluon.bench.utils.general_utils import NumpyEncoder
 from autogluon.multimodal import MultiModalPredictor
 
 logger = logging.getLogger(__name__)
