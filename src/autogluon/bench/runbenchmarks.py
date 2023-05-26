@@ -194,36 +194,41 @@ get_job_status
     logger.info(status_dict)
     return status_dict
 
+
+def wait_for_jobs_to_complete(config_file: Optional[str] = None, job_ids: Optional[list[str]] = None, aws_region: Optional[str] = None):
     while True:
         all_jobs_completed = True
         failed_jobs = []
 
-        for job_id in job_ids:
-            response = batch_client.describe_jobs(jobs=[job_id])
-            job = response["jobs"][0]
-            job_status = job["status"]
+        try:
+            job_status = get_job_status(job_ids=job_ids, cdk_deploy_region=aws_region, config_file=config_file)
 
-            if job_status == "FAILED":
-                failed_jobs.append(job_id)
-            elif job_status not in ["SUCCEEDED", "FAILED"]:
-                all_jobs_completed = False
+            for job_id, job_status in job_status.items():
+                if job_status == "FAILED":
+                    failed_jobs.append(job_id)
+                elif job_status not in ["SUCCEEDED", "FAILED"]:
+                    all_jobs_completed = False
+        except botocore.exceptions.ClientError as e:
+            logger.error(f"An error occurred: {e}.")
+            return
 
         if all_jobs_completed:
             break
         else:
-            time.sleep(60)  # Poll job statuses every 60 seconds
+            time.sleep(120)  # Poll job statuses every 60 seconds
 
     return failed_jobs
+
 
 def _get_split_id(file_name: str):
     if "split" in file_name:
         file_name = os.path.basename(file_name)
-        match = re.search(r'([a-f0-9]{32})', file_name)
+        match = re.search(r"([a-f0-9]{32})", file_name)
         if match:
             return match.group(1)
         else:
             return None
-    
+
     return None
 
 
@@ -244,14 +249,24 @@ def run(
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(bucket=configs["metrics_bucket"], file=args.config_file)
         lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
-        batch_client = boto3.client("batch", infra_configs["CDK_DEPLOY_REGION"])
-        
-        if args.remove_resources:
-            failed_jobs = wait_for_jobs_to_complete(batch_client=batch_client, job_ids=lambda_response["job_ids"])
+        if remove_resources:
+            logger.info("Waiting for jobs to complete and then remove the AWS resources created.")
+            logger.info("You can quit at anytime and run \n"
+                        "`agbench destroy-stack STATIC_RESOURCE_STACK BATCH_STACK CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION` "
+                        "to delete the stack after jobs have run to completion.")
+            failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
             if failed_jobs:
-                logger.warning("Warning: Some jobs have failed: %s. Resources are not being removed.", failed_jobs)
+                logger.warning("Some jobs have failed: %s. Resources are not being removed.", failed_jobs)
+            elif failed_jobs is None:
+                logger.error("Resources are not being removed due to errors.")
             else:
-                destroy_stack(configs=infra_configs)
+                destroy_stack(
+                    static_resource_stack=infra_configs["STATIC_RESOURCE_STACK_NAME"],
+                    batch_stack=infra_configs["BATCH_STACK_NAME"],
+                    cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
+                    cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
+                )
+
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
     else:
