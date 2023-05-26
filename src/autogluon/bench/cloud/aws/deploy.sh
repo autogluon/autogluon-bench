@@ -7,6 +7,7 @@ STACK_NAME_TAG=$2
 STATIC_RESOURCE_STACK_NAME=$3
 BATCH_STACK_NAME=$4
 CONTAINER_MEMORY=$5
+CDK_PATH=$6
 
 update_shm_size() {
     echo "Container shm_size is $CONTAINER_MEMORY"
@@ -43,8 +44,8 @@ ECR_REPO=763104351884.dkr.ecr.us-east-1.amazonaws.com
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPO
 
 echo "Running CDK deploy"
-cdk deploy $STATIC_RESOURCE_STACK_NAME
-cdk deploy $BATCH_STACK_NAME
+cdk deploy --app $CDK_PATH $STATIC_RESOURCE_STACK_NAME
+cdk deploy --app $CDK_PATH $BATCH_STACK_NAME
 
 # Workaround for lack of support from CDK
 update_shm_size
