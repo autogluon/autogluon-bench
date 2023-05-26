@@ -63,6 +63,7 @@ def default_setup_args(*, version):
         include_package_data=True,
         python_requires=PYTHON_REQUIRES,
         package_data={
+            "": ["Dockerfile", "*.sh", "*.txt", "*.yaml"],
             AUTOGLUON: [
                 "LICENSE",
             ]
