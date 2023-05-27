@@ -1,17 +1,24 @@
-import argparse
-import boto3
+import autogluon.bench
 import json
 import logging
 import os
 import re
 import time
 from typing import List, Optional
+
+import boto3
+import botocore
+import typer
 import yaml
 from typing_extensions import Annotated
 
+from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
+from autogluon.bench.utils.general_utils import formatted_time
+
 app = typer.Typer()
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -54,7 +61,17 @@ def get_kwargs(module: str, configs: dict):
         }
 
 
-def run_benchmark(configs: dict, split_id: Optional[str] = None):
+def _get_benchmark_name(configs: dict):
+    default_benchmark_name = "ag_bench"
+    benchmark_name = configs.get("benchmark_name", default_benchmark_name) or default_benchmark_name
+    return benchmark_name
+
+
+def run_benchmark(
+    benchmark_name: str,
+    benchmark_dir: str,
+    configs: dict,
+):
     """Runs a benchmark based on the provided configuration options.
 
     Args:
@@ -66,27 +83,27 @@ def run_benchmark(configs: dict, split_id: Optional[str] = None):
         "tabular": TabularBenchmark,
     }
     module_name = configs["module"]
-    default_benchmark_name = "ag_bench"
-    benchmark_name = configs.get("benchmark_name", default_benchmark_name)
-    if benchmark_name is None:
-        benchmark_name = default_benchmark_name
-    if split_id is not None:
-        benchmark_name=f"{benchmark_name}_{split_id}"
-        
+
     benchmark_class = module_to_benchmark.get(module_name, None)
     if benchmark_class is None:
         raise NotImplementedError
-    benchmark = benchmark_class(benchmark_name=benchmark_name)
+
+    benchmark = benchmark_class(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir)
     module_kwargs = get_kwargs(module=module_name, configs=configs)
     benchmark.setup(**module_kwargs.get("setup_kwargs", {}))
     benchmark.run(**module_kwargs.get("run_kwargs", {}))
-    benchmark.save_configs(configs=configs)
+    logger.info(f"Backing up benchmarking configs to {benchmark.metrics_dir}/configs.yaml")
+    _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
     if configs.get("metrics_bucket", None):
-        benchmark.upload_metrics(s3_bucket=configs["metrics_bucket"], s3_dir=f'{module_name}/{benchmark.benchmark_name}')
-    
+        s3_dir = f"{module_name}{benchmark_dir.split(module_name)[-1]}"
+        benchmark.upload_metrics(
+            s3_bucket=configs["metrics_bucket"], 
+            s3_dir=s3_dir
+        )
 
-def upload_config(bucket: str, file: str):
+
+def upload_config(bucket: str, benchmark_name: str, file: str):
     """Uploads a configuration file to an S3 bucket.
 
     Args:
@@ -96,15 +113,17 @@ def upload_config(bucket: str, file: str):
     Returns:
         The S3 path of the uploaded file.
     """
-
     s3 = boto3.client("s3")
-    file_name = f'{file.split("/")[-1].split(".")[0]}_{time.strftime("%Y%m%dT%H%M%S", time.localtime())}.yaml'
+    config_file_name = os.path.basename(file)
+    file_name = benchmark_name + "_" + config_file_name
+    
     s3_path = f"configs/{file_name}"
     s3.upload_file(file, bucket, s3_path)
+    logger.info(f"Config file has been uploaded to S3://{bucket}/{s3_path}")
     return f"s3://{bucket}/{s3_path}"
 
 
-def download_config(s3_path: str, dir: str="/tmp"):
+def download_config(s3_path: str, dir: str = "/tmp"):
     """Downloads a configuration file from an S3 bucket.
 
     Args:
@@ -123,7 +142,7 @@ def download_config(s3_path: str, dir: str="/tmp"):
     return file_path
 
 
-def invoke_lambda(configs: dict, config_file: str):
+def invoke_lambda(configs: dict, config_file: str) -> dict:
     """Invokes an AWS Lambda function to run benchmarks based on the provided configuration options.
 
     Args:
@@ -132,17 +151,13 @@ def invoke_lambda(configs: dict, config_file: str):
     """
 
     lambda_client = boto3.client("lambda", configs["CDK_DEPLOY_REGION"])
-    payload = {
-        "config_file": config_file
-    }
+    payload = {"config_file": config_file}
     response = lambda_client.invoke(
-        FunctionName=configs["LAMBDA_FUNCTION_NAME"],
-        InvocationType='RequestResponse',
-        Payload=json.dumps(payload)
+        FunctionName=configs["LAMBDA_FUNCTION_NAME"], InvocationType="RequestResponse", Payload=json.dumps(payload)
     )
-    response = json.loads(response['Payload'].read().decode('utf-8'))
+    response = json.loads(response["Payload"].read().decode("utf-8"))
     logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])
-    
+
     return response
 
 
@@ -232,6 +247,15 @@ def _get_split_id(file_name: str):
     return None
 
 
+def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
+    os.makedirs(benchmark_dir, exist_ok=True)
+    config_path = os.path.join(benchmark_dir, file_name)
+    with open(config_path, "w") as file:
+        yaml.dump(configs, file)
+        logger.info(f"Configs have been saved to {config_path}")
+    return config_path
+
+
 @app.command()
 def run(
     config_file: Annotated[str, typer.Argument(help="Path to custom config file.")],
@@ -244,11 +268,26 @@ def run(
         config_file = download_config(s3_path=config_file)
     with open(config_file, "r") as f:
         configs = yaml.safe_load(f)
+    
+    benchmark_name = _get_benchmark_name(configs=configs)
+    timestamp_pattern = r'\d{8}T\d{6}'  # Timestamp that matches YYYYMMDDTHHMMSS
+    if not re.search(timestamp_pattern, benchmark_name):
+        benchmark_name += "_" + formatted_time()
+
+    root_dir = configs.get("root_dir", ".ag_bench_runs")
+    benchmark_dir = os.path.join(root_dir, configs["module"], benchmark_name)
 
     if configs["mode"] == "aws":
+        configs["benchmark_name"] = benchmark_name
+        cloud_config_path = _dump_configs(benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file))
+        os.environ["AG_BENCH_VERSION"] = autogluon.bench.__version__  # set the installed version for Dockerfile to align with 
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
-        config_s3_path = upload_config(bucket=configs["metrics_bucket"], file=args.config_file)
+        config_s3_path = upload_config(bucket=configs["metrics_bucket"], benchmark_name=benchmark_name, file=cloud_config_path)
         lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
+        aws_configs = {**infra_configs, **lambda_response}
+        logger.info(f"Saving infra configs and submitted job configs under {benchmark_dir}.")
+        aws_config_path = _dump_configs(benchmark_dir=benchmark_dir, configs=aws_configs, file_name="aws_confis.yaml")
+
         if remove_resources:
             logger.info("Waiting for jobs to complete and then remove the AWS resources created.")
             logger.info("You can quit at anytime and run \n"
@@ -269,5 +308,13 @@ def run(
 
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
+        if split_id is not None:
+            benchmark_name += "_" + split_id
+            benchmark_dir = os.path.join(benchmark_dir, benchmark_name)
+        run_benchmark(
+            benchmark_name=benchmark_name,
+            benchmark_dir=benchmark_dir,
+            configs=configs,
+        )
     else:
         raise NotImplementedError

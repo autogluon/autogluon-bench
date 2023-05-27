@@ -1,10 +1,12 @@
+import autogluon.bench
 import json
 import logging
 import os
 import subprocess
+import sys
 from typing import Optional
 
-from autogluon.bench.benchmark import Benchmark
+from autogluon.bench.frameworks.benchmark import Benchmark
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +25,6 @@ class MultiModalBenchmark(Benchmark):
         run(): Runs the benchmark on a given dataset.
     """
 
-    def __init__(self, benchmark_name: str, root_dir: str = "./benchmark_runs/multimodal/"):
-        super().__init__(
-            benchmark_name=benchmark_name,
-            root_dir=root_dir,
-        )
-        self.module = "multimodal"
-
     def setup(
         self,
         git_uri: str = "https://github.com/autogluon/autogluon.git",
@@ -46,12 +41,13 @@ class MultiModalBenchmark(Benchmark):
             None
         """
         setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
-        command = [setup_script_path, git_uri, git_branch, self.benchmark_dir]
+        command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, autogluon.bench.__version__]
         result = subprocess.run(command)
         if result.stdout:
             logger.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
         elif result.stderr:
             logger.error(result.stderr)
+            sys.exit(1)
 
     def run(
         self,
