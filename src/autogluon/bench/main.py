@@ -1,7 +1,7 @@
 import typer
 
 from autogluon.bench.cloud.aws.stack_handler import destroy_stack
-from autogluon.bench.runbenchmarks import run, get_job_status
+from autogluon.bench.runbenchmarks import get_job_status, run
 
 app = typer.Typer()
 

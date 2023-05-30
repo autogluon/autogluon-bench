@@ -1,4 +1,3 @@
-import autogluon.bench
 import json
 import logging
 import os
@@ -12,6 +11,7 @@ import typer
 import yaml
 from typing_extensions import Annotated
 
+import autogluon.bench
 from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
@@ -97,10 +97,7 @@ def run_benchmark(
 
     if configs.get("metrics_bucket", None):
         s3_dir = f"{module_name}{benchmark_dir.split(module_name)[-1]}"
-        benchmark.upload_metrics(
-            s3_bucket=configs["metrics_bucket"], 
-            s3_dir=s3_dir
-        )
+        benchmark.upload_metrics(s3_bucket=configs["metrics_bucket"], s3_dir=s3_dir)
 
 
 def upload_config(bucket: str, benchmark_name: str, file: str):
@@ -116,7 +113,7 @@ def upload_config(bucket: str, benchmark_name: str, file: str):
     s3 = boto3.client("s3")
     config_file_name = os.path.basename(file)
     file_name = benchmark_name + "_" + config_file_name
-    
+
     s3_path = f"configs/{file_name}"
     s3.upload_file(file, bucket, s3_path)
     logger.info(f"Config file has been uploaded to S3://{bucket}/{s3_path}")
@@ -164,53 +161,59 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
 @app.command()
 def get_job_status(
     job_ids: Optional[List[str]] = typer.Option(None, "--job-ids", help="List of job ids, separated by space."),
-    cdk_deploy_region: Optional[str] = typer.Option(None, "--cdk_deploy_region", help="AWS region that the Batch jobs run in."),
-    config_file: Optional[str] = typer.Option(None, "--config-file", help="Path to YAML config file containing job ids.")
+    cdk_deploy_region: Optional[str] = typer.Option(
+        None, "--cdk_deploy_region", help="AWS region that the Batch jobs run in."
+    ),
+    config_file: Optional[str] = typer.Option(
+        None, "--config-file", help="Path to YAML config file containing job ids."
+    ),
 ):
     """
-    Query the status of AWS Batch job ids. 
-get_job_status
-    The job ids can either be passed in directly or read from a YAML configuration file.
-    
-    Args:
-        job_ids (list[str], optional):
-            A list of job ids to query the status for. 
-        cdk_deploy_region (str, optional):
-            AWS region that the Batch jobs run in.
-        config_file (str, optional):
-            A path to a YAML config file containing job ids. The YAML file should have the structure:
-                job_configs:
-                    <job_id>: <job_config>
-                    <job_id>: <job_config>
-                    ...
+        Query the status of AWS Batch job ids.
+    get_job_status
+        The job ids can either be passed in directly or read from a YAML configuration file.
 
-    Returns:
-        dict
-            A dictionary containing the status of the queried job ids.
+        Args:
+            job_ids (list[str], optional):
+                A list of job ids to query the status for.
+            cdk_deploy_region (str, optional):
+                AWS region that the Batch jobs run in.
+            config_file (str, optional):
+                A path to a YAML config file containing job ids. The YAML file should have the structure:
+                    job_configs:
+                        <job_id>: <job_config>
+                        <job_id>: <job_config>
+                        ...
+
+        Returns:
+            dict
+                A dictionary containing the status of the queried job ids.
     """
     if config_file is not None:
-        with open(config_file, 'r') as f:
+        with open(config_file, "r") as f:
             config = yaml.safe_load(f)
-            job_ids = list(config.get('job_configs', {}).keys())
-            cdk_deploy_region = config.get('CDK_DEPLOY_REGION', cdk_deploy_region)
-    
+            job_ids = list(config.get("job_configs", {}).keys())
+            cdk_deploy_region = config.get("CDK_DEPLOY_REGION", cdk_deploy_region)
+
     if job_ids is None or cdk_deploy_region is None:
         raise ValueError("Either job_ids or cdk_deploy_region must be provided or configured in the config_file.")
-    
-    batch_client = boto3.client('batch', region_name=cdk_deploy_region)
+
+    batch_client = boto3.client("batch", region_name=cdk_deploy_region)
 
     status_dict = {}
 
     for job_id in job_ids:
         response = batch_client.describe_jobs(jobs=[job_id])
-        job = response['jobs'][0]
-        status_dict[job_id] = job['status']
-    
+        job = response["jobs"][0]
+        status_dict[job_id] = job["status"]
+
     logger.info(status_dict)
     return status_dict
 
 
-def wait_for_jobs_to_complete(config_file: Optional[str] = None, job_ids: Optional[list[str]] = None, aws_region: Optional[str] = None):
+def wait_for_jobs_to_complete(
+    config_file: Optional[str] = None, job_ids: Optional[list[str]] = None, aws_region: Optional[str] = None
+):
     while True:
         all_jobs_completed = True
         failed_jobs = []
@@ -268,9 +271,9 @@ def run(
         config_file = download_config(s3_path=config_file)
     with open(config_file, "r") as f:
         configs = yaml.safe_load(f)
-    
+
     benchmark_name = _get_benchmark_name(configs=configs)
-    timestamp_pattern = r'\d{8}T\d{6}'  # Timestamp that matches YYYYMMDDTHHMMSS
+    timestamp_pattern = r"\d{8}T\d{6}"  # Timestamp that matches YYYYMMDDTHHMMSS
     if not re.search(timestamp_pattern, benchmark_name):
         benchmark_name += "_" + formatted_time()
 
@@ -279,10 +282,16 @@ def run(
 
     if configs["mode"] == "aws":
         configs["benchmark_name"] = benchmark_name
-        cloud_config_path = _dump_configs(benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file))
-        os.environ["AG_BENCH_VERSION"] = autogluon.bench.__version__  # set the installed version for Dockerfile to align with 
+        cloud_config_path = _dump_configs(
+            benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
+        )
+        os.environ[
+            "AG_BENCH_VERSION"
+        ] = autogluon.bench.__version__  # set the installed version for Dockerfile to align with
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
-        config_s3_path = upload_config(bucket=configs["metrics_bucket"], benchmark_name=benchmark_name, file=cloud_config_path)
+        config_s3_path = upload_config(
+            bucket=configs["metrics_bucket"], benchmark_name=benchmark_name, file=cloud_config_path
+        )
         lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
         aws_configs = {**infra_configs, **lambda_response}
         logger.info(f"Saving infra configs and submitted job configs under {benchmark_dir}.")
@@ -290,9 +299,11 @@ def run(
 
         if remove_resources:
             logger.info("Waiting for jobs to complete and then remove the AWS resources created.")
-            logger.info("You can quit at anytime and run \n"
-                        "`agbench destroy-stack STATIC_RESOURCE_STACK BATCH_STACK CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION` "
-                        "to delete the stack after jobs have run to completion.")
+            logger.info(
+                "You can quit at anytime and run \n"
+                "`agbench destroy-stack STATIC_RESOURCE_STACK BATCH_STACK CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION` "
+                "to delete the stack after jobs have run to completion."
+            )
             failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
             if failed_jobs:
                 logger.warning("Some jobs have failed: %s. Resources are not being removed.", failed_jobs)

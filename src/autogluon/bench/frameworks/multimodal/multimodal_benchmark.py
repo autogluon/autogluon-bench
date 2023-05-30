@@ -1,4 +1,3 @@
-import autogluon.bench
 import json
 import logging
 import os
@@ -6,6 +5,7 @@ import subprocess
 import sys
 from typing import Optional
 
+import autogluon.bench
 from autogluon.bench.frameworks.benchmark import Benchmark
 
 logger = logging.getLogger(__name__)
