@@ -1,3 +1,4 @@
+import os
 from unittest.mock import MagicMock, patch
 
 import aws_cdk.aws_ec2 as ec2
@@ -21,13 +22,14 @@ def test_static_resource_stack():
 
     with patch.object(StaticResourceStack, "create_s3_resources", MagicMock()) as mock_s3_resources, patch.object(
         StaticResourceStack, "create_vpc_resources", MagicMock()
-    ) as mock_vpc_resources:
+    ) as mock_vpc_resources, patch.dict(os.environ, {"CDK_DEPLOY_REGION": "dummy_region"}):
         stack = StaticResourceStack(app, "TestStaticResourceStack", env=env)
 
         mock_s3_resources.assert_called_once()
         mock_vpc_resources.assert_called_once()
 
 
+@patch.dict("os.environ", {"CDK_DEPLOY_REGION": "dummy_region", "CDK_DEPLOY_ACCOUNT": "dummy_account"}, clear=True)
 def test_batch_job_stack():
     app = App()
     for key, value in context_values.items():
@@ -42,18 +44,19 @@ def test_batch_job_stack():
         static_resource_stack.data_bucket = s3.Bucket(dummy_stack, "DummyDataBucket")
         static_resource_stack.vpc = ec2.Vpc(dummy_stack, "DummyVpc")
 
+        prefix = app.node.try_get_context("STACK_NAME_PREFIX")
         batch_job_stack = BatchJobStack(app, "TestBatchJobStack", static_stack=static_resource_stack, env=env)
 
         constructs = [
-            ("test-security-group", SecurityGroup),
-            ("test-ecr-docker-image-asset", DockerImageAsset),
+            (f"{prefix}-security-group", ec2.SecurityGroup),
+            (f"{prefix}-ecr-docker-image-asset", DockerImageAsset),
             ("job-definition", JobDefinition),
-            ("test-launch-template", LaunchTemplate),
-            ("test-instance-role", Role),
-            ("test-instance-profile", InstanceProfile),
-            ("test-compute-environment", ComputeEnvironment),
-            ("test-job-queue", JobQueue),
-            ("test-batch-job-function", BatchLambdaFunction),
+            (f"{prefix}-launch-template", ec2.LaunchTemplate),
+            (f"{prefix}-instance-role", Role),
+            (f"{prefix}-instance-profile", InstanceProfile),
+            (f"{prefix}-compute-environment", ComputeEnvironment),
+            (f"{prefix}-job-queue", JobQueue),
+            (app.node.try_get_context("LAMBDA_FUNCTION_NAME"), BatchLambdaFunction),
         ]
 
         for construct_id, construct_class in constructs:
