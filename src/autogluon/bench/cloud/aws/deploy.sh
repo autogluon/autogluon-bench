@@ -7,7 +7,8 @@ STACK_NAME_TAG=$2
 STATIC_RESOURCE_STACK_NAME=$3
 BATCH_STACK_NAME=$4
 CONTAINER_MEMORY=$5
-CDK_PATH=$6
+CDK_DEPLOY_REGION=$6
+CDK_PATH=$7
 
 update_shm_size() {
     echo "Container shm_size is $CONTAINER_MEMORY"
@@ -20,6 +21,7 @@ update_shm_size() {
     aws cloudformation deploy \
     --template-file $stack_template \
     --stack-name $BATCH_STACK_NAME \
+    --region $CDK_DEPLOY_REGION \
     --capabilities CAPABILITY_NAMED_IAM
 }
 
@@ -27,7 +29,7 @@ update_batch_tags() {
     ARNS_TO_UPDATE=("ComputeEnvironmentARN" "JobDefinitionARN" "JobQueueARN")
 
     arns=`aws cloudformation describe-stacks \
-    --stack-name $BATCH_STACK_NAME \
+    --stack-name $BATCH_STACK_NAME --region $CDK_DEPLOY_REGION \
     | jq '.Stacks | .[] | .Outputs \
     | reduce .[] as $i ({}; .[$i.OutputKey] = $i.OutputValue)'`
     
@@ -36,7 +38,7 @@ update_batch_tags() {
     for t in ${ARNS_TO_UPDATE[@]}; do
         resource=`echo $arns | jq --arg t $t ' .[$t]' | xargs`
         echo "Tagging $resource with $stack_tag"
-        aws batch tag-resource --resource-arn $resource --tags $stack_tag
+        aws batch tag-resource --resource-arn $resource --region $CDK_DEPLOY_REGION --tags $stack_tag
     done
 }
 

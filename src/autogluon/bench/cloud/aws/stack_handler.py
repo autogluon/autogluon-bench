@@ -27,7 +27,7 @@ def _get_temp_cdk_app_path():
     return temp_cdk_app_path
 
 
-def construct_context(custom_configs: dict):
+def construct_context(custom_configs: dict) -> dict:
     """
     Constructs the AWS Cloud Development Kit (CDK) context using a combination of default configuration
     settings and custom settings, and writes the context to a JSON file. Also sets environment variables for
@@ -84,7 +84,7 @@ def construct_context(custom_configs: dict):
     return context_to_parse
 
 
-def deploy_stack(configs: Optional[dict] = None):
+def deploy_stack(configs: Optional[dict] = None) -> dict:
     """
     Deploys the AWS CloudFormation stack containing the benchmarking infrastructure by calling the deploy.sh
     script and passing it the required command line arguments. Constructs the CDK context using the custom
@@ -109,6 +109,7 @@ def deploy_stack(configs: Optional[dict] = None):
             infra_configs["STATIC_RESOURCE_STACK_NAME"],
             infra_configs["BATCH_STACK_NAME"],
             str(infra_configs["CONTAINER_MEMORY"]),
+            infra_configs["CDK_DEPLOY_REGION"],
             cdk_path,
         ]
     )
@@ -142,6 +143,7 @@ def destroy_stack(
             os.path.join(module_base_dir, "destroy.sh"),
             static_resource_stack,
             batch_stack,
+            cdk_deploy_region,
             cdk_path,
         ]
     )

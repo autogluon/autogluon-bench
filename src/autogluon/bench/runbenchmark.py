@@ -11,7 +11,7 @@ import typer
 import yaml
 from typing_extensions import Annotated
 
-import autogluon.bench
+from autogluon.bench import __version__ as agbench_version
 from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
@@ -61,7 +61,7 @@ def get_kwargs(module: str, configs: dict):
         }
 
 
-def _get_benchmark_name(configs: dict):
+def _get_benchmark_name(configs: dict) -> str:
     default_benchmark_name = "ag_bench"
     benchmark_name = configs.get("benchmark_name", default_benchmark_name) or default_benchmark_name
     return benchmark_name
@@ -76,6 +76,9 @@ def run_benchmark(
 
     Args:
         configs (dict): A dictionary of configuration options for the benchmark.
+
+    Returns:
+        None
     """
 
     module_to_benchmark = {
@@ -89,6 +92,7 @@ def run_benchmark(
         raise NotImplementedError
 
     benchmark = benchmark_class(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir)
+
     module_kwargs = get_kwargs(module=module_name, configs=configs)
     benchmark.setup(**module_kwargs.get("setup_kwargs", {}))
     benchmark.run(**module_kwargs.get("run_kwargs", {}))
@@ -145,6 +149,9 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
     Args:
         configs (dict): A dictionary of configuration options for the AWS infrastructure.
         config_file (str): The path of the configuration file to use for running the benchmarks.
+
+    Returns:
+        A dictionary containing Lambda response payload.
     """
 
     lambda_client = boto3.client("lambda", configs["CDK_DEPLOY_REGION"])
@@ -169,25 +176,23 @@ def get_job_status(
     ),
 ):
     """
-        Query the status of AWS Batch job ids.
-    get_job_status
-        The job ids can either be passed in directly or read from a YAML configuration file.
+    Query the status of AWS Batch job ids.
+    The job ids can either be passed in directly or read from a YAML configuration file.
 
-        Args:
-            job_ids (list[str], optional):
-                A list of job ids to query the status for.
-            cdk_deploy_region (str, optional):
-                AWS region that the Batch jobs run in.
-            config_file (str, optional):
-                A path to a YAML config file containing job ids. The YAML file should have the structure:
-                    job_configs:
-                        <job_id>: <job_config>
-                        <job_id>: <job_config>
-                        ...
+    Args:
+        job_ids (list[str], optional):
+            A list of job ids to query the status for.
+        cdk_deploy_region (str, optional):
+            AWS region that the Batch jobs run in.
+        config_file (str, optional):
+            A path to a YAML config file containing job ids. The YAML file should have the structure:
+                job_configs:
+                    <job_id>: <job_config>
+                    <job_id>: <job_config>
+                    ...
 
-        Returns:
-            dict
-                A dictionary containing the status of the queried job ids.
+    Returns:
+        A dictionary containing the status of the queried job ids.
     """
     if config_file is not None:
         with open(config_file, "r") as f:
@@ -285,9 +290,7 @@ def run(
         cloud_config_path = _dump_configs(
             benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
         )
-        os.environ[
-            "AG_BENCH_VERSION"
-        ] = autogluon.bench.__version__  # set the installed version for Dockerfile to align with
+        os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(
             bucket=configs["metrics_bucket"], benchmark_name=benchmark_name, file=cloud_config_path

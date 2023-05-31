@@ -5,7 +5,7 @@ import subprocess
 import sys
 from typing import Optional
 
-import autogluon.bench
+from autogluon.bench import __version__ as agbench_version
 from autogluon.bench.frameworks.benchmark import Benchmark
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class MultiModalBenchmark(Benchmark):
             None
         """
         setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
-        command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, autogluon.bench.__version__]
+        command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, agbench_version]
         result = subprocess.run(command)
         if result.stdout:
             logger.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)

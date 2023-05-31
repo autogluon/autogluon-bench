@@ -115,12 +115,14 @@ install_requires = [
     "constructs>=10.0.0,<10.1.289",
     "pyyaml>=5.4,<=6.0",
     "tqdm>4.60.0,<=4.65.0",
+    "twine>=4.0.0,<=4.0.2",
     "typer>=0.9.0,<1.0.0",
     "requests>2.20.0,<=2.30.0",
     "pyarrow>11.0.0,<=12.0.0",
+    "wheel>0.38.0,<=0.40.0",
 ]
 
-test_requirements = ["pytest", "tox"]
+test_requirements = ["pytest", "pytest-mock", "tox"]
 extras_require = {}
 extras_require["tests"] = test_requirements
 

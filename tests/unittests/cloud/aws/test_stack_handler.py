@@ -59,6 +59,7 @@ class TestStackHandler(unittest.TestCase):
             "STATIC_RESOURCE_STACK_NAME": "test-prefix-static-resource-stack",
             "BATCH_STACK_NAME": "test-prefix-batch-stack",
             "CONTAINER_MEMORY": 10000,
+            "CDK_DEPLOY_REGION": "us-west-2",
         }
         mock_construct_context.return_value = infra_configs_dict
         mock_mktemp.return_value = "/path/to/temp_dir"
@@ -75,6 +76,7 @@ class TestStackHandler(unittest.TestCase):
                 infra_configs_dict["STATIC_RESOURCE_STACK_NAME"],
                 infra_configs_dict["BATCH_STACK_NAME"],
                 str(infra_configs_dict["CONTAINER_MEMORY"]),
+                infra_configs_dict["CDK_DEPLOY_REGION"],
                 "/path/to/temp_dir/app.py",
             ]
         )
@@ -101,6 +103,7 @@ class TestStackHandler(unittest.TestCase):
             os.path.join(module_base_dir, "destroy.sh"),
             static_resource_stack,
             batch_stack,
+            cdk_deploy_region,
             cdk_path,
         ]
         mock_check_call.assert_called_once_with(expected_call_args)
