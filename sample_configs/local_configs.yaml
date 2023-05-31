@@ -3,6 +3,7 @@ module: multimodal  # required
 mode: local  # required
 benchmark_name: test_local  # required
 metrics_bucket: autogluon-benchmark-metrics  # optional
+root_dir: .ag_bench_runs  # optional
 
 # Multimodal specific
 git_uri#branch: https://github.com/autogluon/autogluon#master  # required

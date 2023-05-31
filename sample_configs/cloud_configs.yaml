@@ -7,6 +7,7 @@ cdk_context:
 module: multimodal  # required
 mode: aws  # required
 benchmark_name: test_yaml  # required
+root_dir: .ag_bench_runs  # optional
 metrics_bucket: autogluon-benchmark-metrics  # required
 
 # Module specific configurations

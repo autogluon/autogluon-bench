@@ -298,7 +298,7 @@ def run(
         lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
         aws_configs = {**infra_configs, **lambda_response}
         logger.info(f"Saving infra configs and submitted job configs under {benchmark_dir}.")
-        aws_config_path = _dump_configs(benchmark_dir=benchmark_dir, configs=aws_configs, file_name="aws_confis.yaml")
+        aws_config_path = _dump_configs(benchmark_dir=benchmark_dir, configs=aws_configs, file_name="aws_configs.yaml")
 
         if remove_resources:
             logger.info("Waiting for jobs to complete and then remove the AWS resources created.")
