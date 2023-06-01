@@ -4,51 +4,72 @@
 
 # AutoGluon-Bench
 
+Welcome to AutoGluon-Bench, a suite for benchmarking your AutoML frameworks.
+
 ## Setup
 
+Follow the steps below to set up autogluon-bench:
+
+```bash
+# create virtual env
+python3.9 -m venv .venv_agbench
+source .venv_agbench/bin/activate
 ```
+
+Install `autogloun-bench` from PyPI:
+
+```bash
+python -m pip install autogluon.bench
+```
+
+
+Or install `autogluon-bench` from source:
+
+```bash
 git clone https://github.com/autogluon/autogluon-bench.git
 cd autogluon-bench
 
-# create virtual env
-python3.9 -m venv .venv
-source .venv/bin/activate
-
-# install autogluon-bench
+# install from source in editable mode
 pip install -e .
 ```
+Also, replace all `pip install autogluon.bench` with `pip install -e .` in the source code.
+
 
 ## Run benchmarks locally
 
-### Tabular
-
-Currently, `tabular` makes use of the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via configuration file. Sample configuration files are provided in the `sample_configs` directory.
-
-A custom branch of autogluon can be benchmarked by specifying the `amlb_custom_branch` configuration of the form: `https://github.com/REPO/autogluon#BRANCH`
+To run the benchmarks on your local machine, use the following command:
 
 ```
-python ./runbenchmarks.py  --config_file path/to/local_config_file
+agbench run path/to/local_config_file
 ```
-A sample local config file is available for reference at `./sample_configs/local_configs.yaml`. When running a `tabular` benchmark, `Benchmark Configurations` and `Tabular Specific` configurations are required to be set. All keys should have a single value.
 
-### Multimodal
+Check out our [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/local_configs.yaml) for local runs.
 
-Currently, we support benchmarking `multimodal` on a custom branch. Note that `multimodal` benchmarking directly calls the `MultiModalPredictor` without the extra layer of [AMLB](https://github.com/openml/automlbenchmark), so the set of arguments required is different from that of running `tabular`. 
+The results are stored in the following directory: `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}`.
 
-We also support adding additional datasets to your benchmarking jobs. We provided some sample datasets in `./src/autogluon/bench/datasets/multimodal_dataset.py` and `./src/autogluon/bench/datasets/object_detection_dataset.py`. You can add custom datasets following the samples provided and then specify `dataset_name` in `cloud_configs.yaml` or `local_configs.yaml`. 
 
-To customize the benchmarking experiment, including adding more hyperparameters, and evaluate on more metrics, you can refer to `./src/autogluon/bench/frameworks/multimodal/exec.py`.
+### Tabular Benchmark
 
-Results are saved under `{WORKING_DIR}/{benchmark_root_dir}/{module}/{benchmark_name}_{timestamp}`.
+To perform tabular benchmarking, set the module to tabular. You must set both Benchmark Configurations and Tabular Specific configurations, and each should have a single value. Refer to the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/local_configs.yaml) for more details.
 
+The tabular module leverages the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via the configuration file mentioned previously.
+
+To benchmark a custom branch of AutoGluon on `tabular` module, use `amlb_custom_branch: https://github.com/REPO/autogluon#BRANCH` in the configuration file.
+
+
+### Multimodal Benchmark
+
+For multimodal benchmarking, set the module to multimodal. We currently support benchmarking multimodal on a custom branch. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular.
+
+You can add more datasets to your benchmarking jobs. We provided sample [multimodal datasets](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/datasets/multimodal_dataset.py) and [object detection dataset](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/datasets/object_detection_dataset.py). Follow these samples to add custom datasets, then specify dataset_name in your local config file. Please follow the section `Install From Source` for more instructions on how to develop with source.
 
 ## Run benchmarks on AWS
 
-The infrastructure is built on AWS CDK, where a AWS Batch compute environment is setup to run the benchmarkings. 
+AutoGluon-Bench uses the AWS CDK to build an AWS Batch compute environment for benchmarking.
 
-In order to run AWS CDK and build containers, the following setup is required to install [Node.js](https://nodejs.org/) and [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_install)
+To get started, install [Node.js](https://nodejs.org/) and [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_install) with the following commands:
 
-```
+```bash
 curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash  # replace bash with other shell (e.g. zsh) if you are using a different one
 source ~/.bashrc
 nvm install 18.16.0  # install Node.js
@@ -56,7 +77,52 @@ npm install -g aws-cdk  # install aws-cdk
 cdk --version  # verify the installation, you might need to update the Node.js version depending on the log.
 ```
 
-The default configurations of the infrastructure is located at `./src/autogluon/bench/cloud/aws/default_config.yaml`.
+To initiate benchmarking on the cloud, use the command below:
+
+```
+agbench run /path/to/cloud_config_file
+```
+
+This command automatically sets up an AWS Batch environment using instance specifications defined in the `cloud_config_file`. It also creates a lambda function named with your chosen `LAMBDA_FUNCTION_NAME`. This lambda function is automatically invoked with the cloud config file you provided, submitting multiple AWS Batch jobs to the job queue (named with the `PREFIX` you provided).
+
+In order for the Lambda function to submit multiple jobs simultaneously, you need to specify a list of values for each module-specific key. Each combination of configurations is saved and uploaded to your specified `METRICS_BUCKET` in S3, stored under `S3://{METRICS_BUCKET}/configs/{BENCHMARK_NAME}_{timestamp}/{BENCHMARK_NAME}_split_{UID}.yaml`. Here, `UID` is a unique ID assigned to the split.
+
+The AWS infrastructure configurations and submitted job IDs are saved locally at `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`. You can use this file to check the job status at any time:
+
+```bash
+agbench get-job-status --config-file /path/to/aws_configs.yaml
+```
+
+You can also check the job status using job IDs:
+
+```bash
+agbench get-job-status --job-ids JOB_ID_1 --job-ids JOB_ID_2 —cdk_deploy_region AWS_REGION
+
+```
+
+Job logs can be viewed on the AWS console. Each job has an `UID` attached to the name, which you can use to identify the respective config split. After the jobs are completed and reach the `SUCCEEDED` status in the job queue, you'll find metrics saved under `S3://{METRICS_BUCKET}/{module}/{benchmark_name}_{timestamp}/{benchmark_name}_{timestamp}_{UID}`.
+
+By default, the infrastructure created is retained for future use. To automatically remove resources after the run, use the `--remove_resources` option:
+
+```bash
+agbench run path/to/cloud_config_file --remove_resources
+```
+
+This will check the job status every 2 minutes and remove resources after all jobs succeed. If any job fails, resources will be kept.
+
+If you want to manually remove resources later, use:
+
+```bash
+agbench destroy-stack STATIC_RESOURCE_STACK_NAME BATCH_STACK_NAME CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION
+```
+
+where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`.
+
+
+### Configure the AWS infrastructure
+
+The default infrastructure configurations are located [here](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/cloud/aws/default_config.yaml).
+
 ```
 CDK_DEPLOY_ACCOUNT: dummy
 CDK_DEPLOY_REGION: dummy
@@ -80,20 +146,7 @@ where:
 - `VPC_NAME` is used to look up an existing VPC.
 - `LAMBDA_FUNCTION_NAME` lambda function to submit jobs to AWS Batch.
 
-The configs can be overridden by a custom config file defined by `--config_file` under `cdk_context` key. Please refer to `./sample_configs/cloud_configs.yaml` for reference. 
-
-Note that in `AWS` mode, we support running multiple benchmarking jobs at the same time, so you can have a list of values for each key in the module specific keys. Each combination of configs gets saved and uploaded to the `METRICS_BUCKET` you provided in S3, and stored under `S3://{METRICS_BUCKET}/configs/{BENCHMARK_NAME}/{BENCHMARK_NAME}_split_{UID}.yaml`, where the `UID` is an unique ID assigned to the split. 
-
-To deploy the stack and run the benchmarking jobs with one command:
-
-```
-python ./runbenchmarks.py  --config_file path/to/cloud_config_file
-```
-
-The above command will deploy the infrastructure automatically and create a lambda_function with the `LAMBDA_FUNCTION_NAME` of your choice. The lambda function will then be invoked automatically with the cloud config file you provided, and submit AWS Batch jobs to the job queue (named with the `PREFIX` you provided). The infrasturture created is by default retained for future use. To remove the resources, use the option `--remove_resources` in the above command.
-
-You can then check the benchmarking job logs in the job queue. Each job has an `UID` attached to the name which you can use to identify the config split we mentioned above. After the jobs are completed and go to `SUCCEEDED` status in the job queue, you can expect to see metrics saved under `S3://{METRICS_BUCKET}/{module}/{benchmark_name}_{UID}_{timestamp}`.
-
+To override these configurations, use the `cdk_context` key in your custom config file. See our [sample cloud config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/cloud_configs.yaml) for reference.
 
 ## Evaluating bechmark runs
 

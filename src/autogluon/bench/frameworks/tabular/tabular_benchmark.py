@@ -5,34 +5,12 @@ import tempfile
 
 import yaml
 
-from autogluon.bench.benchmark import Benchmark
+from autogluon.bench.frameworks.benchmark import Benchmark
 
 logger = logging.getLogger(__name__)
 
 
 class TabularBenchmark(Benchmark):
-    def __init__(self, benchmark_name: str, root_dir: str = "./benchmark_runs/tabular/"):
-        """A benchmark class for AutoGluon Tabular.
-
-        Args:
-            benchmark_name (str): The name of the benchmark.
-            root_dir (str): The root directory for storing benchmark results (default: "./benchmark_runs/tabular/").
-
-        Attributes:
-            benchmark_name (str): The name of the benchmark.
-            root_dir (str): The root directory for storing benchmark results.
-            module (str): The name of the benchmark module (in this case, "tabular").
-
-        Methods:
-            setup(): Sets up the benchmark environment.
-            run(): Runs the benchmark.
-        """
-        super().__init__(
-            benchmark_name=benchmark_name,
-            root_dir=root_dir,
-        )
-        self.module = "tabular"
-
     def setup(
         self,
     ):

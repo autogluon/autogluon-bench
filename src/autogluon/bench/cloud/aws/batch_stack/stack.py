@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import importlib.resources
 import logging
 import os
 
@@ -21,11 +22,11 @@ Sample CDK code for creating the required infrastructure for running a AWS Batch
 AWS Batch as the compute enviroment in which a docker image runs the benchmarking script.
 """
 
-# Relative path to the source code for the aws batch job, from the project root
-docker_base_dir = "."
+with importlib.resources.path("autogluon.bench", "Dockerfile") as file_path:
+    docker_base_dir = os.path.dirname(file_path)
 
-# Relative path to the source for the AWS lambda, from the project root
-lambda_script_dir = "src/autogluon/bench/cloud/aws/batch_stack/lambdas"
+with importlib.resources.path("autogluon.bench.cloud.aws.batch_stack.lambdas", "lambda_function.py") as file_path:
+    lambda_script_dir = os.path.dirname(file_path)
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +166,7 @@ class BatchJobStack(core.Stack):
             f"{prefix}-ecr-docker-image-asset",
             directory=docker_base_dir,
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
+            build_args={"AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest")},
         )
 
         docker_container_image = ecs.ContainerImage.from_docker_image_asset(docker_image_asset)
