@@ -22,7 +22,6 @@ Install `autogloun-bench` from PyPI:
 python -m pip install autogluon.bench
 ```
 
-
 Or install `autogluon-bench` from source:
 
 ```bash
@@ -32,7 +31,8 @@ cd autogluon-bench
 # install from source in editable mode
 pip install -e .
 ```
-Also, replace all `pip install autogluon.bench` with `pip install -e .` in the source code.
+
+For development, please be aware that `autogluon.bench` is installed as a dependency in certain places, such as the [Dockerfile](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/Dockerfile) and [Multimodal Setup](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/frameworks/multimodal/setup.sh). To ensure that your local changes are reflected in the installed package, you may need to adjust the installation command as necessary. A recommended approach is to push your changes to a remote git branch and then pull from this branch, installing the package from source in the scripts.
 
 
 ## Run benchmarks locally
