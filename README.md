@@ -67,12 +67,13 @@ You can add more datasets to your benchmarking jobs. We provided sample [multimo
 
 AutoGluon-Bench uses the AWS CDK to build an AWS Batch compute environment for benchmarking.
 
-To get started, install [Node.js](https://nodejs.org/) and [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_install) with the following commands:
+To get started, install [Node.js](https://nodejs.org/) and [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_install) with the following instructions:
 
+1. Install [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating).
+2. Source profile or restart the terminal.
+3. Follow the `Prerequisites` section on the [AWS CDK Guide](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) and install an appropriate version for your system:
 ```bash
-curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash  # replace bash with other shell (e.g. zsh) if you are using a different one
-source ~/.bashrc
-nvm install 18.16.0  # install Node.js
+nvm install $VERSION  # install Node.js
 npm install -g aws-cdk  # install aws-cdk
 cdk --version  # verify the installation, you might need to update the Node.js version depending on the log.
 ```
