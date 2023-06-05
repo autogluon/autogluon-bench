@@ -12,16 +12,15 @@ Follow the steps below to set up autogluon-bench:
 
 ```bash
 # create virtual env
-python3.9 -m venv .venv_agbench
+python3 -m venv .venv_agbench
 source .venv_agbench/bin/activate
 ```
 
 Install `autogloun-bench` from PyPI:
 
 ```bash
-python -m pip install autogluon.bench
+python3 -m pip install autogluon.bench
 ```
-
 
 Or install `autogluon-bench` from source:
 
@@ -32,7 +31,8 @@ cd autogluon-bench
 # install from source in editable mode
 pip install -e .
 ```
-Also, replace all `pip install autogluon.bench` with `pip install -e .` in the source code.
+
+For development, please be aware that `autogluon.bench` is installed as a dependency in certain places, such as the [Dockerfile](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/Dockerfile) and [Multimodal Setup](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/frameworks/multimodal/setup.sh). To ensure that your local changes are reflected in the installed package, you may need to adjust the installation command as necessary. A recommended approach is to push your changes to a remote git branch and then pull from this branch, installing the package from source in the scripts.
 
 
 ## Run benchmarks locally
@@ -67,12 +67,13 @@ You can add more datasets to your benchmarking jobs. We provided sample [multimo
 
 AutoGluon-Bench uses the AWS CDK to build an AWS Batch compute environment for benchmarking.
 
-To get started, install [Node.js](https://nodejs.org/) and [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_install) with the following commands:
+To get started, install [Node.js](https://nodejs.org/) and [AWS CDK](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html#getting_started_install) with the following instructions:
 
+1. Install [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating).
+2. Source profile or restart the terminal.
+3. Follow the `Prerequisites` section on the [AWS CDK Guide](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) and install an appropriate version for your system:
 ```bash
-curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash  # replace bash with other shell (e.g. zsh) if you are using a different one
-source ~/.bashrc
-nvm install 18.16.0  # install Node.js
+nvm install $VERSION  # install Node.js
 npm install -g aws-cdk  # install aws-cdk
 cdk --version  # verify the installation, you might need to update the Node.js version depending on the log.
 ```
