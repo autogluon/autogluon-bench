@@ -12,14 +12,14 @@ Follow the steps below to set up autogluon-bench:
 
 ```bash
 # create virtual env
-python3.9 -m venv .venv_agbench
+python3 -m venv .venv_agbench
 source .venv_agbench/bin/activate
 ```
 
 Install `autogloun-bench` from PyPI:
 
 ```bash
-python -m pip install autogluon.bench
+python3 -m pip install autogluon.bench
 ```
 
 Or install `autogluon-bench` from source:

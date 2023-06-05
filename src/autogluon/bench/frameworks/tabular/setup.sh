@@ -9,7 +9,7 @@ if [ ! -d $DIR ]; then
 fi
 
 # create virtual env
-python3.9 -m venv $DIR/.venv
+python3 -m venv $DIR/.venv
 source $DIR/.venv/bin/activate
 
 # install latest AMLB
