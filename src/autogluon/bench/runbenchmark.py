@@ -99,9 +99,9 @@ def run_benchmark(
     logger.info(f"Backing up benchmarking configs to {benchmark.metrics_dir}/configs.yaml")
     _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
-    if configs.get("metrics_bucket", None):
+    if configs.get("METRICS_BUCKET", None):
         s3_dir = f"{module_name}{benchmark_dir.split(module_name)[-1]}"
-        benchmark.upload_metrics(s3_bucket=configs["metrics_bucket"], s3_dir=s3_dir)
+        benchmark.upload_metrics(s3_bucket=configs["METRICS_BUCKET"], s3_dir=s3_dir)
 
 
 def upload_config(bucket: str, benchmark_name: str, file: str):
@@ -293,7 +293,7 @@ def run(
         os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
         infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(
-            bucket=configs["metrics_bucket"], benchmark_name=benchmark_name, file=cloud_config_path
+            bucket=infra_configs["METRICS_BUCKET"], benchmark_name=benchmark_name, file=cloud_config_path
         )
         lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
         aws_configs = {**infra_configs, **lambda_response}

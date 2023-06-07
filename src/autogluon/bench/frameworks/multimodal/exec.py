@@ -148,7 +148,7 @@ def run(
     start_time = time.time()
     predictor.fit(**fit_args)
     end_time = time.time()
-    training_duration = int(end_time - start_time)
+    training_duration = round(end_time - start_time, 1)
 
     evaluate_args = {
         "data": test_data.data,
@@ -163,7 +163,7 @@ def run(
     start_time = time.time()
     scores = predictor.evaluate(**evaluate_args)
     end_time = time.time()
-    predict_duration = int(end_time - start_time)
+    predict_duration = round(end_time - start_time, 1)
 
     metrics = {
         "problem_type": predictor.problem_type,
