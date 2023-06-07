@@ -178,6 +178,7 @@ def handler(event, context):
     with open(config_file_path, "r") as f:
         configs = yaml.safe_load(f)
 
+    metrics_bucket = configs["cdk_context"]["METRICS_BUCKET"]
     del configs["cdk_context"]
 
     batch_job_queue = os.environ.get("BATCH_JOB_QUEUE")
@@ -186,8 +187,8 @@ def handler(event, context):
     module_configs = configs["module_configs"].pop(configs["module"])
     del configs["module_configs"]
     common_configs = configs
+    common_configs["METRICS_BUCKET"] = metrics_bucket
     common_configs["mode"] = "local"
-    metrics_bucket = common_configs["metrics_bucket"]
     common_configs = {key: [value] if not isinstance(value, list) else value for key, value in common_configs.items()}
 
     if common_configs["module"][0] == "tabular":
