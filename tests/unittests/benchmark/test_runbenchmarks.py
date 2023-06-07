@@ -9,13 +9,15 @@ def setup_mock(mocker, tmp_path):
     config_file.touch()
     mock_open = mocker.patch("builtins.open", new_callable=mocker.mock_open)
     mocker.patch("re.search", return_value=False)
+    cdk_context = {
+        "METRICS_BUCKET": "test_bucket",
+    }
 
     mock_yaml = mocker.patch("yaml.safe_load")
     mock_yaml.return_value = {
         "mode": "aws",
-        "metrics_bucket": "test_bucket",
         "module": "test_module",
-        "cdk_context": {},
+        "cdk_context": cdk_context,
     }
     mocker.patch("autogluon.bench.runbenchmark._get_benchmark_name", return_value="test_benchmark")
     mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
@@ -27,6 +29,7 @@ def setup_mock(mocker, tmp_path):
         "BATCH_STACK_NAME": "test_batch_stack",
         "CDK_DEPLOY_ACCOUNT": "test_account",
         "CDK_DEPLOY_REGION": "test_region",
+        "METRICS_BUCKET": "test_bucket",
     }
     mock_deploy_stack = mocker.patch("autogluon.bench.runbenchmark.deploy_stack", return_value=infra_configs)
     mock_upload_config = mocker.patch("autogluon.bench.runbenchmark.upload_config", return_value="test_s3_path")
@@ -43,6 +46,7 @@ def setup_mock(mocker, tmp_path):
         "mock_invoke_lambda": mock_invoke_lambda,
         "mock_wait_for_jobs": mock_wait_for_jobs,
         "mock_destroy_stack": mock_destroy_stack,
+        "cdk_context": cdk_context,
     }
 
 
@@ -156,7 +160,7 @@ def test_run_aws_mode(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources)
 
-    setup["mock_deploy_stack"].assert_called_once_with(configs={})
+    setup["mock_deploy_stack"].assert_called_once_with(configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
         bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
     )
@@ -171,7 +175,7 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources)
 
-    setup["mock_deploy_stack"].assert_called_once_with(configs={})
+    setup["mock_deploy_stack"].assert_called_once_with(configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
         bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
     )
@@ -218,7 +222,7 @@ def test_run_benchmark(mocker):
     benchmark_dir = "test_dir"
     configs = {
         "module": "tabular",
-        "metrics_bucket": "test_bucket",
+        "METRICS_BUCKET": "test_bucket",
     }
 
     mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
@@ -232,5 +236,5 @@ def test_run_benchmark(mocker):
     setup_mock.assert_called_once_with()
     run_mock.assert_called_once_with()
     upload_metrics_mock.assert_called_once_with(
-        s3_bucket=configs["metrics_bucket"], s3_dir=f"{configs['module']}{benchmark_dir.split(configs['module'])[-1]}"
+        s3_bucket=configs["METRICS_BUCKET"], s3_dir=f"{configs['module']}{benchmark_dir.split(configs['module'])[-1]}"
     )

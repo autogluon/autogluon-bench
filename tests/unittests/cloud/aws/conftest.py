@@ -30,7 +30,6 @@ context_values = {
     "CONTAINER_MEMORY": 10000,
     "BLOCK_DEVICE_VOLUME": 100,
     "LAMBDA_FUNCTION_NAME": "test-batch-job-function",
-    "VPC_NAME": "test-vpc",
 }
 
 
