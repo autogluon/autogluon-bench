@@ -53,7 +53,7 @@ def construct_context(custom_configs: dict) -> dict:
         "STATIC_RESOURCE_STACK_NAME": f"{prefix}-static-resource-stack",
         "BATCH_STACK_NAME": f"{prefix}-batch-stack",
         "METRICS_BUCKET": configs["METRICS_BUCKET"],  # bucket to upload metrics
-        "DATA_BUCKET": configs["DATA_BUCKET"],  # bucket to download data
+        "DATA_BUCKET": configs.get("DATA_BUCKET", None),  # bucket to download data
         "INSTANCE_TYPES": [configs["INSTANCE"]],  # can be a list of instance families or instance types
         "COMPUTE_ENV_MAXV_CPUS": vcpu_map[configs["INSTANCE"]]
         * configs["MAX_MACHINE_NUM"],  # total max v_cpus in batch compute environment
@@ -65,9 +65,9 @@ def construct_context(custom_configs: dict) -> dict:
         ],  # memory in MB reserved for container, also used for shm_size, i.e. `shared_memory_size`
         "BLOCK_DEVICE_VOLUME": configs["BLOCK_DEVICE_VOLUME"],  # device attached to instance, in GB
         "LAMBDA_FUNCTION_NAME": f"{prefix}-batch-job-function",
-        "VPC_NAME": configs[
-            "VPC_NAME"
-        ],  # it's recommended to share a vpc for all benchmark infra, you can lookup an existing VPC name under aws console -> VPC, if you want to create a new one, assign a new name
+        "VPC_NAME": configs.get(
+            "VPC_NAME", None
+        ),  # it's recommended to share a vpc for all benchmark infra, you can lookup an existing VPC name under aws console -> VPC, if you want to create a new one, assign a new name
     }
     with open(CONTEXT_FILE, "w+") as f:
         try:
@@ -78,7 +78,7 @@ def construct_context(custom_configs: dict) -> dict:
         json.dump(cdk_config, f, indent=2)
         f.close()
     # set environment variables
-    os.environ["CDK_DEPLOY_ACCOUNT"] = configs["CDK_DEPLOY_ACCOUNT"]
+    os.environ["CDK_DEPLOY_ACCOUNT"] = str(configs["CDK_DEPLOY_ACCOUNT"])
     os.environ["CDK_DEPLOY_REGION"] = configs["CDK_DEPLOY_REGION"]
 
     return context_to_parse
