@@ -94,8 +94,13 @@ class StaticResourceStack(core.Stack):
         region = os.environ["CDK_DEPLOY_REGION"]
         s3_resource = boto3.resource(service_name="s3", region_name=region)
         self.metrics_bucket = self.import_or_create_bucket(resource=s3_resource, bucket_name=self.metrics_bucket_name)
-        self.data_bucket = s3.Bucket.from_bucket_name(self, self.data_bucket_name, bucket_name=self.data_bucket_name)
-
+        if self.data_bucket_name:
+            self.data_bucket = s3.Bucket.from_bucket_name(
+                self, self.data_bucket_name, bucket_name=self.data_bucket_name
+            )
+        else:
+            self.data_bucket = None
+    
     def create_vpc_resources(self):
         """
         Creates VPC resources.
@@ -219,7 +224,8 @@ class BatchJobStack(core.Stack):
 
         metrics_bucket = static_stack.metrics_bucket
         data_bucket = static_stack.data_bucket
-        data_bucket.grant_read(batch_instance_role)
+        if data_bucket is not None:
+            data_bucket.grant_read(batch_instance_role)
         metrics_bucket.grant_read_write(batch_instance_role)
 
         batch_instance_profile = InstanceProfile(self, f"{prefix}-instance-profile", prefix=prefix)
