@@ -61,32 +61,6 @@ class StaticResourceStack(core.Stack):
             )
         return bucket
 
-    def import_or_create_vpc(self, resource, vpc_name, prefix):
-        """
-        Imports an EC2 VPC if it already exists or creates a new one if it doesn't exist.
-
-        Args:
-            resource: A boto3 EC2 client object.
-            vpc_name: The name of the VPC.
-            prefix: The prefix to use for the VPC.
-
-        Returns:
-            An EC2 VPC object.
-        """
-        filters = [
-            {
-                "Name": "tag:Name",
-                "Values": [vpc_name],
-            }
-        ]
-        response = resource.describe_vpcs(Filters=filters)
-        if response["Vpcs"]:
-            vpc_id = response["Vpcs"][0]["VpcId"]
-            vpc = ec2.Vpc.from_lookup(self, f"{prefix}-vpc", vpc_id=vpc_id)
-        else:
-            vpc = ec2.Vpc(self, f"{prefix}-vpc", vpc_name=vpc_name, max_azs=1)
-        return vpc
-
     def create_s3_resources(self):
         """
         Creates S3 bucket resources.
@@ -100,14 +74,6 @@ class StaticResourceStack(core.Stack):
             )
         else:
             self.data_bucket = None
-    
-    def create_vpc_resources(self):
-        """
-        Creates VPC resources.
-        """
-        region = os.environ["CDK_DEPLOY_REGION"]
-        ec2_client = boto3.client("ec2", region_name=region)
-        self.vpc = self.import_or_create_vpc(resource=ec2_client, vpc_name=self.vpc_name, prefix=self.prefix)
 
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -117,7 +83,7 @@ class StaticResourceStack(core.Stack):
         self.prefix = self.node.try_get_context("STACK_NAME_PREFIX")
 
         self.create_s3_resources()
-        self.create_vpc_resources()
+        self.vpc = ec2.Vpc.from_lookup(self, f"{self.prefix}-vpc", vpc_name=self.vpc_name) if self.vpc_name else None
 
 
 class BatchJobStack(core.Stack):
@@ -157,6 +123,23 @@ class BatchJobStack(core.Stack):
 
         vpc = static_stack.vpc
 
+        if vpc is None:
+            vpc = ec2.Vpc(
+                self,
+                f"{prefix}-vpc",
+                max_azs=2,  # You can increase this number for high availability
+                nat_gateways=1,
+                subnet_configuration=[
+                    ec2.SubnetConfiguration(
+                        name=f"{prefix}-PublicSubnet",
+                        subnet_type=ec2.SubnetType.PUBLIC,
+                    ),
+                    ec2.SubnetConfiguration(
+                        name=f"{prefix}-PrivateSubnet",
+                        subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    ),
+                ],
+            )
         sg = ec2.SecurityGroup(
             self,
             f"{prefix}-security-group",
