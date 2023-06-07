@@ -124,27 +124,11 @@ where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{be
 
 The default infrastructure configurations are located [here](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/cloud/aws/default_config.yaml).
 
-```
-CDK_DEPLOY_ACCOUNT: dummy
-CDK_DEPLOY_REGION: dummy
-PREFIX: ag-bench-test
-RESERVED_MEMORY_SIZE: 15000
-MAX_MACHINE_NUM: 20
-BLOCK_DEVICE_VOLUME: 100
-INSTANCE: g4dn.2xlarge
-METRICS_BUCKET: autogluon-benchmark-metrics
-DATA_BUCKET: automl-mm-bench
-VPC_NAME: automm-batch-stack/automm-vpc
-LAMBDA_FUNCTION_NAME: ag-bench-test-job-function
-```
 where:
 - `CDK_DEPLOY_ACCOUNT` and `CDK_DEPLOY_REGION` should be overridden with your AWS account ID and desired region to create the stack.
 - `PREFIX` is used as an identifier for the stack and resources created.
 - `RESERVED_MEMORY_SIZE` is used together with the instance memory size to calculate the container shm_size.
 - `BLOCK_DEVICE_VOLUME` is the size of storage device attached to instance.
-- `METRICS_BUCKET` is the bucket to upload benchmarking metrics.
-- `DATA_BUCKET` is the bucket to download dataset from.
-- `VPC_NAME` is used to look up an existing VPC.
 - `LAMBDA_FUNCTION_NAME` lambda function to submit jobs to AWS Batch.
 
 To override these configurations, use the `cdk_context` key in your custom config file. See our [sample cloud config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/cloud_configs.yaml) for reference.
