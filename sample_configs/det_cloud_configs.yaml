@@ -1,0 +1,55 @@
+# Infra configurations
+cdk_context:
+  CDK_DEPLOY_ACCOUNT: 097403188315  # required, update with your AWS account
+  CDK_DEPLOY_REGION: us-west-2  # required, update with your desired region
+  INSTANCE: g5.4xlarge
+  MAX_MACHINE_NUM: 30
+  BLOCK_DEVICE_VOLUME: 400
+  RESERVED_MEMORY_SIZE: 40000
+
+# Benchmark configurations
+module: multimodal  # required
+mode: aws  # required
+benchmark_name: sup_agdet080  # required
+metrics_bucket: autogluon-benchmark-metrics  # required
+
+# Module specific configurations
+# 
+# Each key consists of a list of configurations,
+# and we will generate the combination of the key-configuration
+# and save each split (same format as ./local_config.yaml) to metrics_bucket
+#
+# Refer to ./local_configs.yaml for more information on required/optional configs
+module_configs:
+  # Multimodal specific
+  multimodal:
+    git_uri#branch:
+      #- https://github.com/FANGAreNotGnu/autogluon.git#add_dino_preset
+      - https://github.com/autogluon/autogluon.git
+    dataset_name:
+      #- apparel_blogger_influencer
+      - apparel_streetwear_daily
+      #- chest10
+      #- comic
+      - damaged_vehicles
+      - deepfruits
+      #- dota
+      #- kitchen
+      - nfl_logo
+      #- pothole
+      #- sixray
+      #- table
+      - uefa
+      #- vehicles_test_commercial
+    presets:
+      - medium_quality
+      - high_quality
+      - best_quality
+    #time_limit:
+    #  - 1440
+    #hyperparameters:
+    #  - optimization.max_epochs: 2
+    #    optimization.learning_rate: 0.005
+    #  - optimization.max_epochs: 5
+    #    optimization.learning_rate: 0.0005
+  
