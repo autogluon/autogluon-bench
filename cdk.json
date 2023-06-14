@@ -1,3 +1,0 @@
-{
-    "app": "python3 src/autogluon/bench/cloud/aws/app.py"
-}

@@ -1,6 +1,7 @@
 import abc
 import os
 
+from autogluon.bench.utils.dataset_utils import get_data_home_dir, get_repo_url
 from autogluon.common.loaders import load_zip
 from autogluon.multimodal.constants import (
     MAP,
@@ -18,7 +19,6 @@ from autogluon.multimodal.constants import (
 )
 
 from .constants import _OBJECT_DETECTION
-from .utils import get_data_home_dir, get_repo_url
 
 # Add dataset class names here
 __all__ = [

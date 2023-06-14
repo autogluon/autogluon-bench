@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import importlib.resources
 import logging
 import os
 
@@ -21,11 +22,11 @@ Sample CDK code for creating the required infrastructure for running a AWS Batch
 AWS Batch as the compute enviroment in which a docker image runs the benchmarking script.
 """
 
-# Relative path to the source code for the aws batch job, from the project root
-docker_base_dir = "."
+with importlib.resources.path("autogluon.bench", "Dockerfile") as file_path:
+    docker_base_dir = os.path.dirname(file_path)
 
-# Relative path to the source for the AWS lambda, from the project root
-lambda_script_dir = "src/autogluon/bench/cloud/aws/batch_stack/lambdas"
+with importlib.resources.path("autogluon.bench.cloud.aws.batch_stack.lambdas", "lambda_function.py") as file_path:
+    lambda_script_dir = os.path.dirname(file_path)
 
 logger = logging.getLogger(__name__)
 
@@ -60,32 +61,6 @@ class StaticResourceStack(core.Stack):
             )
         return bucket
 
-    def import_or_create_vpc(self, resource, vpc_name, prefix):
-        """
-        Imports an EC2 VPC if it already exists or creates a new one if it doesn't exist.
-
-        Args:
-            resource: A boto3 EC2 client object.
-            vpc_name: The name of the VPC.
-            prefix: The prefix to use for the VPC.
-
-        Returns:
-            An EC2 VPC object.
-        """
-        filters = [
-            {
-                "Name": "tag:Name",
-                "Values": [vpc_name],
-            }
-        ]
-        response = resource.describe_vpcs(Filters=filters)
-        if response["Vpcs"]:
-            vpc_id = response["Vpcs"][0]["VpcId"]
-            vpc = ec2.Vpc.from_lookup(self, f"{prefix}-vpc", vpc_id=vpc_id)
-        else:
-            vpc = ec2.Vpc(self, f"{prefix}-vpc", vpc_name=vpc_name, max_azs=1)
-        return vpc
-
     def create_s3_resources(self):
         """
         Creates S3 bucket resources.
@@ -93,15 +68,12 @@ class StaticResourceStack(core.Stack):
         region = os.environ["CDK_DEPLOY_REGION"]
         s3_resource = boto3.resource(service_name="s3", region_name=region)
         self.metrics_bucket = self.import_or_create_bucket(resource=s3_resource, bucket_name=self.metrics_bucket_name)
-        self.data_bucket = s3.Bucket.from_bucket_name(self, self.data_bucket_name, bucket_name=self.data_bucket_name)
-
-    def create_vpc_resources(self):
-        """
-        Creates VPC resources.
-        """
-        region = os.environ["CDK_DEPLOY_REGION"]
-        ec2_client = boto3.client("ec2", region_name=region)
-        self.vpc = self.import_or_create_vpc(resource=ec2_client, vpc_name=self.vpc_name, prefix=self.prefix)
+        if self.data_bucket_name:
+            self.data_bucket = s3.Bucket.from_bucket_name(
+                self, self.data_bucket_name, bucket_name=self.data_bucket_name
+            )
+        else:
+            self.data_bucket = None
 
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -111,7 +83,7 @@ class StaticResourceStack(core.Stack):
         self.prefix = self.node.try_get_context("STACK_NAME_PREFIX")
 
         self.create_s3_resources()
-        self.create_vpc_resources()
+        self.vpc = ec2.Vpc.from_lookup(self, f"{self.prefix}-vpc", vpc_name=self.vpc_name) if self.vpc_name else None
 
 
 class BatchJobStack(core.Stack):
@@ -151,6 +123,23 @@ class BatchJobStack(core.Stack):
 
         vpc = static_stack.vpc
 
+        if vpc is None:
+            vpc = ec2.Vpc(
+                self,
+                f"{prefix}-vpc",
+                max_azs=2,  # You can increase this number for high availability
+                nat_gateways=1,
+                subnet_configuration=[
+                    ec2.SubnetConfiguration(
+                        name=f"{prefix}-PublicSubnet",
+                        subnet_type=ec2.SubnetType.PUBLIC,
+                    ),
+                    ec2.SubnetConfiguration(
+                        name=f"{prefix}-PrivateSubnet",
+                        subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    ),
+                ],
+            )
         sg = ec2.SecurityGroup(
             self,
             f"{prefix}-security-group",
@@ -165,6 +154,7 @@ class BatchJobStack(core.Stack):
             f"{prefix}-ecr-docker-image-asset",
             directory=docker_base_dir,
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
+            build_args={"AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest")},
         )
 
         docker_container_image = ecs.ContainerImage.from_docker_image_asset(docker_image_asset)
@@ -217,7 +207,8 @@ class BatchJobStack(core.Stack):
 
         metrics_bucket = static_stack.metrics_bucket
         data_bucket = static_stack.data_bucket
-        data_bucket.grant_read(batch_instance_role)
+        if data_bucket is not None:
+            data_bucket.grant_read(batch_instance_role)
         metrics_bucket.grant_read_write(batch_instance_role)
 
         batch_instance_profile = InstanceProfile(self, f"{prefix}-instance-profile", prefix=prefix)

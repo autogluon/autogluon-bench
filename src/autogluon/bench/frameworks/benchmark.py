@@ -1,20 +1,15 @@
 import logging
 import os
 import shutil
-import time
 from abc import ABC, abstractmethod
-
-import yaml
 
 logger = logging.getLogger(__name__)
 
 
 class Benchmark(ABC):
-    def __init__(self, benchmark_name: str, root_dir: str):
-        current_time = time.localtime()
-        formatted_time = time.strftime("%Y%m%dT%H%M%S", current_time)
-        self.benchmark_name = benchmark_name + "_" + formatted_time
-        self.benchmark_dir = os.path.join(root_dir, self.benchmark_name)
+    def __init__(self, benchmark_name: str, benchmark_dir: str):
+        self.benchmark_name = benchmark_name
+        self.benchmark_dir = benchmark_dir
         self.metrics_dir = os.path.join(self.benchmark_dir, "results")
         self.benchmark_dir_s3 = None
 
@@ -73,16 +68,3 @@ class Benchmark(ABC):
             bucket = s3.Bucket(bucket_name)
             bucket.objects.filter(Prefix=benchmark_dir).delete()
             s3.Object(bucket_name, self.benchmark_dir_s3).delete()
-
-    def save_configs(self, configs: dict, file_name: str = "configs.yaml"):
-        """
-        Save a config dictionary to a YAML file.
-
-        Args:
-            configs (dict): The dictionary of configs to be saved.
-            file_name (str): The name of the file to save. Defaults to "configs.yaml".
-        """
-        os.makedirs(self.metrics_dir, exist_ok=True)
-        configs_path = os.path.join(self.metrics_dir, file_name)
-        with open(configs_path, "w+") as f:
-            yaml.dump(configs, f, default_flow_style=False)

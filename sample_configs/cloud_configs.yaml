@@ -1,13 +1,16 @@
 # Infra configurations
-cdk_context:
+cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
   CDK_DEPLOY_ACCOUNT: dummy  # required, update with your AWS account
   CDK_DEPLOY_REGION: dummy  # required, update with your desired region
+  METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
+  PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
+  # DATA_BUCKET: existing-s3-bucket  # optional, required when benchmark on your private datasets on S3
 
 # Benchmark configurations
 module: multimodal  # required
 mode: aws  # required
-benchmark_name: test_yaml  # required
-metrics_bucket: autogluon-benchmark-metrics  # required
+benchmark_name: ag_bench  # required
+root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
 
 # Module specific configurations
 # 

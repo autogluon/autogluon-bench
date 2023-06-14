@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -12,7 +13,7 @@ from autogluon.bench.datasets.constants import (
     _TEXT_SIMILARITY,
 )
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
-from autogluon.bench.frameworks.utils import NumpyEncoder
+from autogluon.bench.utils.general_utils import NumpyEncoder
 from autogluon.multimodal import MultiModalPredictor
 
 logger = logging.getLogger(__name__)
@@ -142,7 +143,12 @@ def run(
         "hyperparameters": hyperparameters,
         "time_limit": time_limit,
     }
+
+    utc_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    start_time = time.time()
     predictor.fit(**fit_args)
+    end_time = time.time()
+    training_duration = round(end_time - start_time, 1)
 
     evaluate_args = {
         "data": test_data.data,
@@ -153,13 +159,18 @@ def run(
         evaluate_args["query_data"] = test_data.data[test_data.text_columns[0]].unique().tolist()
         evaluate_args["response_data"] = test_data.data[test_data.image_columns[0]].unique().tolist()
         evaluate_args["cutoffs"] = [1, 5, 10]
-    scores = predictor.evaluate(**evaluate_args)
 
-    timestamp = datetime.now()
+    start_time = time.time()
+    scores = predictor.evaluate(**evaluate_args)
+    end_time = time.time()
+    predict_duration = round(end_time - start_time, 1)
+
     metrics = {
         "problem_type": predictor.problem_type,
+        "utc_time": utc_time,
+        "training_duration": training_duration,
+        "predict_duration": predict_duration,
         "scores": scores,
-        "timestamp": timestamp.strftime("%H:%M:%S"),
     }
     save_metrics(metrics_dir, metrics)
 

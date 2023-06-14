@@ -1,8 +1,9 @@
 # Benchmark configurations
 module: multimodal  # required
 mode: local  # required
-benchmark_name: test_local  # required
-metrics_bucket: autogluon-benchmark-metrics  # optional
+benchmark_name: ag_bench  # required
+root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
+METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
 
 # Multimodal specific
 git_uri#branch: https://github.com/autogluon/autogluon#master  # required

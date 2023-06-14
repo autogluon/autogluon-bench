@@ -1,4 +1,5 @@
 import json
+import time
 
 import numpy as np
 
@@ -13,3 +14,9 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         else:
             return super(NumpyEncoder, self).default(obj)
+
+
+def formatted_time():
+    current_time = time.localtime()
+    formatted_time = time.strftime("%Y%m%dT%H%M%S", current_time)
+    return formatted_time

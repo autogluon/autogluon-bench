@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from autogluon.bench.datasets.utils import get_data_home_dir, get_home_dir, get_repo_url
+from autogluon.bench.utils.dataset_utils import get_data_home_dir, get_home_dir, get_repo_url
 
 
 class TestUtils(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(get_home_dir(), expected_path)
 
     def test_get_data_home_dir(self):
-        with patch("autogluon.bench.datasets.utils.get_home_dir", return_value="/home/user"):
+        with patch("autogluon.bench.utils.dataset_utils.get_home_dir", return_value="/home/user"):
             expected_path = "/home/user/datasets"
             self.assertEqual(get_data_home_dir(), expected_path)
 

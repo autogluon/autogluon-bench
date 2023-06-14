@@ -3,6 +3,7 @@ import os
 
 import pandas as pd
 
+from autogluon.bench.utils.dataset_utils import get_data_home_dir, get_repo_url
 from autogluon.common.loaders import load_zip
 from autogluon.common.loaders._utils import download
 
@@ -18,7 +19,6 @@ from .constants import (
     _TEXT,
     _TEXT_SIMILARITY,
 )
-from .utils import get_data_home_dir, get_repo_url
 
 # Add dataset class names here
 __all__ = [
