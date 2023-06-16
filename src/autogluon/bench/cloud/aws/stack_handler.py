@@ -84,7 +84,7 @@ def construct_context(custom_configs: dict) -> dict:
     return context_to_parse
 
 
-def deploy_stack(configs: Optional[dict] = None) -> dict:
+def deploy_stack(custom_configs: dict) -> dict:
     """
     Deploys the AWS CloudFormation stack containing the benchmarking infrastructure by calling the deploy.sh
     script and passing it the required command line arguments. Constructs the CDK context using the custom
@@ -98,7 +98,6 @@ def deploy_stack(configs: Optional[dict] = None) -> dict:
         dict: A dictionary containing the CDK context settings used for the deployment.
     """
     cdk_path = _get_temp_cdk_app_path()
-    custom_configs = {} if configs is None else configs
     infra_configs = construct_context(custom_configs=custom_configs)
 
     subprocess.check_call(

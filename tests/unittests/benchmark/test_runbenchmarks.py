@@ -164,7 +164,7 @@ def test_run_aws_mode(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources)
 
-    setup["mock_deploy_stack"].assert_called_once_with(configs=setup["cdk_context"])
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
         bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
     )
@@ -179,7 +179,7 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources)
 
-    setup["mock_deploy_stack"].assert_called_once_with(configs=setup["cdk_context"])
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
         bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
     )
