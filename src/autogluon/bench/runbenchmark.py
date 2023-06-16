@@ -156,8 +156,9 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
 
     lambda_client = boto3.client("lambda", configs["CDK_DEPLOY_REGION"])
     payload = {"config_file": config_file}
+    lambda_function_name = configs["LAMBDA_FUNCTION_NAME"] + "-" + configs["STACK_NAME_PREFIX"]
     response = lambda_client.invoke(
-        FunctionName=configs["LAMBDA_FUNCTION_NAME"], InvocationType="RequestResponse", Payload=json.dumps(payload)
+        FunctionName=lambda_function_name, InvocationType="RequestResponse", Payload=json.dumps(payload)
     )
     response = json.loads(response["Payload"].read().decode("utf-8"))
     logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])

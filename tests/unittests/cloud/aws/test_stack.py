@@ -70,6 +70,7 @@ def test_batch_job_stack():
 
         batch_job_stack = BatchJobStack(app, "TestBatchJobStack", static_stack=static_resource_stack, env=env)
         prefix = app.node.try_get_context("STACK_NAME_PREFIX")
+        lambda_function_name = app.node.try_get_context("LAMBDA_FUNCTION_NAME")
         constructs = [
             (f"{prefix}-security-group", ec2.SecurityGroup),
             (f"{prefix}-ecr-docker-image-asset", DockerImageAsset),
@@ -79,7 +80,7 @@ def test_batch_job_stack():
             (f"{prefix}-instance-profile", InstanceProfile),
             (f"{prefix}-compute-environment", ComputeEnvironment),
             (f"{prefix}-job-queue", JobQueue),
-            (app.node.try_get_context("LAMBDA_FUNCTION_NAME"), BatchLambdaFunction),
+            (f"{lambda_function_name}-{prefix}", BatchLambdaFunction),
             ("vpc", ec2.Vpc),
         ]
 

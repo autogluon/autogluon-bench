@@ -138,7 +138,11 @@ def test_download_config(mocker, tmp_path):
 
 
 def test_invoke_lambda(mocker):
-    configs = {"CDK_DEPLOY_REGION": "us-east-1", "LAMBDA_FUNCTION_NAME": "test_function"}
+    configs = {
+        "CDK_DEPLOY_REGION": "us-east-1",
+        "LAMBDA_FUNCTION_NAME": "test_function",
+        "STACK_NAME_PREFIX": "prefix",
+    }
     config_file = "test_config_file"
 
     mock_response = {"StatusCode": 200, "Payload": io.BytesIO(b'{"key": "value"}')}
@@ -148,7 +152,7 @@ def test_invoke_lambda(mocker):
     with mocker.patch("boto3.client", return_value=mock_lambda_client):
         invoke_lambda(configs, config_file)
         mock_lambda_client.invoke.assert_called_once_with(
-            FunctionName=configs["LAMBDA_FUNCTION_NAME"],
+            FunctionName=configs["LAMBDA_FUNCTION_NAME"] + "-" + configs["STACK_NAME_PREFIX"],
             InvocationType="RequestResponse",
             Payload='{"config_file": "test_config_file"}',
         )
