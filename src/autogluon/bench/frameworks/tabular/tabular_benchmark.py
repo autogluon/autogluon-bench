@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+import sys
 import tempfile
 
 import yaml
@@ -18,10 +19,12 @@ class TabularBenchmark(Benchmark):
         setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
         command = [setup_script_path, self.benchmark_dir]
         result = subprocess.run(command)
-        if result.stdout:
-            logging.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
-        elif result.stderr:
-            logging.error(result.stderr)
+        if result.returncode != 0:
+            logger.error(result.stderr)
+            sys.exit(1)
+        else:
+            logger.info(result.stdout)
+            logger.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
 
     def run(
         self,
@@ -81,4 +84,10 @@ class TabularBenchmark(Benchmark):
 
             command += ["-c", temp_dirpath]
 
-        subprocess.run(command)
+        result = subprocess.run(command)
+        if result.returncode != 0:
+            logger.error(result.stderr)
+            sys.exit(1)
+        else:
+            logger.info(result.stdout)
+            logger.info(f"Benchmark {self.benchmark_name} is complete.")
