@@ -191,6 +191,7 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
         batch_stack=setup["infra_configs"]["BATCH_STACK_NAME"],
         cdk_deploy_account=setup["infra_configs"]["CDK_DEPLOY_ACCOUNT"],
         cdk_deploy_region=setup["infra_configs"]["CDK_DEPLOY_REGION"],
+        config_file=None,
     )
 
 

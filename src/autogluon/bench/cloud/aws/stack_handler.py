@@ -119,10 +119,15 @@ def deploy_stack(custom_configs: dict) -> dict:
 
 @app.command()
 def destroy_stack(
-    static_resource_stack: str = typer.Argument(..., help="The static resource stack name."),
-    batch_stack: str = typer.Argument(..., help="The batch stack name."),
-    cdk_deploy_account: str = typer.Argument(..., help="The CDK deploy account ID."),
-    cdk_deploy_region: str = typer.Argument(..., help="The CDK deploy region."),
+    static_resource_stack: Optional[str] = typer.Option(
+        None, "--static_resource_stack", help="The static resource stack name."
+    ),
+    batch_stack: Optional[str] = typer.Option(None, "--batch_stack", help="The batch stack name."),
+    cdk_deploy_account: Optional[str] = typer.Option(None, "--cdk_deploy_account", help="The CDK deploy account ID."),
+    cdk_deploy_region: Optional[str] = typer.Option(None, "--cdk_deploy_region", help="The CDK deploy region."),
+    config_file: Optional[str] = typer.Option(
+        None, "--config_file", help="Path to YAML config file containing stack information."
+    ),
 ):
     """
     This function destroys AWS CloudFormation stacks using the AWS Cloud Development Kit (CDK).
@@ -135,6 +140,20 @@ def destroy_stack(
     you can find the AWS configs saved under {root_dir}/{module}/{prefix}_{timestamp}/aws_configs.yaml"
     """
     cdk_path = _get_temp_cdk_app_path()
+
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+            static_resource_stack = config.get("STATIC_RESOURCE_STACK_NAME", static_resource_stack)
+            batch_stack = config.get("BATCH_STACK_NAME", batch_stack)
+            cdk_deploy_account = config.get("CDK_DEPLOY_ACCOUNT", cdk_deploy_account)
+            cdk_deploy_region = config.get("CDK_DEPLOY_REGION", cdk_deploy_region)
+
+    if static_resource_stack is None or batch_stack is None or cdk_deploy_account is None or cdk_deploy_region is None:
+        raise ValueError(
+            "static_resource_stack, batch_stack, cdk_deploy_account and cdk_deploy_region must be specified or configured in the config_file."
+        )
+
     os.environ["CDK_DEPLOY_ACCOUNT"] = cdk_deploy_account
     os.environ["CDK_DEPLOY_REGION"] = cdk_deploy_region
     subprocess.check_call(

@@ -305,7 +305,7 @@ def run(
             logger.info("Waiting for jobs to complete and then remove the AWS resources created.")
             logger.info(
                 "You can quit at anytime and run \n"
-                "`agbench destroy-stack STATIC_RESOURCE_STACK BATCH_STACK CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION` "
+                f"`agbench destroy-stack --config_file {aws_config_path}` "
                 "to delete the stack after jobs have run to completion."
             )
             failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
@@ -319,6 +319,7 @@ def run(
                     batch_stack=infra_configs["BATCH_STACK_NAME"],
                     cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
                     cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
+                    config_file=None,
                 )
 
     elif configs["mode"] == "local":
