@@ -16,9 +16,9 @@ IMAGE_URI=$(echo "${OUTPUTS_JSON}" | jq -r '.[] | select(.OutputKey == "ImageUri
 IMAGE_TAG_OR_DIGEST=$(echo "${IMAGE_URI}" | sed -n 's/.*://p')
 
 echo "Destroying $BATCH_STACK_NAME"
-cdk destroy --app $CDK_PATH $BATCH_STACK_NAME
+cdk destroy --app $CDK_PATH $BATCH_STACK_NAME --force
 echo "Destroying $STATIC_RESOURCE_STACK_NAME"
-cdk deploy --app $CDK_PATH $STATIC_RESOURCE_STACK_NAME
+cdk destroy --app $CDK_PATH $STATIC_RESOURCE_STACK_NAME --force
 
 echo "Removing image $IMAGE_TAG_OR_DIGEST from ECR repository $REPOSITORY_NAME."
 aws ecr batch-delete-image --repository-name "${REPOSITORY_NAME}" --region $CDK_DEPLOY_REGION --image-ids "imageTag=${IMAGE_TAG_OR_DIGEST}"
