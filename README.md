@@ -78,6 +78,12 @@ npm install -g aws-cdk  # install aws-cdk
 cdk --version  # verify the installation, you might need to update the Node.js version depending on the log.
 ```
 
+If it is the first time using CDK to deploy to an AWS environment (An AWS environment is a combination of an AWS account and Region), please run the following:
+
+```bash
+cdk bootstrap aws://CDK_DEPLOY_ACCOUNT/CDK_DEPLOY_REGION
+```
+
 To initiate benchmarking on the cloud, use the command below:
 
 ```
@@ -114,10 +120,18 @@ This will check the job status every 2 minutes and remove resources after all jo
 If you want to manually remove resources later, use:
 
 ```bash
-agbench destroy-stack STATIC_RESOURCE_STACK_NAME BATCH_STACK_NAME CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION
+agbench destroy-stack --config_file `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`
 ```
 
+Or you can remove specific stacks by running:
+
+```bash
+agbench destroy-stack --static_resource_stack STATIC_RESOURCE_STACK_NAME --batch_stack BATCH_STACK_NAME --cdk_deploy_account CDK_DEPLOY_ACCOUNT --cdk_deploy_region CDK_DEPLOY_REGION
+```
 where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`.
+
+
+
 
 
 ### Configure the AWS infrastructure
