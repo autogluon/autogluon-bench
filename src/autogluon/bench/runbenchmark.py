@@ -181,7 +181,7 @@ def get_job_status(
     The job ids can either be passed in directly or read from a YAML configuration file.
 
     Args:
-        job_ids (list[str], optional):
+        job_ids (List[str], optional):
             A list of job ids to query the status for.
         cdk_deploy_region (str, optional):
             AWS region that the Batch jobs run in.
@@ -218,7 +218,7 @@ def get_job_status(
 
 
 def wait_for_jobs_to_complete(
-    config_file: Optional[str] = None, job_ids: Optional[list[str]] = None, aws_region: Optional[str] = None
+    config_file: Optional[str] = None, job_ids: Optional[List[str]] = None, aws_region: Optional[str] = None
 ):
     while True:
         all_jobs_completed = True
