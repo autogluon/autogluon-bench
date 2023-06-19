@@ -55,5 +55,5 @@ module_configs:
         - vehicle
     amlb_constraint:
       - test
-    amlb_custom_branch:
-      - https://github.com/gidler/autogluon#gidler_master_w_logging
+    # amlb_custom_branch:  # optional, `framework` and `label` are overwritten when this is specified 
+    #   - https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>
