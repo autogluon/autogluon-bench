@@ -43,11 +43,12 @@ class MultiModalBenchmark(Benchmark):
         setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
         command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, agbench_version]
         result = subprocess.run(command)
-        if result.stdout:
-            logger.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
-        elif result.stderr:
+        if result.returncode != 0:
             logger.error(result.stderr)
             sys.exit(1)
+        else:
+            logger.info(result.stdout)
+            logger.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
 
     def run(
         self,
@@ -87,4 +88,10 @@ class MultiModalBenchmark(Benchmark):
             command += ["--hyperparameters", json.dumps(hyperparameters)]
         if time_limit is not None:
             command += ["--time_limit", str(time_limit)]
-        subprocess.run(command)
+        result = subprocess.run(command)
+        if result.returncode != 0:
+            logger.error(result.stderr)
+            sys.exit(1)
+        else:
+            logger.info(result.stdout)
+            logger.info(f"Benchmark {self.benchmark_name} on dataset {dataset_name} is complete.")

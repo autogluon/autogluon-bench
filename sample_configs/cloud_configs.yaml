@@ -2,8 +2,8 @@
 cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
   CDK_DEPLOY_ACCOUNT: dummy  # required, update with your AWS account
   CDK_DEPLOY_REGION: dummy  # required, update with your desired region
-  METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
   PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
+  METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
   # DATA_BUCKET: existing-s3-bucket  # optional, required when benchmark on your private datasets on S3
 
 # Benchmark configurations
@@ -55,5 +55,5 @@ module_configs:
         - vehicle
     amlb_constraint:
       - test
-    amlb_custom_branch:
-      - https://github.com/gidler/autogluon#gidler_master_w_logging
+    # amlb_custom_branch:  # optional, `framework` and `label` are overwritten when this is specified 
+    #   - https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>

@@ -115,7 +115,7 @@ class BatchJobStack(core.Stack):
         container_vcpu = self.node.try_get_context("CONTAINER_VCPU")
         container_memory = self.node.try_get_context("CONTAINER_MEMORY")
         block_device_volume = self.node.try_get_context("BLOCK_DEVICE_VOLUME")
-        lambda_function_name = self.node.try_get_context("LAMBDA_FUNCTION_NAME")
+        lambda_function_name = self.node.try_get_context("LAMBDA_FUNCTION_NAME") + "-" + prefix
 
         instances = []
         for instance in instance_types:

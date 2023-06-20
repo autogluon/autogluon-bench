@@ -20,4 +20,4 @@ label: stable  # required
 amlb_benchmark: test  # optional
 amlb_task: iris  # optional
 amlb_constraint: test  # optional
-amlb_custom_branch: https://github.com/gidler/autogluon#gidler_master_w_logging  # optional
+# amlb_custom_branch: https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` and `label` are overwritten when this is specified 

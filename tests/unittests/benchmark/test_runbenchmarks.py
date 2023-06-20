@@ -1,7 +1,14 @@
 import io
 
-from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
-from autogluon.bench.runbenchmark import download_config, get_kwargs, invoke_lambda, run, run_benchmark, upload_config
+from autogluon.bench.runbenchmark import (
+    download_config,
+    get_job_status,
+    get_kwargs,
+    invoke_lambda,
+    run,
+    run_benchmark,
+    upload_config,
+)
 
 
 def setup_mock(mocker, tmp_path):
@@ -12,17 +19,10 @@ def setup_mock(mocker, tmp_path):
     cdk_context = {
         "METRICS_BUCKET": "test_bucket",
     }
-
-    mock_yaml = mocker.patch("yaml.safe_load")
-    mock_yaml.return_value = {
-        "mode": "aws",
-        "module": "test_module",
-        "cdk_context": cdk_context,
+    job_configs = {
+        "job_id_1": "config_spit_1",
+        "job_id_2": "config_spit_2",
     }
-    mocker.patch("autogluon.bench.runbenchmark._get_benchmark_name", return_value="test_benchmark")
-    mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
-    mocker.patch("autogluon.bench.runbenchmark._dump_configs", return_value="test_dump")
-    mocker.patch("os.environ.__setitem__")
 
     infra_configs = {
         "STATIC_RESOURCE_STACK_NAME": "test_static_stack",
@@ -31,6 +31,20 @@ def setup_mock(mocker, tmp_path):
         "CDK_DEPLOY_REGION": "test_region",
         "METRICS_BUCKET": "test_bucket",
     }
+    mock_yaml = mocker.patch("yaml.safe_load")
+    yaml_value = {
+        "mode": "aws",
+        "module": "test_module",
+        "cdk_context": cdk_context,
+        "job_configs": job_configs,
+    }
+    yaml_value.update(infra_configs)
+    mock_yaml.return_value = yaml_value
+    mocker.patch("autogluon.bench.runbenchmark._get_benchmark_name", return_value="test_benchmark")
+    mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
+    mocker.patch("autogluon.bench.runbenchmark._dump_configs", return_value="test_dump")
+    mocker.patch("os.environ.__setitem__")
+
     mock_deploy_stack = mocker.patch("autogluon.bench.runbenchmark.deploy_stack", return_value=infra_configs)
     mock_upload_config = mocker.patch("autogluon.bench.runbenchmark.upload_config", return_value="test_s3_path")
     mock_invoke_lambda = mocker.patch("autogluon.bench.runbenchmark.invoke_lambda", return_value={})
@@ -47,6 +61,7 @@ def setup_mock(mocker, tmp_path):
         "mock_wait_for_jobs": mock_wait_for_jobs,
         "mock_destroy_stack": mock_destroy_stack,
         "cdk_context": cdk_context,
+        "job_configs": job_configs,
     }
 
 
@@ -138,7 +153,11 @@ def test_download_config(mocker, tmp_path):
 
 
 def test_invoke_lambda(mocker):
-    configs = {"CDK_DEPLOY_REGION": "us-east-1", "LAMBDA_FUNCTION_NAME": "test_function"}
+    configs = {
+        "CDK_DEPLOY_REGION": "us-east-1",
+        "LAMBDA_FUNCTION_NAME": "test_function",
+        "STACK_NAME_PREFIX": "prefix",
+    }
     config_file = "test_config_file"
 
     mock_response = {"StatusCode": 200, "Payload": io.BytesIO(b'{"key": "value"}')}
@@ -148,7 +167,7 @@ def test_invoke_lambda(mocker):
     with mocker.patch("boto3.client", return_value=mock_lambda_client):
         invoke_lambda(configs, config_file)
         mock_lambda_client.invoke.assert_called_once_with(
-            FunctionName=configs["LAMBDA_FUNCTION_NAME"],
+            FunctionName=configs["LAMBDA_FUNCTION_NAME"] + "-" + configs["STACK_NAME_PREFIX"],
             InvocationType="RequestResponse",
             Payload='{"config_file": "test_config_file"}',
         )
@@ -160,7 +179,7 @@ def test_run_aws_mode(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources)
 
-    setup["mock_deploy_stack"].assert_called_once_with(configs=setup["cdk_context"])
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
         bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
     )
@@ -175,7 +194,7 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources)
 
-    setup["mock_deploy_stack"].assert_called_once_with(configs=setup["cdk_context"])
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
         bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
     )
@@ -187,6 +206,7 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
         batch_stack=setup["infra_configs"]["BATCH_STACK_NAME"],
         cdk_deploy_account=setup["infra_configs"]["CDK_DEPLOY_ACCOUNT"],
         cdk_deploy_region=setup["infra_configs"]["CDK_DEPLOY_REGION"],
+        config_file=None,
     )
 
 
@@ -238,3 +258,39 @@ def test_run_benchmark(mocker):
     upload_metrics_mock.assert_called_once_with(
         s3_bucket=configs["METRICS_BUCKET"], s3_dir=f"{configs['module']}{benchmark_dir.split(configs['module'])[-1]}"
     )
+
+
+def test_get_job_status_with_config_file(mocker, tmp_path):
+    # Setup mock
+    setup = setup_mock(mocker, tmp_path)
+
+    # Additional mock for describe_jobs
+    mock_boto_client = mocker.patch("boto3.client")
+    mock_boto_client.return_value.describe_jobs.side_effect = [
+        {"jobs": [{"status": "SUCCEEDED"}]},
+        {"jobs": [{"status": "FAILED"}]},
+    ]
+
+    expected_status_dict = {"job_id_1": "SUCCEEDED", "job_id_2": "FAILED"}
+    actual_status_dict = get_job_status(config_file=setup["config_file"])
+
+    mock_boto_client.assert_called_once_with("batch", region_name="test_region")
+    assert actual_status_dict == expected_status_dict
+
+
+def test_get_job_status_with_job_ids(mocker, tmp_path):
+    # Setup mock
+    setup = setup_mock(mocker, tmp_path)
+
+    # Additional mock for describe_jobs
+    mock_boto_client = mocker.patch("boto3.client")
+    mock_boto_client.return_value.describe_jobs.side_effect = [
+        {"jobs": [{"status": "SUCCEEDED"}]},
+        {"jobs": [{"status": "FAILED"}]},
+    ]
+
+    expected_status_dict = {"job_id_1": "SUCCEEDED", "job_id_2": "FAILED"}
+    actual_status_dict = get_job_status(job_ids=["job_id_1", "job_id_2"], cdk_deploy_region="test_region")
+
+    mock_boto_client.assert_called_once_with("batch", region_name="test_region")
+    assert actual_status_dict == expected_status_dict

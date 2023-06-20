@@ -156,8 +156,9 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
 
     lambda_client = boto3.client("lambda", configs["CDK_DEPLOY_REGION"])
     payload = {"config_file": config_file}
+    lambda_function_name = configs["LAMBDA_FUNCTION_NAME"] + "-" + configs["STACK_NAME_PREFIX"]
     response = lambda_client.invoke(
-        FunctionName=configs["LAMBDA_FUNCTION_NAME"], InvocationType="RequestResponse", Payload=json.dumps(payload)
+        FunctionName=lambda_function_name, InvocationType="RequestResponse", Payload=json.dumps(payload)
     )
     response = json.loads(response["Payload"].read().decode("utf-8"))
     logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])
@@ -180,7 +181,7 @@ def get_job_status(
     The job ids can either be passed in directly or read from a YAML configuration file.
 
     Args:
-        job_ids (list[str], optional):
+        job_ids (List[str], optional):
             A list of job ids to query the status for.
         cdk_deploy_region (str, optional):
             AWS region that the Batch jobs run in.
@@ -217,7 +218,7 @@ def get_job_status(
 
 
 def wait_for_jobs_to_complete(
-    config_file: Optional[str] = None, job_ids: Optional[list[str]] = None, aws_region: Optional[str] = None
+    config_file: Optional[str] = None, job_ids: Optional[List[str]] = None, aws_region: Optional[str] = None
 ):
     while True:
         all_jobs_completed = True
@@ -291,7 +292,7 @@ def run(
             benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
         )
         os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
-        infra_configs = deploy_stack(configs=configs.get("cdk_context", {}))
+        infra_configs = deploy_stack(custom_configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(
             bucket=infra_configs["METRICS_BUCKET"], benchmark_name=benchmark_name, file=cloud_config_path
         )
@@ -304,7 +305,7 @@ def run(
             logger.info("Waiting for jobs to complete and then remove the AWS resources created.")
             logger.info(
                 "You can quit at anytime and run \n"
-                "`agbench destroy-stack STATIC_RESOURCE_STACK BATCH_STACK CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION` "
+                f"`agbench destroy-stack --config_file {aws_config_path}` "
                 "to delete the stack after jobs have run to completion."
             )
             failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
@@ -318,6 +319,7 @@ def run(
                     batch_stack=infra_configs["BATCH_STACK_NAME"],
                     cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
                     cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
+                    config_file=None,
                 )
 
     elif configs["mode"] == "local":
