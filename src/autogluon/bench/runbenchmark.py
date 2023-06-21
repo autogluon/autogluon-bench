@@ -334,6 +334,7 @@ def run(
                         batch_stack=infra_configs["BATCH_STACK_NAME"],
                         cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
                         cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
+                        config_file=None,
                     )
                     logger.info("Resources removed successfully.")
 
