@@ -269,7 +269,9 @@ def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
 def run(
     config_file: Annotated[str, typer.Argument(help="Path to custom config file.")],
     remove_resources: Annotated[bool, typer.Option("--remove_resources", help="Remove resources after run.")] = False,
-    wait: Annotated[bool, typer.Option("--wait", help="Whether to block and wait for the benchmark to finish")] = False,
+    wait: Annotated[
+        bool, typer.Option("--wait", help="Whether to block and wait for the benchmark to finish")
+    ] = False,
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
 
@@ -305,14 +307,16 @@ def run(
         if remove_resources:
             wait = True
         if wait:
-            logger.info("Waiting for jobs to complete. You can quit at anytime and the benchmark will continue to run on the cloud")
+            logger.info(
+                "Waiting for jobs to complete. You can quit at anytime and the benchmark will continue to run on the cloud"
+            )
             if remove_resources:
                 logger.info(
                     "Resources will be deleted after the jobs are finished. You can also call \n"
                     "`agbench destroy-stack STATIC_RESOURCE_STACK BATCH_STACK CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION` "
                     "to delete the stack after jobs have run to completion if you choose to quit now."
                 )
-                
+
             failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
             if len(failed_jobs) > 0:
                 logger.warning("Some jobs have failed: %s.", failed_jobs)

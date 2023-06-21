@@ -208,7 +208,7 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
         cdk_deploy_region=setup["infra_configs"]["CDK_DEPLOY_REGION"],
         config_file=None,
     )
-    
+
 
 def test_run_aws_mode_wait(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
