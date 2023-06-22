@@ -269,6 +269,9 @@ def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
 def run(
     config_file: Annotated[str, typer.Argument(help="Path to custom config file.")],
     remove_resources: Annotated[bool, typer.Option("--remove_resources", help="Remove resources after run.")] = False,
+    wait: Annotated[
+        bool, typer.Option("--wait", help="Whether to block and wait for the benchmark to finish")
+    ] = False,
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
 
@@ -302,25 +305,38 @@ def run(
         aws_config_path = _dump_configs(benchmark_dir=benchmark_dir, configs=aws_configs, file_name="aws_configs.yaml")
 
         if remove_resources:
-            logger.info("Waiting for jobs to complete and then remove the AWS resources created.")
+            wait = True
+        if wait:
             logger.info(
-                "You can quit at anytime and run \n"
-                f"`agbench destroy-stack --config_file {aws_config_path}` "
-                "to delete the stack after jobs have run to completion."
+                "Waiting for jobs to complete. You can quit at anytime and the benchmark will continue to run on the cloud"
             )
-            failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
-            if failed_jobs:
-                logger.warning("Some jobs have failed: %s. Resources are not being removed.", failed_jobs)
-            elif failed_jobs is None:
-                logger.error("Resources are not being removed due to errors.")
-            else:
-                destroy_stack(
-                    static_resource_stack=infra_configs["STATIC_RESOURCE_STACK_NAME"],
-                    batch_stack=infra_configs["BATCH_STACK_NAME"],
-                    cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
-                    cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
-                    config_file=None,
+            if remove_resources:
+                logger.info(
+                    "Resources will be deleted after the jobs are finished. You can also call \n"
+                    f"`agbench destroy-stack --config_file {aws_config_path}` "
+                    "to delete the stack after jobs have run to completion if you choose to quit now."
                 )
+
+            failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
+            if len(failed_jobs) > 0:
+                logger.warning("Some jobs have failed: %s.", failed_jobs)
+                if remove_resources:
+                    logger.warning("Resources will be kept so error logs can be accessed")
+            elif failed_jobs is None:
+                if remove_resources:
+                    logger.error("Resources are not being removed due to errors.")
+            else:
+                logger.info("All job succeeded.")
+                if remove_resources:
+                    logger.info("Removing resoureces...")
+                    destroy_stack(
+                        static_resource_stack=infra_configs["STATIC_RESOURCE_STACK_NAME"],
+                        batch_stack=infra_configs["BATCH_STACK_NAME"],
+                        cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
+                        cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
+                        config_file=None,
+                    )
+                    logger.info("Resources removed successfully.")
 
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)

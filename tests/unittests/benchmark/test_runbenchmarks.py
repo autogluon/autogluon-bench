@@ -210,6 +210,21 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
     )
 
 
+def test_run_aws_mode_wait(mocker, tmp_path):
+    setup = setup_mock(mocker, tmp_path)
+    wait = True
+
+    run(setup["config_file"], wait)
+
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
+    setup["mock_upload_config"].assert_called_once_with(
+        bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
+    )
+    setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
+
+    setup["mock_wait_for_jobs"].assert_called_once_with(config_file="test_dump")
+
+
 def test_run_local_mode(mocker, tmp_path):
     config_file = tmp_path / "config_split_test.yaml"
     config_file.touch()

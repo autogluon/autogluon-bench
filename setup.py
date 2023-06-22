@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 AUTOGLUON = "autogluon"
 BENCH = "bench"
@@ -66,7 +66,7 @@ def default_setup_args(*, version):
             "": ["Dockerfile", "*.sh", "*.txt", "*.yaml"],
             AUTOGLUON: [
                 "LICENSE",
-            ]
+            ],
         },
         classifiers=[
             "Development Status :: 4 - Beta",
