@@ -152,6 +152,7 @@ class BenchmarkEvaluator:
                   folds: list = None,
                   clean_data: bool = False,
                   problem_type=None,
+                  valid_datasets: list = None,
                   banned_datasets: list = None,
                   infer_batch_size: int = None,
                   treat_folds_as_datasets: bool = False,
@@ -167,6 +168,8 @@ class BenchmarkEvaluator:
             print(f'Filtering to the following problem_type: {problem_type}')
         if banned_datasets is not None:
             results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
+        if valid_datasets is not None:
+            results_raw = results_raw[results_raw[DATASET].isin(valid_datasets)]
         if self._use_tid_as_dataset_name:
             results_raw[DATASET] = results_raw['tid'].astype(int).astype(str)
             if banned_datasets is not None:
@@ -186,6 +189,7 @@ class BenchmarkEvaluator:
             frameworks_present = list(results_raw[FRAMEWORK].unique())
             if set(frameworks) != set(frameworks_present):
                 diff = list(set(frameworks).symmetric_difference(set(frameworks_present)))
+                diff = sorted(diff)
                 raise AssertionError(f'Difference in expected frameworks present: {diff}')
         # Round error
         results_raw[METRIC_ERROR] = results_raw[METRIC_ERROR].round(decimals=4)
@@ -194,8 +198,11 @@ class BenchmarkEvaluator:
             results_raw = results_raw[self._columns_to_keep]
         return results_raw
 
+    def _load_task_metadata(self) -> pd.DataFrame:
+        return load_task_metadata(path=self._task_metadata_path)
+
     def _clean_data(self, results_raw):
-        task_metadata = load_task_metadata(path=self._task_metadata_path)
+        task_metadata = self._load_task_metadata()
         task_metadata[DATASET] = task_metadata['name']
         # FIXME: TEMP
         results_raw = results_raw.drop(columns=[DATASET])
@@ -236,3 +243,17 @@ class BenchmarkEvaluator:
 
     def _filter_frameworks(self, results_raw: pd.DataFrame, frameworks: list):
         return results_raw[results_raw['framework'].isin(frameworks)]
+
+	def filter_datasets(self, *, max_rows=None, min_rows=None, max_rows_missing_val=None, max_features_categorical=None):
+        # TODO: Consider having task_metadata be its own class
+        task_metadata = self._load_task_metadata()
+
+        if max_rows is not None:
+            task_metadata = task_metadata[task_metadata['NumberOfInstances'] <= max_rows]
+        if max_rows_missing_val is not None:
+            task_metadata = task_metadata[task_metadata['NumberOfInstancesWithMissingValues'] <= max_rows_missing_val]
+        if max_features_categorical is not None:
+            task_metadata = task_metadata[task_metadata['NumberOfSymbolicFeatures'] <= max_features_categorical]
+
+        return list(task_metadata['name'])
+
