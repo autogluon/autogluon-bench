@@ -1,4 +1,5 @@
 import abc
+import logging
 import os
 
 import pandas as pd
@@ -36,6 +37,8 @@ __all__ = [
     "NewsChannel",
 ]
 
+logger = logging.getLogger(__name__)
+
 
 def _path_expander(path, base_folder):
     path_l = path.split(";")
@@ -43,6 +46,15 @@ def _path_expander(path, base_folder):
 
 
 class BaseMultiModalDataset(abc.ABC):
+    def __init__(self, split: str):
+        """
+        Initializes the class.
+
+        Args:
+            split (str): Specifies the dataset split. It should be one of the following options: 'train', 'val', 'test'.
+        """
+        pass
+
     @property
     @abc.abstractmethod
     def feature_columns(self):
@@ -74,6 +86,15 @@ class BaseMultiModalDataset(abc.ABC):
 
 
 class BaseImageDataset(BaseMultiModalDataset):
+    def __init__(self, split: str):
+        """
+        Initializes the class.
+
+        Args:
+            split (str): Specifies the dataset split. It should be one of the following options: 'train', 'val', 'test'.
+        """
+        pass
+
     @property
     def base_folder(self):
         """Base folder that contains images"""
@@ -108,8 +129,15 @@ class Shopee(BaseImageDataset):
         self._path = os.path.join(get_data_home_dir(), "shopee")
         load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path, sha1sum=self._INFO["data"]["sha1sum"])
         self._base_folder = os.path.join(self._path, "shopee")
-        self._data = pd.read_csv(os.path.join(self._base_folder, f"{self._split}.csv"))
-        self._data["image"] = self._data["image"].apply(lambda ele: _path_expander(ele, base_folder=self._base_folder))
+        try:
+            data_path = os.path.join(self._base_folder, f"{self._split}.csv")
+            self._data = pd.read_csv(data_path)
+            self._data["image"] = self._data["image"].apply(
+                lambda ele: _path_expander(ele, base_folder=self._base_folder)
+            )
+        except FileNotFoundError as e:
+            logger.warn(e)
+            self._data = None
 
     @property
     def base_folder(self):
@@ -157,12 +185,16 @@ class StanfordOnline(BaseMatcherDataset):
         self._path = os.path.join(get_data_home_dir(), "Stanford_Online_Products")
         load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path, sha1sum=self._INFO["data"]["sha1sum"])
         self._base_folder = os.path.join(self._path, "Stanford_Online_Products")
-        self._data = pd.read_csv(os.path.join(self._base_folder, f"{self._split}.csv"), index_col=0)
-        self._image_columns = ["Image1", "Image2"]
-        for image_col in self._image_columns:
-            self._data[image_col] = self._data[image_col].apply(
-                lambda ele: _path_expander(ele, base_folder=self._base_folder)
-            )
+        try:
+            self._data = pd.read_csv(os.path.join(self._base_folder, f"{self._split}.csv"), index_col=0)
+            self._image_columns = ["Image1", "Image2"]
+            for image_col in self._image_columns:
+                self._data[image_col] = self._data[image_col].apply(
+                    lambda ele: _path_expander(ele, base_folder=self._base_folder)
+                )
+        except FileNotFoundError as e:
+            logger.warn(e)
+            self._data = None
 
     @property
     def image_columns(self):
@@ -206,15 +238,20 @@ class Flickr30k(BaseMatcherDataset):
         self._path = os.path.join(get_data_home_dir(), "flickr30k")
         load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path)
         self._base_folder = os.path.join(self._path, "flickr30k_processed")
-        self._data = pd.read_csv(os.path.join(self._base_folder, f"{self._split}.csv"), index_col=0)
-        self._image_col = "image"
-        self._text_col = "caption"
 
-        self._data[self._image_col] = self._data[self._image_col].apply(
-            lambda ele: _path_expander(ele, base_folder=self._base_folder)
-        )
-        self._label_col = "relevance"
-        self._data[self._label_col] = [1] * len(self._data)
+        try:
+            self._data = pd.read_csv(os.path.join(self._base_folder, f"{self._split}.csv"), index_col=0)
+            self._image_col = "image"
+            self._text_col = "caption"
+
+            self._data[self._image_col] = self._data[self._image_col].apply(
+                lambda ele: _path_expander(ele, base_folder=self._base_folder)
+            )
+            self._label_col = "relevance"
+            self._data[self._label_col] = [1] * len(self._data)
+        except FileNotFoundError as e:
+            logger.warn(e)
+            self._data = None
 
     @property
     def image_columns(self):
@@ -265,8 +302,12 @@ class SNLI(BaseMatcherDataset):
     def __init__(self, split="train"):
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "snli", f"{split}.csv")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_csv(self._path, delimiter="|")
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_csv(self._path, delimiter="|")
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @property
     def text_columns(self):
@@ -315,8 +356,12 @@ class MitMovies(BaseMultiModalDataset):
     def __init__(self, split="train"):
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "mit-movies", f"{split}.csv")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_csv(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_csv(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @property
     def feature_columns(self):
@@ -356,8 +401,12 @@ class WomenClothingReview(BaseMultiModalDataset):
     def __init__(self, split="train"):
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "women_clothing_review", f"{split}.pq")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_parquet(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_parquet(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @classmethod
     def splits(cls):
@@ -414,8 +463,12 @@ class MelBourneAirBnb(BaseMultiModalDataset):
     def __init__(self, split="train"):
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "airbnb_melbourne", f"{split}.pq")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_parquet(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_parquet(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @classmethod
     def splits(cls):
@@ -484,11 +537,14 @@ class AEPricePrediction(BaseMultiModalDataset):
     _registry_name = "ae_price_prediction"
 
     def __init__(self, split="train"):
-        super().__init__()
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "ae_price_prediction", f"{split}.pq")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_parquet(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_parquet(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @classmethod
     def splits(cls):
@@ -538,11 +594,14 @@ class IMDBGenrePrediction(BaseMultiModalDataset):
     _registry_name = "imdb_genre_prediction"
 
     def __init__(self, split="train"):
-        super().__init__()
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "imdb_genre_prediction", f"{split}.pq")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_csv(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_csv(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @property
     def data(self):
@@ -592,11 +651,14 @@ class JCPennyCategory(BaseMultiModalDataset):
     _registry_name = "jc_penney_products"
 
     def __init__(self, split="train"):
-        super().__init__()
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "jc_penney_products", f"{split}.pq")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_csv(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_csv(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @property
     def data(self):
@@ -646,11 +708,14 @@ class NewsPopularity(BaseMultiModalDataset):
     _registry_name = "news_popularity"
 
     def __init__(self, split="train"):
-        super().__init__()
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "news_popularity2", f"{split}.pq")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_csv(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_csv(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @property
     def data(self):
@@ -700,11 +765,14 @@ class NewsChannel(BaseMultiModalDataset):
     _registry_name = "news_channel"
 
     def __init__(self, split="train"):
-        super().__init__()
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "news_channel", f"{split}.pq")
-        download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-        self._data = pd.read_csv(self._path)
+        try:
+            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            self._data = pd.read_csv(self._path)
+        except Exception:
+            logger.warn(f"The data split {self._split} is not available.")
+            self._data = None
 
     @property
     def data(self):
