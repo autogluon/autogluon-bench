@@ -313,7 +313,7 @@ def run(
             if remove_resources:
                 logger.info(
                     "Resources will be deleted after the jobs are finished. You can also call \n"
-                    "`agbench destroy-stack STATIC_RESOURCE_STACK BATCH_STACK CDK_DEPLOY_ACCOUNT CDK_DEPLOY_REGION` "
+                    f"`agbench destroy-stack --config_file {aws_config_path}` "
                     "to delete the stack after jobs have run to completion if you choose to quit now."
                 )
 
