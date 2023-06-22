@@ -52,9 +52,10 @@ def load_dataset(
         Tuple[pd.DataFrame, pd.DataFrame]: A tuple containing the training and test datasets.
     """
     train_data = multimodal_dataset_registry.create(dataset_name, "train")
+    val_data = multimodal_dataset_registry.create(dataset_name, "val")
     test_data = multimodal_dataset_registry.create(dataset_name, "test")
 
-    return train_data, test_data
+    return train_data, val_data, test_data
 
 
 def save_metrics(metrics_path: str, metrics):
@@ -106,7 +107,7 @@ def run(
     Returns:
         None
     """
-    train_data, test_data = load_dataset(dataset_name=dataset_name)
+    train_data, val_data, test_data = load_dataset(dataset_name=dataset_name)
 
     try:
         label_column = train_data.label_columns[0]
@@ -140,6 +141,7 @@ def run(
 
     fit_args = {
         "train_data": train_data.data,
+        "tuning_data": val_data.data,
         "hyperparameters": hyperparameters,
         "time_limit": time_limit,
     }
