@@ -6,7 +6,16 @@ import pandas as pd
 from .constants import *
 
 
-def compare_frameworks(results_raw, frameworks=None, banned_datasets=None, folds_to_keep=None, filter_errors=True, verbose=True, columns_to_agg_extra=None, datasets=None):
+def compare_frameworks(
+    results_raw,
+    frameworks=None,
+    banned_datasets=None,
+    folds_to_keep=None,
+    filter_errors=True,
+    verbose=True,
+    columns_to_agg_extra=None,
+    datasets=None,
+):
     columns_to_agg = [DATASET, FRAMEWORK, PROBLEM_TYPE, TIME_TRAIN_S, METRIC_ERROR]
     if columns_to_agg_extra:
         columns_to_agg += columns_to_agg_extra
@@ -14,7 +23,12 @@ def compare_frameworks(results_raw, frameworks=None, banned_datasets=None, folds
         frameworks = sorted(list(results_raw[FRAMEWORK].unique()))
 
     if filter_errors:  # FIXME: This should not be toggled, instead filter_errors should be passed to filter_results
-        results = filter_results(results_raw=results_raw, valid_frameworks=frameworks, banned_datasets=banned_datasets, folds_to_keep=folds_to_keep)
+        results = filter_results(
+            results_raw=results_raw,
+            valid_frameworks=frameworks,
+            banned_datasets=banned_datasets,
+            folds_to_keep=folds_to_keep,
+        )
     else:
         results = results_raw.copy()
 
@@ -22,30 +36,31 @@ def compare_frameworks(results_raw, frameworks=None, banned_datasets=None, folds
 
     worst_scores = results_agg.sort_values(METRIC_ERROR, ascending=False).drop_duplicates(DATASET)
     worst_scores = worst_scores[[DATASET, METRIC_ERROR]]
-    worst_scores.columns = [DATASET, 'WORST_ERROR']
+    worst_scores.columns = [DATASET, "WORST_ERROR"]
     best_scores = results_agg.sort_values(METRIC_ERROR, ascending=True).drop_duplicates(DATASET)
     best_scores = best_scores[[DATASET, METRIC_ERROR]]
-    best_scores.columns = [DATASET, 'BEST_ERROR']
+    best_scores.columns = [DATASET, "BEST_ERROR"]
 
     results_agg = results_agg.merge(best_scores, on=DATASET)
     results_agg = results_agg.merge(worst_scores, on=DATASET)
-    results_agg[BESTDIFF] = 1 - (results_agg['BEST_ERROR'] / results_agg[METRIC_ERROR])
-    results_agg[LOSS_RESCALED] = (results_agg[METRIC_ERROR] - results_agg['BEST_ERROR']) / (results_agg['WORST_ERROR'] - results_agg['BEST_ERROR'])
+    results_agg[BESTDIFF] = 1 - (results_agg["BEST_ERROR"] / results_agg[METRIC_ERROR])
+    results_agg[LOSS_RESCALED] = (results_agg[METRIC_ERROR] - results_agg["BEST_ERROR"]) / (
+        results_agg["WORST_ERROR"] - results_agg["BEST_ERROR"]
+    )
     results_agg[BESTDIFF] = results_agg[BESTDIFF].fillna(0)
     results_agg[LOSS_RESCALED] = results_agg[LOSS_RESCALED].fillna(0)
-    results_agg = results_agg.drop(['BEST_ERROR'], axis=1)
-    results_agg = results_agg.drop(['WORST_ERROR'], axis=1)
+    results_agg = results_agg.drop(["BEST_ERROR"], axis=1)
+    results_agg = results_agg.drop(["WORST_ERROR"], axis=1)
 
-    for time_attr in [
-        TIME_TRAIN_S,
-        TIME_INFER_S
-    ]:
+    for time_attr in [TIME_TRAIN_S, TIME_INFER_S]:
         if time_attr in columns_to_agg:
-            best_time_attr = 'BEST_' + time_attr
-            best_speed = results_agg[[DATASET, time_attr]].sort_values(time_attr, ascending=True).drop_duplicates(DATASET)
+            best_time_attr = "BEST_" + time_attr
+            best_speed = (
+                results_agg[[DATASET, time_attr]].sort_values(time_attr, ascending=True).drop_duplicates(DATASET)
+            )
             best_speed.columns = [DATASET, best_time_attr]
             results_agg = results_agg.merge(best_speed, on=DATASET)
-            results_agg[time_attr + '_rescaled'] = results_agg[time_attr] / results_agg[best_time_attr]
+            results_agg[time_attr + "_rescaled"] = results_agg[time_attr] / results_agg[best_time_attr]
             results_agg = results_agg.drop([best_time_attr], axis=1)
 
     valid_tasks = list(results_agg[DATASET].unique())
@@ -53,46 +68,53 @@ def compare_frameworks(results_raw, frameworks=None, banned_datasets=None, folds
     results_ranked, results_ranked_by_dataset = rank_result(results_agg)
     rank_1 = results_ranked_by_dataset[results_ranked_by_dataset[RANK] == 1]
     rank_1_count = rank_1[FRAMEWORK].value_counts()
-    results_ranked['rank=1_count'] = rank_1_count
-    results_ranked['rank=1_count'] = results_ranked['rank=1_count'].fillna(0).astype(int)
+    results_ranked["rank=1_count"] = rank_1_count
+    results_ranked["rank=1_count"] = results_ranked["rank=1_count"].fillna(0).astype(int)
 
     rank_2 = results_ranked_by_dataset[(results_ranked_by_dataset[RANK] > 1) & (results_ranked_by_dataset[RANK] <= 2)]
     rank_2_count = rank_2[FRAMEWORK].value_counts()
 
-    results_ranked['rank=2_count'] = rank_2_count
-    results_ranked['rank=2_count'] = results_ranked['rank=2_count'].fillna(0).astype(int)
+    results_ranked["rank=2_count"] = rank_2_count
+    results_ranked["rank=2_count"] = results_ranked["rank=2_count"].fillna(0).astype(int)
 
     rank_3 = results_ranked_by_dataset[(results_ranked_by_dataset[RANK] > 2) & (results_ranked_by_dataset[RANK] <= 3)]
     rank_3_count = rank_3[FRAMEWORK].value_counts()
 
-    results_ranked['rank=3_count'] = rank_3_count
-    results_ranked['rank=3_count'] = results_ranked['rank=3_count'].fillna(0).astype(int)
+    results_ranked["rank=3_count"] = rank_3_count
+    results_ranked["rank=3_count"] = results_ranked["rank=3_count"].fillna(0).astype(int)
 
     rank_l3 = results_ranked_by_dataset[(results_ranked_by_dataset[RANK] > 3)]
     rank_l3_count = rank_l3[FRAMEWORK].value_counts()
 
-    results_ranked['rank>3_count'] = rank_l3_count
-    results_ranked['rank>3_count'] = results_ranked['rank>3_count'].fillna(0).astype(int)
+    results_ranked["rank>3_count"] = rank_l3_count
+    results_ranked["rank>3_count"] = results_ranked["rank>3_count"].fillna(0).astype(int)
 
     if datasets is None:
         datasets = sorted(list(results_ranked_by_dataset[DATASET].unique()))
     datasets_len = len(datasets)
     errors_list = []
     for framework in frameworks:
-        results_framework = filter_results(results_raw=results_raw, valid_frameworks=[framework], banned_datasets=banned_datasets, folds_to_keep=folds_to_keep)
-        results_framework_agg = results_framework[columns_to_agg].groupby([DATASET, FRAMEWORK, PROBLEM_TYPE]).mean().reset_index()
+        results_framework = filter_results(
+            results_raw=results_raw,
+            valid_frameworks=[framework],
+            banned_datasets=banned_datasets,
+            folds_to_keep=folds_to_keep,
+        )
+        results_framework_agg = (
+            results_framework[columns_to_agg].groupby([DATASET, FRAMEWORK, PROBLEM_TYPE]).mean().reset_index()
+        )
         num_valid = len(results_framework_agg[results_framework_agg[FRAMEWORK] == framework])
         num_errors = datasets_len - num_valid
         errors_list.append(num_errors)
     errors_series = pd.Series(data=errors_list, index=frameworks)
 
-    results_ranked['error_count'] = errors_series
-    results_ranked['error_count'] = results_ranked['error_count'].fillna(0).astype(int)
+    results_ranked["error_count"] = errors_series
+    results_ranked["error_count"] = results_ranked["error_count"].fillna(0).astype(int)
     results_ranked = results_ranked.reset_index()
 
     if verbose:
-        print('valid_tasks:', len(valid_tasks))
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+        print("valid_tasks:", len(valid_tasks))
+        with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
             print(results_ranked)
         print()
     return results_ranked, results_ranked_by_dataset
@@ -173,8 +195,7 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
     from matplotlib import colors
 
     fig, ax = plt.subplots(dpi=300)  # Create a figure containing a single axes.
-    ax.set(xlabel=f2, ylabel=f1,
-           title='Dataset Error Rate Comparison')
+    ax.set(xlabel=f2, ylabel=f1, title="Dataset Error Rate Comparison")
 
     results_1_lst = []
     results_2_lst = []
@@ -187,6 +208,7 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
     tie = 0
 
     from collections import defaultdict
+
     problem_type_d = defaultdict(list)
     problem_type_lst = []
     for dataset in datasets:
@@ -213,25 +235,24 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
         r_1_dict[dataset] = r_1
         r_2_dict[dataset] = r_2
 
-
         # problem_type_lst.append(marker)
         # if z_stats is not None:
         #     ax.scatter(r_1, r_2, c=z_stats[dataset], label=dataset)
         # else:
         #     ax.scatter(r_1, r_2, label=dataset)
     ax.plot((0, 1))
-    cm = plt.cm.get_cmap('RdYlBu')
+    cm = plt.cm.get_cmap("RdYlBu")
 
     for pt in problem_type_d:
 
-        if pt == 'binary':
-            marker = 'o'
-        elif pt == 'multiclass':
-            marker = '^'
-        elif pt == 'regression':
-            marker = '*'
+        if pt == "binary":
+            marker = "o"
+        elif pt == "multiclass":
+            marker = "^"
+        elif pt == "regression":
+            marker = "*"
         else:
-            raise AssertionError(f'Unknown problem type: {pt}')
+            raise AssertionError(f"Unknown problem type: {pt}")
 
         pt_datasets = problem_type_d[pt]
         r_1_lst = [r_1_dict[d] for d in pt_datasets]
@@ -243,16 +264,15 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
             c=z_stats_lst,
             cmap=cm,
             norm=colors.Normalize(vmin=-3, vmax=3, clip=True),
-            edgecolor='k',
+            edgecolor="k",
             linewidths=0.5,
             marker=marker,
             label=pt,
         )
 
-    textstr = f'Win 1: {win_1}, Win 2: {win_2}, Tie: {tie}'
-    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax.text(0.05, 0.75, textstr, transform=ax.transAxes, fontsize=8,
-            verticalalignment='top', bbox=props)
+    textstr = f"Win 1: {win_1}, Win 2: {win_2}, Tie: {tie}"
+    props = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+    ax.text(0.05, 0.75, textstr, transform=ax.transAxes, fontsize=8, verticalalignment="top", bbox=props)
 
     ax.grid()
     # ax.set_xlim(0, 0.02)
@@ -265,7 +285,9 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
 
 
 # TODO: USE T-STATISTIC?
-def compute_stderr_z_stat(results_df: pd.DataFrame, f1: str, f2: str, folds: list = None, win_z_threshold: float = 1.96, verbose: bool = True) -> pd.Series:
+def compute_stderr_z_stat(
+    results_df: pd.DataFrame, f1: str, f2: str, folds: list = None, win_z_threshold: float = 1.96, verbose: bool = True
+) -> pd.Series:
     """
     Compute z-scores for each dataset by comparing f1 and f2.
 
@@ -304,7 +326,7 @@ def compute_stderr_z_stat(results_df: pd.DataFrame, f1: str, f2: str, folds: lis
 
     """
     if f1 == f2:
-        raise AssertionError('f1 and f2 cannot be the same!')
+        raise AssertionError("f1 and f2 cannot be the same!")
 
     results_df = results_df[[FRAMEWORK, DATASET, FOLD, METRIC_ERROR]]
     results_df = results_df[results_df[FRAMEWORK].isin([f1, f2])]
@@ -312,13 +334,13 @@ def compute_stderr_z_stat(results_df: pd.DataFrame, f1: str, f2: str, folds: lis
         folds = list(results_df[FOLD].unique())
     num_folds = len(folds)
     if num_folds <= 1:
-        raise AssertionError('Not enough folds to calculate stderr')
+        raise AssertionError("Not enough folds to calculate stderr")
     results_df = results_df[results_df[FOLD].isin(folds)]
 
-    mean_std_error_df = results_df.groupby([FRAMEWORK, DATASET])[METRIC_ERROR].agg(['mean', 'std', 'count'])
+    mean_std_error_df = results_df.groupby([FRAMEWORK, DATASET])[METRIC_ERROR].agg(["mean", "std", "count"])
     mean_std_error_df = mean_std_error_df.reset_index()
-    dataset_row_count = mean_std_error_df.groupby(DATASET)['count'].sum()
-    valid_datasets = list(dataset_row_count[dataset_row_count == num_folds*2].index)
+    dataset_row_count = mean_std_error_df.groupby(DATASET)["count"].sum()
+    valid_datasets = list(dataset_row_count[dataset_row_count == num_folds * 2].index)
 
     results1 = results_df[results_df[FRAMEWORK] == f1].set_index([DATASET, FOLD])
     results2 = results_df[results_df[FRAMEWORK] == f2].set_index([DATASET, FOLD])
@@ -360,20 +382,20 @@ def compute_stderr_z_stat(results_df: pd.DataFrame, f1: str, f2: str, folds: lis
             tie += 1
     if verbose:
         print(z_stat_series)
-        print(f'Win {win1} : {f1}')
-        print(f'Win {win2} : {f2}')
-        print(f'Tie {tie}')
+        print(f"Win {win1} : {f1}")
+        print(f"Win {win2} : {f2}")
+        print(f"Tie {tie}")
 
     return z_stat_series
 
 
 # TODO: document
 def compute_stderr_z_stat_bulk(
-        framework: str,
-        frameworks_to_compare: list,
-        results_raw: pd.DataFrame,
-        folds: list = None,
-        verbose: bool = True,
+    framework: str,
+    frameworks_to_compare: list,
+    results_raw: pd.DataFrame,
+    folds: list = None,
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """
     Compares framework with each framework in frameworks_to_compare, constructing an overall result DataFrame as output.
@@ -392,12 +414,12 @@ def compute_stderr_z_stat_bulk(
         z_stat_dict[f2] = z_stat_series
 
     z_stat_df = pd.DataFrame(z_stat_dict)
-    z_stat_df['min'] = z_stat_df.min(axis=1)
-    z_stat_df = z_stat_df.sort_values(by=['min'], ascending=False)
+    z_stat_df["min"] = z_stat_df.min(axis=1)
+    z_stat_df = z_stat_df.sort_values(by=["min"], ascending=False)
 
     if verbose:
-        print('Z-statistic comparisons:')
-        with pd.option_context('display.max_columns', None, 'display.width', 1000):
+        print("Z-statistic comparisons:")
+        with pd.option_context("display.max_columns", None, "display.width", 1000):
             print(z_stat_df)
     return z_stat_df
 
@@ -412,7 +434,7 @@ def compute_win_rate_per_dataset(
     epsilon_bestdiff=1e-4,
 ):
     if f1 == f2:
-        raise AssertionError('f1 and f2 cannot be the same!')
+        raise AssertionError("f1 and f2 cannot be the same!")
 
     results_df = results_raw[[FRAMEWORK, DATASET, FOLD, METRIC_ERROR]]
     results_df = results_df[results_df[FRAMEWORK].isin([f1, f2])]
@@ -470,7 +492,7 @@ def compute_win_rate_per_dataset(
             continue
         tierate = num_ties / valid_folds
         bestdiff_dataset = np.mean(bestdiff_dataset)
-        f1_winrate = f1_wins/valid_folds
+        f1_winrate = f1_wins / valid_folds
         # print(f'{f1_wins}/{valid_folds} | {dataset}')
         out_dict[dataset] = dict(
             winrate=f1_winrate,
@@ -481,6 +503,6 @@ def compute_win_rate_per_dataset(
         )
 
     out_df = pd.DataFrame(out_dict).T
-    out_df = out_df.sort_values(by=['winrate', 'bestdiff', 'folds', 'tierate'], ascending=[False, False, False, True])
-    print(f'winrate {f1} vs {f2}')
+    out_df = out_df.sort_values(by=["winrate", "bestdiff", "folds", "tierate"], ascending=[False, False, False, True])
+    print(f"winrate {f1} vs {f2}")
     print(out_df)

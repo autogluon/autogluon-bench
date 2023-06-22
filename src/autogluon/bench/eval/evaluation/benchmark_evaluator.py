@@ -1,29 +1,30 @@
-from collections import defaultdict
-from typing import Optional, List
 import warnings
+from collections import defaultdict
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
 
 from autogluon.common.utils.s3_utils import is_s3_url
 
-from .constants import TIME_INFER_S, METRIC_ERROR, METRIC, FRAMEWORK, DATASET, FOLD, PROBLEM_TYPE, TIME_TRAIN_S
-from .preprocess.preprocess_utils import fill_missing_results_with_default, convert_folds_into_separate_datasets
+from .constants import DATASET, FOLD, FRAMEWORK, METRIC, METRIC_ERROR, PROBLEM_TYPE, TIME_INFER_S, TIME_TRAIN_S
 from .metadata.metadata_loader import load_task_metadata
+from .preprocess.preprocess_utils import convert_folds_into_separate_datasets, fill_missing_results_with_default
 
 
 class BenchmarkEvaluator:
-    def __init__(self,
-                 results_dir='data/results/',
-                 output_suffix='ag_full_v5/1h8c',
-                 use_tid_as_dataset_name: bool = False,
-                 filter_errors: bool = False,
-                 framework_nan_fill: Optional[str] = None,
-                 task_metadata: str = 'task_metadata_289.csv',
-                 filter_columns: bool = True,
-                 columns_to_keep: Optional[List[str]] = None,
-                 columns_to_keep_extra: Optional[List[str]] = None,
-                 ):
+    def __init__(
+        self,
+        results_dir="data/results/",
+        output_suffix="ag_full_v5/1h8c",
+        use_tid_as_dataset_name: bool = False,
+        filter_errors: bool = False,
+        framework_nan_fill: Optional[str] = None,
+        task_metadata: str = "task_metadata_289.csv",
+        filter_columns: bool = True,
+        columns_to_keep: Optional[List[str]] = None,
+        columns_to_keep_extra: Optional[List[str]] = None,
+    ):
         """
         # TODO: Describe purpose of class
         # TODO: Add docstring for `load_data`
@@ -96,13 +97,15 @@ class BenchmarkEvaluator:
             col_count_dict = defaultdict(int)
             for c in columns_to_keep:
                 col_count_dict[c] += 1
-            raise ValueError(f'Columns cannot be listed multiple times across '
-                             f'columns_to_keep and extra_columns_to_keep!'
-                             f'\n\tcolumn counts:\n\t\t{col_count_dict}')
+            raise ValueError(
+                f"Columns cannot be listed multiple times across "
+                f"columns_to_keep and extra_columns_to_keep!"
+                f"\n\tcolumn counts:\n\t\t{col_count_dict}"
+            )
 
         self.results_dir = results_dir
-        self.results_dir_input = results_dir + 'input/prepared/openml/'
-        self.results_dir_output = results_dir + f'output/openml/{output_suffix}/'
+        self.results_dir_input = results_dir + "input/prepared/openml/"
+        self.results_dir_output = results_dir + f"output/openml/{output_suffix}/"
         self._use_tid_as_dataset_name = use_tid_as_dataset_name
         self._filter_errors = filter_errors
         self._task_metadata_path = task_metadata
@@ -118,7 +121,7 @@ class BenchmarkEvaluator:
         paths = [path if is_s3_url(path) else self.results_dir_input + path for path in paths]
         results_raw = pd.concat([pd.read_csv(path) for path in paths], ignore_index=True, sort=True)
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore')
+            warnings.filterwarnings("ignore")
             results_raw[TIME_INFER_S][results_raw[TIME_INFER_S] == 0] = 0.001
         if clean_data:
             # FIXME: This doesn't work on new tasks due to not comprehensive metadata
@@ -126,7 +129,7 @@ class BenchmarkEvaluator:
         if banned_datasets is not None:
             results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         if self._use_tid_as_dataset_name:
-            results_raw[DATASET] = results_raw['tid'].astype(int).astype(str)
+            results_raw[DATASET] = results_raw["tid"].astype(int).astype(str)
             if banned_datasets is not None:
                 results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         results_raw = results_raw.drop_duplicates(subset=[FRAMEWORK, DATASET, FOLD])
@@ -138,25 +141,30 @@ class BenchmarkEvaluator:
             eps = -1 / 1e8
             num_negative = len(results_raw[results_raw[METRIC_ERROR] < 0])
             if results_raw[METRIC_ERROR].min() < eps:
-                raise AssertionError(f'{METRIC_ERROR} cannot be negative! There may be a bug. '
-                                     f'Found min value: {results_raw[METRIC_ERROR].min()}')
+                raise AssertionError(
+                    f"{METRIC_ERROR} cannot be negative! There may be a bug. "
+                    f"Found min value: {results_raw[METRIC_ERROR].min()}"
+                )
             else:
-                print(f'WARNING: min {METRIC_ERROR} was found to be negative, but was higher than epsilon {eps}! '
-                      f'({results_raw[METRIC_ERROR].min()}) {num_negative} rows had negative values! '
-                      f'Setting all negative values to 0.')
+                print(
+                    f"WARNING: min {METRIC_ERROR} was found to be negative, but was higher than epsilon {eps}! "
+                    f"({results_raw[METRIC_ERROR].min()}) {num_negative} rows had negative values! "
+                    f"Setting all negative values to 0."
+                )
                 results_raw.loc[results_raw[METRIC_ERROR] < 0, METRIC_ERROR] = 0
 
-    def load_data(self,
-                  paths: list,
-                  frameworks: list = None,
-                  folds: list = None,
-                  clean_data: bool = False,
-                  problem_type=None,
-                  valid_datasets: list = None,
-                  banned_datasets: list = None,
-                  infer_batch_size: int = None,
-                  treat_folds_as_datasets: bool = False,
-                  ) -> pd.DataFrame:
+    def load_data(
+        self,
+        paths: list,
+        frameworks: list = None,
+        folds: list = None,
+        clean_data: bool = False,
+        problem_type=None,
+        valid_datasets: list = None,
+        banned_datasets: list = None,
+        infer_batch_size: int = None,
+        treat_folds_as_datasets: bool = False,
+    ) -> pd.DataFrame:
         results_raw = self._load_results(paths=paths, clean_data=clean_data, banned_datasets=banned_datasets)
         if folds is not None:
             results_raw = results_raw[results_raw[FOLD].isin(folds)]
@@ -165,19 +173,21 @@ class BenchmarkEvaluator:
                 results_raw = results_raw[results_raw[PROBLEM_TYPE].isin(problem_type)]
             else:
                 results_raw = results_raw[results_raw[PROBLEM_TYPE] == problem_type]
-            print(f'Filtering to the following problem_type: {problem_type}')
+            print(f"Filtering to the following problem_type: {problem_type}")
         if banned_datasets is not None:
             results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         if valid_datasets is not None:
             results_raw = results_raw[results_raw[DATASET].isin(valid_datasets)]
         if self._use_tid_as_dataset_name:
-            results_raw[DATASET] = results_raw['tid'].astype(int).astype(str)
+            results_raw[DATASET] = results_raw["tid"].astype(int).astype(str)
             if banned_datasets is not None:
                 results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         if infer_batch_size is not None:
             results_raw = self._update_infer_batch_size(results_raw=results_raw, infer_batch_size=infer_batch_size)
         if self._framework_nan_fill is not None:
-            results_raw = fill_missing_results_with_default(framework_nan_fill=self._framework_nan_fill, frameworks_to_fill=frameworks, results_raw=results_raw)
+            results_raw = fill_missing_results_with_default(
+                framework_nan_fill=self._framework_nan_fill, frameworks_to_fill=frameworks, results_raw=results_raw
+            )
         if frameworks is not None:
             results_raw = self._filter_frameworks(results_raw=results_raw, frameworks=frameworks)
         if treat_folds_as_datasets:
@@ -190,7 +200,7 @@ class BenchmarkEvaluator:
             if set(frameworks) != set(frameworks_present):
                 diff = list(set(frameworks).symmetric_difference(set(frameworks_present)))
                 diff = sorted(diff)
-                raise AssertionError(f'Difference in expected frameworks present: {diff}')
+                raise AssertionError(f"Difference in expected frameworks present: {diff}")
         # Round error
         results_raw[METRIC_ERROR] = results_raw[METRIC_ERROR].round(decimals=4)
 
@@ -203,29 +213,35 @@ class BenchmarkEvaluator:
 
     def _clean_data(self, results_raw):
         task_metadata = self._load_task_metadata()
-        task_metadata[DATASET] = task_metadata['name']
+        task_metadata[DATASET] = task_metadata["name"]
         # FIXME: TEMP
         results_raw = results_raw.drop(columns=[DATASET])
-        results_raw['tid'] = results_raw['tid'].astype(int)
-        pre_unique_tid = len(results_raw['tid'].unique())
+        results_raw["tid"] = results_raw["tid"].astype(int)
+        pre_unique_tid = len(results_raw["tid"].unique())
         # results_raw['dataset'] = results_raw['dataset'].map({'numerai28_6': 'numerai28.6'}).fillna(results_raw['dataset'])
-        results_raw = results_raw.merge(task_metadata[['NumberOfInstances', DATASET, 'tid']], on='tid')
+        results_raw = results_raw.merge(task_metadata[["NumberOfInstances", DATASET, "tid"]], on="tid")
 
-        post_unique_tid = len(results_raw['tid'].unique())
+        post_unique_tid = len(results_raw["tid"].unique())
 
-        print(f'Joined with task_metadata ({self._task_metadata_path}), '
-              f'filtered task IDs: {pre_unique_tid} -> {post_unique_tid}')
+        print(
+            f"Joined with task_metadata ({self._task_metadata_path}), "
+            f"filtered task IDs: {pre_unique_tid} -> {post_unique_tid}"
+        )
 
         # FIXME: TEMP
-        results_raw[TIME_INFER_S] = results_raw[TIME_INFER_S] / results_raw['NumberOfInstances'] * 10
+        results_raw[TIME_INFER_S] = results_raw[TIME_INFER_S] / results_raw["NumberOfInstances"] * 10
         return results_raw
 
     def _update_infer_batch_size(self, results_raw: pd.DataFrame, infer_batch_size: int):
         # Update infer time
-        if f'pred_time_test_with_transform_batch_size_{infer_batch_size}' in results_raw.columns:
-            results_raw['time_infer_s'] = results_raw[f'pred_time_test_with_transform_batch_size_{infer_batch_size}'].fillna(results_raw['time_infer_s'])
-        if f'pred_time_test_with_transform_{infer_batch_size}' in results_raw.columns:
-            results_raw['time_infer_s'] = results_raw[f'pred_time_test_with_transform_{infer_batch_size}'].fillna(results_raw['time_infer_s'])
+        if f"pred_time_test_with_transform_batch_size_{infer_batch_size}" in results_raw.columns:
+            results_raw["time_infer_s"] = results_raw[
+                f"pred_time_test_with_transform_batch_size_{infer_batch_size}"
+            ].fillna(results_raw["time_infer_s"])
+        if f"pred_time_test_with_transform_{infer_batch_size}" in results_raw.columns:
+            results_raw["time_infer_s"] = results_raw[f"pred_time_test_with_transform_{infer_batch_size}"].fillna(
+                results_raw["time_infer_s"]
+            )
         return results_raw
 
     def filter_errors(self, results_raw: pd.DataFrame, folds, frameworks: list = None):
@@ -234,26 +250,27 @@ class BenchmarkEvaluator:
         """
         # FIXME: Ensure correct folds, not just count
         if frameworks is None:
-            frameworks = list(results_raw['framework'].unique())
+            frameworks = list(results_raw["framework"].unique())
         for f in frameworks:
-            datasets_keep = results_raw[results_raw['framework'] == f]['dataset'].value_counts()
+            datasets_keep = results_raw[results_raw["framework"] == f]["dataset"].value_counts()
             datasets_keep = list(datasets_keep[datasets_keep == len(folds)].index)
-            results_raw = results_raw[results_raw['dataset'].isin(datasets_keep)]
+            results_raw = results_raw[results_raw["dataset"].isin(datasets_keep)]
         return results_raw
 
     def _filter_frameworks(self, results_raw: pd.DataFrame, frameworks: list):
-        return results_raw[results_raw['framework'].isin(frameworks)]
+        return results_raw[results_raw["framework"].isin(frameworks)]
 
-	def filter_datasets(self, *, max_rows=None, min_rows=None, max_rows_missing_val=None, max_features_categorical=None):
+    def filter_datasets(
+        self, *, max_rows=None, min_rows=None, max_rows_missing_val=None, max_features_categorical=None
+    ):
         # TODO: Consider having task_metadata be its own class
         task_metadata = self._load_task_metadata()
 
         if max_rows is not None:
-            task_metadata = task_metadata[task_metadata['NumberOfInstances'] <= max_rows]
+            task_metadata = task_metadata[task_metadata["NumberOfInstances"] <= max_rows]
         if max_rows_missing_val is not None:
-            task_metadata = task_metadata[task_metadata['NumberOfInstancesWithMissingValues'] <= max_rows_missing_val]
+            task_metadata = task_metadata[task_metadata["NumberOfInstancesWithMissingValues"] <= max_rows_missing_val]
         if max_features_categorical is not None:
-            task_metadata = task_metadata[task_metadata['NumberOfSymbolicFeatures'] <= max_features_categorical]
+            task_metadata = task_metadata[task_metadata["NumberOfSymbolicFeatures"] <= max_features_categorical]
 
-        return list(task_metadata['name'])
-
+        return list(task_metadata["name"])
