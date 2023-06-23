@@ -129,7 +129,6 @@ def run(
         predictor_args["query"] = train_data.text_columns[0]
         predictor_args["response"] = train_data.image_columns[0]
         predictor_args["eval_metric"] = train_data.metric
-        predictor_args["match_label"] = train_data.match_label
         del predictor_args["label"]
     elif train_data.problem_type == _TEXT_SIMILARITY:
         predictor_args["query"] = train_data.text_columns[0]
