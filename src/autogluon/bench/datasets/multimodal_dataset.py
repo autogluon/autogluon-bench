@@ -46,14 +46,26 @@ def _path_expander(path, base_folder):
 
 
 class BaseMultiModalDataset(abc.ABC):
-    def __init__(self, split: str):
+    def __init__(self, split: str, dataset_name: str, data_info: dict):
         """
         Initializes the class.
 
         Args:
             split (str): Specifies the dataset split. It should be one of the following options: 'train', 'val', 'test'.
         """
-        pass
+        try:
+            ext = data_info[split]["url"].split(".")[-1]
+            self._path = os.path.join(get_data_home_dir(), dataset_name, f"{split}.{ext}")
+            download(data_info[split]["url"], path=self._path, sha1_hash=data_info[split]["sha1sum"])
+            if ext == "csv":
+                self._data = pd.read_csv(self._path)
+            elif ext == "pq":
+                self._data = pd.read_parquet(self._path)
+        except Exception:
+            logger.warn(f"The data split {split} is not available.")
+            self._data = None
+
+        self._split = split
 
     @property
     @abc.abstractmethod
@@ -86,15 +98,6 @@ class BaseMultiModalDataset(abc.ABC):
 
 
 class BaseImageDataset(BaseMultiModalDataset):
-    def __init__(self, split: str):
-        """
-        Initializes the class.
-
-        Args:
-            split (str): Specifies the dataset split. It should be one of the following options: 'train', 'val', 'test'.
-        """
-        pass
-
     @property
     def base_folder(self):
         """Base folder that contains images"""
@@ -354,14 +357,7 @@ class MitMovies(BaseMultiModalDataset):
     _registry_name = "mit_movies"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "mit-movies", f"{split}.csv")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_csv(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @property
     def feature_columns(self):
@@ -399,14 +395,7 @@ class WomenClothingReview(BaseMultiModalDataset):
     _registry_name = "women_clothing_review"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "women_clothing_review", f"{split}.pq")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_parquet(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @classmethod
     def splits(cls):
@@ -461,14 +450,7 @@ class MelBourneAirBnb(BaseMultiModalDataset):
     _registry_name = "melbourne_airbnb"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "airbnb_melbourne", f"{split}.pq")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_parquet(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @classmethod
     def splits(cls):
@@ -537,14 +519,7 @@ class AEPricePrediction(BaseMultiModalDataset):
     _registry_name = "ae_price_prediction"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "ae_price_prediction", f"{split}.pq")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_parquet(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @classmethod
     def splits(cls):
@@ -594,14 +569,7 @@ class IMDBGenrePrediction(BaseMultiModalDataset):
     _registry_name = "imdb_genre_prediction"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "imdb_genre_prediction", f"{split}.pq")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_csv(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @property
     def data(self):
@@ -651,14 +619,7 @@ class JCPennyCategory(BaseMultiModalDataset):
     _registry_name = "jc_penney_products"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "jc_penney_products", f"{split}.pq")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_csv(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @property
     def data(self):
@@ -708,14 +669,7 @@ class NewsPopularity(BaseMultiModalDataset):
     _registry_name = "news_popularity"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "news_popularity2", f"{split}.pq")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_csv(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @property
     def data(self):
@@ -765,14 +719,7 @@ class NewsChannel(BaseMultiModalDataset):
     _registry_name = "news_channel"
 
     def __init__(self, split="train"):
-        self._split = split
-        self._path = os.path.join(get_data_home_dir(), "news_channel", f"{split}.pq")
-        try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
-            self._data = pd.read_csv(self._path)
-        except Exception:
-            logger.warn(f"The data split {self._split} is not available.")
-            self._data = None
+        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @property
     def data(self):
