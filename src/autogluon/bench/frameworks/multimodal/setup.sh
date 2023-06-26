@@ -29,5 +29,6 @@ python3 -m pip install -e core/[all,tests]
 python3 -m pip install -e features/
 python3 -m pip install -e multimodal/[tests]
 
-python3 -m mim install -q mmcv-full
-python3 -m pip install "mmdet>=2.28, <=3.0.0"
+python3 -m mim install mmcv
+python3 -m pip install "mmdet==3.0.0"
+

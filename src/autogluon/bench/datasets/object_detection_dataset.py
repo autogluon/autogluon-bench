@@ -1,4 +1,5 @@
 import abc
+import logging
 import os
 
 from autogluon.bench.utils.dataset_utils import get_data_home_dir, get_repo_url
@@ -9,8 +10,25 @@ from .constants import _OBJECT_DETECTION
 # Add dataset class names here
 __all__ = ["TinyMotorbike", "Clipart"]
 
+logger = logging.getLogger(__name__)
+
 
 class BaseObjectDetectionDataset(abc.ABC):
+    def __init__(self, split: str, dataset_name: str, data_info: dict):
+        """
+        Initializes the class.
+
+        Args:
+            split (str): Specifies the dataset split. It should be one of the following options: 'train', 'val', 'test'.
+        """
+        self._path = os.path.join(get_data_home_dir(), dataset_name)
+        load_zip.unzip(data_info["data"]["url"], unzip_dir=self._path, sha1sum=data_info["data"]["sha1sum"])
+        self._base_folder = os.path.join(self._path, dataset_name)
+        self._data_path = os.path.join(self._base_folder, "Annotations", f"{split}_cocoformat.json")
+        if not os.path.exists(self._data_path):
+            logger.warn(f"No annotation found at {self._data_path}")
+            self._data_path = None
+
     @property
     @abc.abstractmethod
     def base_folder(self):
@@ -43,10 +61,7 @@ class TinyMotorbike(BaseObjectDetectionDataset):
 
     def __init__(self, split="train"):
         self._split = f"{split}val" if split == "train" else split
-        self._path = os.path.join(get_data_home_dir(), "tiny_motorbike")
-        load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path, sha1sum=self._INFO["data"]["sha1sum"])
-        self._base_folder = os.path.join(self._path, "tiny_motorbike")
-        self._data_path = os.path.join(self._base_folder, "Annotations", f"{self._split}_cocoformat.json")
+        super().__init__(split=self._split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @property
     def base_folder(self):
@@ -73,10 +88,7 @@ class Clipart(BaseObjectDetectionDataset):
 
     def __init__(self, split="train"):
         self._split = split
-        self._path = os.path.join(get_data_home_dir(), "clipart")
-        load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path, sha1sum=self._INFO["data"]["sha1sum"])
-        self._base_folder = os.path.join(self._path, "clipart")
-        self._data_path = os.path.join(self._base_folder, "Annotations", f"{self._split}_cocoformat.json")
+        super().__init__(split=self._split, dataset_name=self._registry_name, data_info=self._INFO)
 
     @property
     def base_folder(self):
