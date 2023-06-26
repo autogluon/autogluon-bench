@@ -54,13 +54,15 @@ class BaseMultiModalDataset(abc.ABC):
             split (str): Specifies the dataset split. It should be one of the following options: 'train', 'val', 'test'.
         """
         try:
-            ext = data_info[split]["url"].split(".")[-1]
-            self._path = os.path.join(get_data_home_dir(), dataset_name, f"{split}.{ext}")
+            ext = os.path.splitext(data_info[split]["url"])[-1]
+            self._path = os.path.join(get_data_home_dir(), dataset_name, f"{split}{ext}")
             download(data_info[split]["url"], path=self._path, sha1_hash=data_info[split]["sha1sum"])
-            if ext == "csv":
+            if ext == ".csv":
                 self._data = pd.read_csv(self._path)
-            elif ext == "pq":
+            elif ext == ".pq":
                 self._data = pd.read_parquet(self._path)
+            else:
+                raise NotImplementedError(f"File extension {ext} is not supported.")
         except Exception:
             logger.warn(f"The data split {split} is not available.")
             self._data = None
