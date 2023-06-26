@@ -1,5 +1,5 @@
 # Benchmark configurations
-module: multimodal  # required
+module: tabular  # required
 mode: local  # required
 benchmark_name: ag_bench  # required
 root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
@@ -15,9 +15,8 @@ hyperparameters:  # optional
 time_limit: 10  # optional
 
 # Tabular specific
-framework: AutoGluon  # required
-label: stable  # required
+framework: AutoGluon:stable  # required
 amlb_benchmark: test  # optional
-amlb_task: iris  # optional
+amlb_task:   # optional
 amlb_constraint: test  # optional
 # amlb_custom_branch: https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` and `label` are overwritten when this is specified 

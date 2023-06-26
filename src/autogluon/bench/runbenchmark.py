@@ -52,10 +52,10 @@ def get_kwargs(module: str, configs: dict):
         return {
             "setup_kwargs": {},
             "run_kwargs": {
-                "framework": f'{configs["framework"]}:{configs["label"]}',
                 "benchmark": configs["amlb_benchmark"],
                 "constraint": configs["amlb_constraint"],
                 "task": configs.get("amlb_task"),
+                "framework": configs.get("framework"),
                 "custom_branch": configs.get("amlb_custom_branch"),
             },
         }

@@ -42,9 +42,7 @@ module_configs:
   # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
   tabular:
     framework:
-      - AutoGluon
-    label:
-      - stable
+      - AutoGluon:stable
     amlb_benchmark:
       - test
       - small
