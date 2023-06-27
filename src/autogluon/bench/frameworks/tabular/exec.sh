@@ -31,4 +31,4 @@ fi
 cd $DIR
 source .venv/bin/activate
 
-python3 ./automlbenchmark/runbenchmark.py  $amlb_args
+python3 ./automlbenchmark/runbenchmark.py $amlb_args

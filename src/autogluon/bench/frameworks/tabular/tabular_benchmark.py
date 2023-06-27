@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+from typing import List
 
 import yaml
 
@@ -29,7 +30,7 @@ class TabularBenchmark(Benchmark):
         self,
         benchmark: str = "test",
         constraint: str = "test",
-        task: str = None,
+        task: List[str] = None,
         framework: str = None,
         custom_branch: str = None,
     ):
@@ -38,7 +39,7 @@ class TabularBenchmark(Benchmark):
         Args:
             benchmark (str): The name of the benchmark to run (default: "test").
             constraint (str): The name of the constraint to use (default: "test").
-            task (str): The name of the task to run (default: None).
+            task (List[str]): The name of the task to run (default: None).
             framework (str): The name of the framework to use (default: None). Examples: "AutoGluon:latest", "AutoGluon:stable".
             custom_branch (str): The name of the custom branch to use (default: None).
 
@@ -85,7 +86,7 @@ class TabularBenchmark(Benchmark):
             command += ["-c", custom_branch_dir]
 
         if task is not None:
-            command += ["-t", task]
+            command += ["-t", " ".join(task)]
 
         result = subprocess.run(command)
         if result.returncode != 0:
