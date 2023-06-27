@@ -1,9 +1,9 @@
 # Benchmark configurations
-module: tabular  # required
+module: multimodal  # required
 mode: local  # required
 benchmark_name: ag_bench  # required
 root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
-METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
+# METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
 
 # Multimodal specific
 git_uri#branch: https://github.com/autogluon/autogluon#master  # required
@@ -13,10 +13,3 @@ hyperparameters:  # optional
   optimization.learning_rate: 0.0005
   optimization.max_epochs: 5
 time_limit: 10  # optional
-
-# Tabular specific
-framework: AutoGluon:stable  # required
-amlb_benchmark: test  # optional
-amlb_task:   # optional
-amlb_constraint: test  # optional
-# amlb_custom_branch: https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` and `label` are overwritten when this is specified 

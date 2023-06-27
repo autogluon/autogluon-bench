@@ -1,0 +1,37 @@
+# Infra configurations
+cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
+  CDK_DEPLOY_ACCOUNT: dummy  # required, update with your AWS account
+  CDK_DEPLOY_REGION: dummy  # required, update with your desired region
+  PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
+  METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
+  # DATA_BUCKET: existing-s3-bucket  # optional, S3 bucket to download your private datasets
+  # MAX_MACHINE_NUM: 20   # optional
+  # BLOCK_DEVICE_VOLUME: 100   # optional
+  # RESERVED_MEMORY_SIZE: 15000  # optional
+  # INSTANCE: g4dn.2xlarge  # optional
+  # VPC_NAME: existing-vpc-name  # optional
+
+# Benchmark configurations
+module: multimodal  # required
+mode: aws  # required
+benchmark_name: ag_bench  # required
+root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
+
+module_configs:
+  # Multimodal specific
+  multimodal:
+    git_uri#branch: # required
+      - https://github.com/autogluon/autogluon#master
+    dataset_name:  # required
+      - shopee
+      - stanford_online
+    presets:  # optional
+      - medium_quality
+      - high_quality
+    time_limit:  # optional
+      - 10
+    hyperparameters:  # optional
+      - optimization.max_epochs: 2
+        optimization.learning_rate: 0.005
+      - optimization.max_epochs: 5
+        optimization.learning_rate: 0.0005

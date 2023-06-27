@@ -1,0 +1,13 @@
+# Benchmark configurations
+module: tabular  # required
+mode: local  # required
+benchmark_name: ag_bench  # required
+root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
+# METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
+
+# Tabular specific
+framework: AutoGluon:stable  # required
+amlb_benchmark: test  # optional
+amlb_task:   # optional
+amlb_constraint: test  # optional
+# amlb_custom_branch: https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` and `label` are overwritten when this is specified 
