@@ -149,38 +149,39 @@ To override these configurations, use the `cdk_context` key in your custom confi
 
 ## Evaluating bechmark runs
 
-Innixma's `autogluon-benchmark` repository can be used to evaluate tabular benchmark runs whose results are in S3.
-Using these utilities is ad-hoc at this time, but in a coming release we will integrate this capability into `autogluon-bench` and support evaulation of multimodal benchmarks.
+Tabular benchmark results can be evaluated using the tools in `src/autogluon/bench/eval/`. The evaluation logic will aggregate, clean, and produce evaluation results for runs stored in S3.
+In a future release, we intend to add evaluation support for multimodal benchmark results.
 
 ### Evaluation Steps
 
-Clone the `autogluon-benchmark` repository:
-```
-git clone https://github.com/gidler/autogluon-benchmark.git
-```
+Begin by setting up AWS credentials for the default profile for the AWS account that has the benchmark results in S3.
 
-Confirm that AWS credentials are setup for the AWS account that has the benchmark results in S3.
-
-Run the `aggregate_all.py` script
+Step 1: Run the `aggregate_amlb_results.py` script
 ```
-python scripts/aggregate_all.py --s3_bucket {AWS_BUCKET} --s3_prefix {AWS_PREFIX} --version_name {BENCHMARK_VERSION_NAME}
+cd src/autogluon/bench/eval/
+python scripts/aggregate_amlb_results.py --s3_bucket {AWS_BUCKET} --s3_prefix {AWS_PREFIX} --version_name {BENCHMARK_VERSION_NAME}
 
-# example: python scripts/aggregate_all.py --s3_bucket autogluon-benchmark-metrics --s3_prefix tabular/ --version_name test_local_20230330T180916
+# example: python scripts/aggregate_amlb_results.py --s3_bucket autogluon-benchmark-metrics --s3_prefix tabular/ --version_name test_local_20230330T180916
 ```
 
 This will create a new file in S3 with this signature:
 ```
 s3://{AWS_BUCKET}/aggregated/{AWS_PREFIX}/{BENCHMARK_VERSION_NAME}/results.csv
+# example: s3://autogluon-benchmark-metrics/aggregated/tabular/test_local_20230330T180916/results_automlbenchmark_None_test_local_20230330T180916.csv
 ```
 
-Run the `run_generate_clean_openml` python utility. You will need to manually set the `run_name_arg` and `path_prefix` variables in the script.
+Step 2: Run the `run_generate_clean_openml` script
 ```
-python autogluon_benchmark/evaluation/runners/run_generate_clean_openml.py 
+python scipts/run_generate_clean_openml.py --run_name {NAME_OF_AGGREGATED_RUN} --file_prefix {S3_FILE_PREFIX_FROM_PREVIOUS_STEP} --results_input_dir {S3_PATH_PREFIX_FROM_LAST_STEP}
+# example: python scripts/run_generate_clean_openml.py --run_name test_local_20230330T180916 --file_prefix results_automlbenchmark_None_test_local_20230330T180916 --results_input_dir s3://autogluon-benchmark-metrics/aggregated/tabular/test_local_20230330T180916/
 ```
+
 This will create a local file of results in the `data/results/input/prepared/openml/` directory.
+Like this: `./data/results/input/prepared/openml/openml_ag_test_local_20230330T180916.csv`
 
-Run the `benchmark_evaluation` python script. You will need to manually update the `frameworks_run` and `paths` variables in the script.
+Step 3: Run the `benchmark_evaluation` python script
 ```
-python autogluon_benchmark/evaluation/runners/run_evaluation_openml.py
+python scripts/run_evaluation_openml.py --frameworks_run {NAME_OF_FRAMEWORKS_TO_EVALUATE} --paths {PATHS_TO_CLEANED_FILES} --folds_to_keep {FOLD_IDENTIFIER}
+# example: python scripts/run_evaluation_openml.py --frameworks_run AutoGluon_test_test_local_20230330T180916 --paths openml_ag_test_local_20230330T180916.csv --folds_to_keep 0
 ```
 
