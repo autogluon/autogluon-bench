@@ -80,6 +80,7 @@ class TabularBenchmark(Benchmark):
             benchmark,
             constraint,
             self.benchmark_dir,
+            self.metrics_dir,
         ]
 
         if custom_branch_dir is not None:

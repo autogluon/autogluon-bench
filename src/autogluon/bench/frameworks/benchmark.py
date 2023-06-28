@@ -48,7 +48,7 @@ class Benchmark(ABC):
                 # upload the file to S3
                 s3.upload_file(local_path, s3_bucket, s3_path)
 
-        logging.info("Metrics under %s has been saved to %s/%s.", self.metrics_dir, s3_bucket, s3_dir)
+        logging.info("Metrics under %s have been saved to s3://%s/%s.", self.metrics_dir, s3_bucket, s3_dir)
 
     def cleanup_metrics(self):
         """
