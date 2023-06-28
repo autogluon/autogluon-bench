@@ -27,27 +27,45 @@ def generate_cloud_config(
         None, help="Reserved memory size for Docker container (optional, default = 15000)"
     ),
     instance: str = typer.Option(None, help="EC2 Instance type (optional, default = 'g4dn.2xlarge')"),
-    git_uri_branch: str = typer.Option("", help="AutoGluon MultiModal git_uri#branch (comma-separated)"),
+    git_uri_branch: str = typer.Option(
+        "", help="AutoGluon MultiModal git_uri#branch (in the format 'git_uri1#branch1,git_uri2#branch2,...')"
+    ),
     dataset_names: str = typer.Option(
         "",
-        help="AutoGluon MultiModal dataset names (comma-separated, to get a list of dataset names, run `from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry\n multimodal_dataset_registry.list_keys()`)",
+        help="AutoGluon MultiModal dataset names for '--module multimodal' (comma-separated, to get a list of dataset names, run `from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry\n multimodal_dataset_registry.list_keys()`)",
     ),
     presets: str = typer.Option(
         None,
-        help="AutoGluon MultiModal presets (comma-separated, can choose from ['medium_quality', 'high_quality', 'best_quality'])",
+        help="AutoGluon MultiModal presets for '--module multimodal' (comma-separated, can choose from ['medium_quality', 'high_quality', 'best_quality'])",
     ),
-    time_limit: str = typer.Option(None, help="AutoGluon MultiModal time limit (comma-separated)"),
+    time_limit: str = typer.Option(
+        None,
+        help="AutoGluon MultiModal time limits for '--module multimodal' (in the format 'time_limit1,time_limit2,...'",
+    ),
     hyperparameters: str = typer.Option(
         None,
-        help="AutoGluon MultiModal hyperparameters (in the format '\"key1:value1,key2:value2;key1:value1,key2:value2\"'). Refer to https://auto.gluon.ai/stable/tutorials/multimodal/advanced_topics/customization.html for hyperparameter cutomization.",
+        help="AutoGluon MultiModal hyperparameters for '--module multimodal' (in the format '\"key1:value1,key2:value2;key1:value1,key2:value2;...\"'). Refer to https://auto.gluon.ai/stable/tutorials/multimodal/advanced_topics/customization.html for hyperparameter cutomization.",
     ),
-    framework: str = typer.Option("AutoGluon:stable", help="AMLB Framework, default = (comma-separated)"),
-    amlb_benchmark: str = typer.Option("", help="AMLB Benchmark (comma-separated)"),
+    framework: str = typer.Option(
+        "AutoGluon:stable",
+        help="AMLB Frameworks for '--module tabular', in the format 'Framework1:label,Framework2:label,...'",
+    ),
+    amlb_benchmark: str = typer.Option(
+        "",
+        help="AMLB Benchmarks for '--module tabular', in the format 'test,small,...'. Refer to https://github.com/openml/automlbenchmark/tree/master/resources/benchmarks for options.",
+    ),
     amlb_task: str = typer.Option(
-        None, help="AMLB Task (in the format '\"benchmark1:task1,task2;benchmark2:task3,task4\"')"
+        None,
+        help="AMLB Tasks for '--module tabular' (in the format '\"benchmark1:task1,task2;benchmark2:task3,task4,task5;...\"')",
     ),
-    amlb_constraint: str = typer.Option("", help="AMLB Constraint (comma-separated)"),
-    amlb_custom_branch: str = typer.Option(None, help="AMLB Custom Branch (comma-separated)"),
+    amlb_constraint: str = typer.Option(
+        "",
+        help="AMLB Constraints for '--module tabular', in the format 'test,1h4c,...'. Refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml for details.",
+    ),
+    amlb_custom_branch: str = typer.Option(
+        None,
+        help="Custom branch for '--module tabular', in the format 'https://github.com/<ACCOUNT1>/autogluon#<CUSTOM_BRANCH1>,https://github.com/<ACCOUNT2>/autogluon#<CUSTOM_BRANCH2>,...'",
+    ),
 ):
     config = {
         "module": module,
