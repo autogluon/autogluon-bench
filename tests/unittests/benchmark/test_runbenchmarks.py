@@ -94,8 +94,7 @@ def test_get_kwargs_multimodal():
 def test_get_kwargs_tabular():
     module = "tabular"
     configs = {
-        "framework": "AutoGluon",
-        "label": "stable",
+        "framework": "AutoGluon:stable",
         "amlb_benchmark": "test_bench",
         "amlb_task": "iris",
         "amlb_constraint": "test_constraint",

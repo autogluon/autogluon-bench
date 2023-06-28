@@ -204,20 +204,17 @@ def handler(event, context):
 
             if common_configs["module"][0] == "tabular":
                 for amlb_benchmark in amlb_benchmarks:
-                    amlb_task_values = amlb_tasks[amlb_benchmark]
-                    if amlb_task_values is None:
-                        amlb_task_values = [None]
-                    for amlb_task in amlb_task_values:
-                        extended_combination = combination + (amlb_benchmark, amlb_task)
-                        extended_keys = keys + ["amlb_benchmark", "amlb_task"]
-                        job_id, config_s3_path = process_combination(
-                            extended_combination,
-                            extended_keys,
-                            metrics_bucket,
-                            batch_job_queue,
-                            batch_job_definition,
-                        )
-                        job_configs[job_id] = config_s3_path
+                    amlb_task_values = amlb_tasks.get(amlb_benchmark)
+                    extended_combination = combination + (amlb_benchmark, amlb_task_values)
+                    extended_keys = keys + ["amlb_benchmark", "amlb_task"]
+                    job_id, config_s3_path = process_combination(
+                        extended_combination,
+                        extended_keys,
+                        metrics_bucket,
+                        batch_job_queue,
+                        batch_job_definition,
+                    )
+                    job_configs[job_id] = config_s3_path
             else:
                 job_id, config_s3_path = process_combination(
                     combination,
