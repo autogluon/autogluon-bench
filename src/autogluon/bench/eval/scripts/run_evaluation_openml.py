@@ -193,7 +193,6 @@ def run(
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--paths", type=str, help="Results Paths", required=True, nargs="+")
     parser.add_argument("--frameworks_run", type=str, help="Name of framework runs", required=True, nargs="+")

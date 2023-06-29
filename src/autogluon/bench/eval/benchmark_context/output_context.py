@@ -145,7 +145,6 @@ class OutputContext:
             print(f"FAILURE: {print_msg}\n" f"\t{e.__class__.__name__}: {e}")
             return None
         else:
-
             result_val = scores.iloc[0]["result"]
             if np.isnan(result_val):
                 print(

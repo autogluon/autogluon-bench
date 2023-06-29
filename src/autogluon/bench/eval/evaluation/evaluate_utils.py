@@ -244,7 +244,6 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
     cm = plt.cm.get_cmap("RdYlBu")
 
     for pt in problem_type_d:
-
         if pt == "binary":
             marker = "o"
         elif pt == "multiclass":
