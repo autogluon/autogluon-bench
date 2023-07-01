@@ -1,8 +1,8 @@
+import os
 import warnings
 from collections import defaultdict
 from typing import List, Optional
 
-import numpy as np
 import pandas as pd
 
 from autogluon.common.utils.s3_utils import is_s3_url
@@ -15,8 +15,10 @@ from .preprocess.preprocess_utils import convert_folds_into_separate_datasets, f
 class BenchmarkEvaluator:
     def __init__(
         self,
-        results_dir="data/results/",
-        output_suffix="ag_full_v5/1h8c",
+        results_dir: str = "data/results/",
+        results_input_dir: str = None,
+        results_output_dir: str = None,
+        output_suffix: str = "ag_full_v5/1h8c",
         use_tid_as_dataset_name: bool = False,
         filter_errors: bool = False,
         framework_nan_fill: Optional[str] = None,
@@ -104,8 +106,12 @@ class BenchmarkEvaluator:
             )
 
         self.results_dir = results_dir
-        self.results_dir_input = results_dir + "input/prepared/openml/"
-        self.results_dir_output = results_dir + f"output/openml/{output_suffix}/"
+        self.results_dir_input = (
+            results_dir + "input/prepared/openml/" if results_input_dir is None else results_input_dir
+        )
+        self.results_dir_output = (
+            results_dir + f"output/openml/{output_suffix}/" if results_output_dir is None else results_output_dir
+        )
         self._use_tid_as_dataset_name = use_tid_as_dataset_name
         self._filter_errors = filter_errors
         self._task_metadata_path = task_metadata
@@ -118,7 +124,7 @@ class BenchmarkEvaluator:
             self._columns_to_keep = None
 
     def _load_results(self, paths: list, clean_data: bool = False, banned_datasets: list = None) -> pd.DataFrame:
-        paths = [path if is_s3_url(path) else self.results_dir_input + path for path in paths]
+        paths = [path if is_s3_url(path) else os.path.join(self.results_dir_input, path) for path in paths]
         results_raw = pd.concat([pd.read_csv(path) for path in paths], ignore_index=True, sort=True)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
