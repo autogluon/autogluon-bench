@@ -100,7 +100,7 @@ def run_benchmark(
     _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
     if configs.get("METRICS_BUCKET", None):
-        s3_dir = f"{module_name}{benchmark_dir.split(module_name)[-1]}"
+        s3_dir = f"{module_name}{benchmark_dir.split(module_name, 1)[-1]}"
         benchmark.upload_metrics(s3_bucket=configs["METRICS_BUCKET"], s3_dir=s3_dir)
 
 
