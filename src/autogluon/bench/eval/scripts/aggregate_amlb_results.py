@@ -1,35 +1,39 @@
-import argparse
+import typer
 
 from autogluon.bench.eval.aggregate.results import aggregate_results
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument(
-        "--s3_bucket",
-        type=str,
-        help="Name of S3 bucket that results to aggregate get outputted to",
-        default="automl-benchmark-ag",
-        nargs="?",
-    )
-    parser.add_argument(
-        "--s3_prefix", type=str, help="Prefix for path to results needing aggregation", default="ec2/", nargs="?"
-    )
-    parser.add_argument("--version_name", type=str, help="Root folder name in EC2 of results", nargs="?")
-    parser.add_argument("--constraint", type=str, help="Name of constraint used in benchmark", default=None, nargs="?")
-    parser.add_argument("--include_infer_speed", action="store_true")
-    parser.add_argument(
-        "--mode", type=str, help='Whether to aggregate via "seq" or via "ray"', default="ray", nargs="?"
-    )
-    # parser.set_defaults(keep_params=True)
-    # parser.set_defaults(include_infer_speed=False)
-    # parser.set_defaults(constraint="24h64c")  # FIXME: Remove
-    args = parser.parse_args()
+app = typer.Typer()
+
+
+@app.command()
+def aggregate_amlb_results(
+    s3_bucket: str = typer.Option(
+        ..., help="Name of the S3 bucket to which the aggregated results will be outputted."
+    ),
+    module: str = typer.Option(..., help="Can be one of ['tabular', 'multimodal']."),
+    benchmark_name: str = typer.Option(
+        ..., help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
+    ),
+    constraint: str = typer.Option(
+        None,
+        help="Name of constraint used in benchmark, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml",
+    ),
+    include_infer_speed: bool = typer.Option(False, help="Include inference speed in aggregation."),
+    mode: str = typer.Option("ray", help='Aggregation mode: "seq" or "ray".'),
+):
+    """
+    Finds "scores/results.csv" under s3://<s3_bucket>/<module>/<benchmark_name> recursively with the constraint if provided,
+    and append all results into one file at s3://<s3_bucket>/aggregated/<module>/<benchmark_name>/results_automlbenchmark_<constraint>_<benchmark_name>.csv
+
+    Example:
+        agbench aggregate-s3-results --s3-bucket autogluon-benchmark-metrics --module tabular --benchmark-name ag_tabular_20230629T140546
+    """
 
     aggregate_results(
-        s3_bucket=args.s3_bucket,
-        s3_prefix=args.s3_prefix,
-        version_name=args.version_name,
-        constraint=args.constraint,
-        include_infer_speed=args.include_infer_speed,
-        mode=args.mode,
+        s3_bucket=s3_bucket,
+        s3_prefix=f"{module}/",
+        version_name=benchmark_name,
+        constraint=constraint,
+        include_infer_speed=include_infer_speed,
+        mode=mode,
     )
