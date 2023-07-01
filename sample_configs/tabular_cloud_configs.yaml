@@ -32,5 +32,5 @@ module_configs:
         - vehicle
     amlb_constraint:  # optional
       - test
-    amlb_custom_branch:  # either framework or amlb_custom_branch is required, when both present, amlb_custom_branch takes precedence
-      - https://github.com/gidler/autogluon#update_google_analytic_id
+    # amlb_custom_branch: 
+    #   - https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` and `label` are overwritten when this is specified 
