@@ -1,7 +1,7 @@
+import logging
+
 from autogluon.bench.eval.benchmark_context.output_suite_context import OutputSuiteContext
 from autogluon.common.savers import save_pd
-
-import logging
 
 logger = logging.getLogger(__name__)
 
