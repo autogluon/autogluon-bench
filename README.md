@@ -84,13 +84,7 @@ If it is the first time using CDK to deploy to an AWS environment (An AWS enviro
 cdk bootstrap aws://CDK_DEPLOY_ACCOUNT/CDK_DEPLOY_REGION
 ```
 
-To initiate benchmarking on the cloud, use the command below:
-
-```
-agbench run /path/to/cloud_config_file
-```
-
-You can edit the provided [sample cloud config files](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs), or use the CLI tool to generate the cloud config files locally.
+You will need a cloud configuration file to run the benchmarks. You can edit the provided [sample cloud config files](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs), or use the CLI tool to generate the cloud config files locally.
 
 For multimodal:
 
@@ -106,6 +100,12 @@ agbench generate-cloud-config --module tabular --cdk-deploy-account <AWS_ACCOUNT
 For more details, you can run
 ```
 agbench generate-cloud-config --help
+```
+
+After having the configuration file ready, use the command below to initiate benchmark runs on cloud:
+
+```
+agbench run /path/to/cloud_config_file
 ```
 
 This command automatically sets up an AWS Batch environment using instance specifications defined in the `cloud_config_file`. It also creates a lambda function named with your chosen `LAMBDA_FUNCTION_NAME`. This lambda function is automatically invoked with the cloud config file you provided, submitting multiple AWS Batch jobs to the job queue (named with the `PREFIX` you provided).
@@ -126,6 +126,8 @@ agbench get-job-status --job-ids JOB_ID_1 --job-ids JOB_ID_2 —cdk_deploy_regio
 ```
 
 Job logs can be viewed on the AWS console. Each job has an `UID` attached to the name, which you can use to identify the respective config split. After the jobs are completed and reach the `SUCCEEDED` status in the job queue, you'll find metrics saved under `S3://{METRICS_BUCKET}/{module}/{benchmark_name}_{timestamp}/{benchmark_name}_{timestamp}_{UID}`.
+
+A cloud configuration file with time-stamped `benchmark_name` is also saved under `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/{module}_cloud_configs.yaml`
 
 By default, the infrastructure created is retained for future use. To automatically remove resources after the run, use the `--remove_resources` option:
 
@@ -149,9 +151,6 @@ agbench destroy-stack --static_resource_stack STATIC_RESOURCE_STACK_NAME --batch
 where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`.
 
 
-
-
-
 ### Configure the AWS infrastructure
 
 The default infrastructure configurations are located [here](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/cloud/aws/default_config.yaml).
@@ -163,43 +162,55 @@ where:
 - `BLOCK_DEVICE_VOLUME` is the size of storage device attached to instance.
 - `LAMBDA_FUNCTION_NAME` lambda function to submit jobs to AWS Batch.
 
-To override these configurations, use the `cdk_context` key in your custom config file. See our [sample cloud config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/cloud_configs.yaml) for reference.
+To override these configurations, use the `cdk_context` key in your custom config file. See our [sample cloud config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabular_cloud_configs.yaml) for reference.
+
 
 ## Evaluating bechmark runs
 
 Tabular benchmark results can be evaluated using the tools in `src/autogluon/bench/eval/`. The evaluation logic will aggregate, clean, and produce evaluation results for runs stored in S3.
 In a future release, we intend to add evaluation support for multimodal benchmark results.
 
+
 ### Evaluation Steps
 
 Begin by setting up AWS credentials for the default profile for the AWS account that has the benchmark results in S3.
 
-Step 1: Run the `aggregate_amlb_results.py` script
+Step 1: Aggregate AMLB results on S3. After running the benchmark in [AWS mode](#run-benchmarks-on-aws), take note of the `benchmark_name` with timestamp in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/{module}_cloud_configs.yaml` and run the command below:
 ```
-cd src/autogluon/bench/eval/
-python scripts/aggregate_amlb_results.py --s3_bucket {AWS_BUCKET} --s3_prefix {AWS_PREFIX} --version_name {BENCHMARK_VERSION_NAME}
-
-# example: python scripts/aggregate_amlb_results.py --s3_bucket autogluon-benchmark-metrics --s3_prefix tabular/ --version_name test_local_20230330T180916
+agbench aggregate-amlb-results --s3-bucket {METRICS_BUCKET} --module {module} --benchmark-name {benchmark_name} --constraint {constraint}
 ```
 
-This will create a new file in S3 with this signature:
+This will create a new file on S3 with this signature:
 ```
-s3://{AWS_BUCKET}/aggregated/{AWS_PREFIX}/{BENCHMARK_VERSION_NAME}/results.csv
-# example: s3://autogluon-benchmark-metrics/aggregated/tabular/test_local_20230330T180916/results_automlbenchmark_None_test_local_20230330T180916.csv
-```
-
-Step 2: Run the `run_generate_clean_openml` script
-```
-python scipts/run_generate_clean_openml.py --run_name {NAME_OF_AGGREGATED_RUN} --file_prefix {S3_FILE_PREFIX_FROM_PREVIOUS_STEP} --results_input_dir {S3_PATH_PREFIX_FROM_LAST_STEP}
-# example: python scripts/run_generate_clean_openml.py --run_name test_local_20230330T180916 --file_prefix results_automlbenchmark_None_test_local_20230330T180916 --results_input_dir s3://autogluon-benchmark-metrics/aggregated/tabular/test_local_20230330T180916/
+s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/results_automlbenchmark_{constraint}_{benchmark_name}.csv
 ```
 
-This will create a local file of results in the `data/results/input/prepared/openml/` directory.
-Like this: `./data/results/input/prepared/openml/openml_ag_test_local_20230330T180916.csv`
-
-Step 3: Run the `benchmark_evaluation` python script
+For more details, run:
 ```
-python scripts/run_evaluation_openml.py --frameworks_run {NAME_OF_FRAMEWORKS_TO_EVALUATE} --paths {PATHS_TO_CLEANED_FILES} --folds_to_keep {FOLD_IDENTIFIER}
-# example: python scripts/run_evaluation_openml.py --frameworks_run AutoGluon_test_test_local_20230330T180916 --paths openml_ag_test_local_20230330T180916.csv --folds_to_keep 0
+agbench aggregate-amlb-results --help
+```
+
+Step 2: Further clean the aggregated results.
+
+If the file is still on S3 from the previous step, run:
+```
+agbench clean-amlb-results --benchmark-name {benchmark_name} --results-input-dir s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path
+```
+If the file is saved under a local directory `{results_input_dir}`, then run:
+```
+agbench clean-amlb-results --results-input-dir {results_input_dir} --benchmark-name {benchmark_name} --benchmark-name-in-input-path
+```
+
+This will create a local file `{results_dir}{results_output_dir}/{out_path_prefix}{benchmark_name}{out_path_suffix}`.
+
+For more details, run:
+```
+agbench clean-amlb-results --help
+```
+
+Step 3: Run evaluation on multiple cleaned files from `Step 2`
+
+```
+agbench evaluate-amlb-results --frameworks '{framework1},{framework2},...' --results-input-dir {results_input_dir} --paths 'file_name1,file_name2,...'
 ```
 
