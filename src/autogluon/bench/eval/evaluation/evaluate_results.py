@@ -1,3 +1,6 @@
+import logging
+import os
+
 import pandas as pd
 
 from autogluon.common.savers import save_pd
@@ -5,6 +8,8 @@ from autogluon.common.savers import save_pd
 from . import evaluate_utils
 from .constants import *
 from .preprocess import preprocess_utils
+
+logger = logging.getLogger(__name__)
 
 
 def evaluate(
@@ -194,8 +199,12 @@ def evaluate(
     )
 
     if output_dir:
-        save_pd.save(path=output_dir + "results_ranked_all.csv", df=results_ranked_all)
-        save_pd.save(path=output_dir + "results_ranked_by_dataset_all.csv", df=results_ranked_by_dataset_all)
+        save_pd.save(path=os.path.join(output_dir, "results_ranked_all.csv"), df=results_ranked_all)
+        logger.info(f'{os.path.join(output_dir, "results_ranked_all.csv")} saved.')
+        save_pd.save(
+            path=os.path.join(output_dir, "results_ranked_by_dataset_all.csv"), df=results_ranked_by_dataset_all
+        )
+        logger.info(f'{os.path.join(output_dir, "results_ranked_by_dataset_all.csv")} saved.')
 
     print("################################################")
     print("%s VS %s" % ("all", "all"))
@@ -235,12 +244,17 @@ def evaluate(
             # results_pairs_merged_print = results_pairs_merged_print.drop(columns=['metric_error', ])
             print(results_pairs_merged_print)
         if output_dir:
-            save_pd.save(path=output_dir + "pairwise/" + framework + ".csv", df=results_pairs_merged)
+            save_pd.save(path=os.path.join(output_dir, "pairwise", framework + ".csv"), df=results_pairs_merged)
+            logger.info(f'{os.path.join(output_dir, "pairwise", framework + ".csv")} saved.')
         results_pairs_merged_dict[framework] = results_pairs_merged
 
     if output_dir:
-        save_pd.save(path=output_dir + "results_ranked_valid.csv", df=results_ranked_valid)
-        save_pd.save(path=output_dir + "results_ranked_by_dataset_valid.csv", df=results_ranked_by_dataset_valid)
+        save_pd.save(path=os.path.join(output_dir, "results_ranked_valid.csv"), df=results_ranked_valid)
+        logger.info(f'{os.path.join(output_dir, "results_ranked_valid.csv")} saved.')
+        save_pd.save(
+            path=os.path.join(output_dir, "results_ranked_by_dataset_valid.csv"), df=results_ranked_by_dataset_valid
+        )
+        logger.info(f'{os.path.join(output_dir, "results_ranked_by_dataset_valid.csv")} saved.')
 
     return (
         results_ranked_valid,
