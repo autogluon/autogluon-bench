@@ -29,6 +29,7 @@ class MultiModalBenchmark(Benchmark):
         self,
         git_uri: str = "https://github.com/autogluon/autogluon.git",
         git_branch: str = "master",
+        agbench_dev_url: str = None,
     ):
         """
         Sets up the virtual environment for running the benchmark.
@@ -41,7 +42,11 @@ class MultiModalBenchmark(Benchmark):
             None
         """
         setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
-        command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, agbench_version]
+        command = [setup_script_path, git_uri, git_branch, self.benchmark_dir]
+        if agbench_dev_url is not None:
+            command.append(f"--AGBENCH_DEV_URL={agbench_dev_url}")
+        else:
+            command.append(f"--AG_BENCH_VER={agbench_version}")
         result = subprocess.run(command)
         if result.returncode != 0:
             logger.error(result.stderr)

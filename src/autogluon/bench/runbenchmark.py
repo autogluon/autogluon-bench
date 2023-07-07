@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def get_kwargs(module: str, configs: dict):
+def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
     """Returns a dictionary of keyword arguments to be used for setting up and running the benchmark.
 
     Args:
@@ -40,6 +40,7 @@ def get_kwargs(module: str, configs: dict):
             "setup_kwargs": {
                 "git_uri": git_uri,
                 "git_branch": git_branch,
+                "agbench_dev_url": agbench_dev_url,
             },
             "run_kwargs": {
                 "dataset_name": configs["dataset_name"],
@@ -67,11 +68,7 @@ def _get_benchmark_name(configs: dict) -> str:
     return benchmark_name
 
 
-def run_benchmark(
-    benchmark_name: str,
-    benchmark_dir: str,
-    configs: dict,
-):
+def run_benchmark(benchmark_name: str, benchmark_dir: str, configs: dict, agbench_dev_url: str = None):
     """Runs a benchmark based on the provided configuration options.
 
     Args:
@@ -93,7 +90,7 @@ def run_benchmark(
 
     benchmark = benchmark_class(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir)
 
-    module_kwargs = get_kwargs(module=module_name, configs=configs)
+    module_kwargs = get_kwargs(module=module_name, configs=configs, agbench_dev_url=agbench_dev_url)
     benchmark.setup(**module_kwargs.get("setup_kwargs", {}))
     benchmark.run(**module_kwargs.get("run_kwargs", {}))
     logger.info(f"Backing up benchmarking configs to {benchmark.metrics_dir}/configs.yaml")
@@ -267,11 +264,7 @@ def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
 
 @app.command()
 def run(
-    config_file: Annotated[str, typer.Argument(help="Path to custom config file.")],
-    remove_resources: Annotated[bool, typer.Option("--remove_resources", help="Remove resources after run.")] = False,
-    wait: Annotated[
-        bool, typer.Option("--wait", help="Whether to block and wait for the benchmark to finish")
-    ] = False,
+    dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
 
@@ -343,10 +336,10 @@ def run(
         if split_id is not None:
             benchmark_name += "_" + split_id
             benchmark_dir = os.path.join(benchmark_dir, benchmark_name)
+        if dev_branch is not None:
+            logger.info(f"Using dev branch at {dev_branch}...")
         run_benchmark(
-            benchmark_name=benchmark_name,
-            benchmark_dir=benchmark_dir,
-            configs=configs,
+            benchmark_name=benchmark_name, benchmark_dir=benchmark_dir, configs=configs, agbench_dev_url=dev_branch
         )
     else:
         raise NotImplementedError
