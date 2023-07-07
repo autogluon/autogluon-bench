@@ -119,15 +119,11 @@ def deploy_stack(custom_configs: dict) -> dict:
 
 @app.command()
 def destroy_stack(
-    static_resource_stack: Optional[str] = typer.Option(
-        None, "--static_resource_stack", help="The static resource stack name."
-    ),
-    batch_stack: Optional[str] = typer.Option(None, "--batch_stack", help="The batch stack name."),
-    cdk_deploy_account: Optional[str] = typer.Option(None, "--cdk_deploy_account", help="The CDK deploy account ID."),
-    cdk_deploy_region: Optional[str] = typer.Option(None, "--cdk_deploy_region", help="The CDK deploy region."),
-    config_file: Optional[str] = typer.Option(
-        None, "--config_file", help="Path to YAML config file containing stack information."
-    ),
+    static_resource_stack: Optional[str] = typer.Option(None, help="The static resource stack name."),
+    batch_stack: Optional[str] = typer.Option(None, help="The batch stack name."),
+    cdk_deploy_account: Optional[str] = typer.Option(None, help="The CDK deploy account ID."),
+    cdk_deploy_region: Optional[str] = typer.Option(None, help="The CDK deploy region."),
+    config_file: Optional[str] = typer.Option(None, help="Path to YAML config file containing stack information."),
 ):
     """
     This function destroys AWS CloudFormation stacks using the AWS Cloud Development Kit (CDK).

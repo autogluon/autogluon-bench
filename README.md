@@ -136,7 +136,7 @@ A cloud configuration file with time-stamped `benchmark_name` is also saved unde
 By default, the infrastructure created is retained for future use. To automatically remove resources after the run, use the `--remove_resources` option:
 
 ```bash
-agbench run path/to/cloud_config_file --remove_resources
+agbench run path/to/cloud_config_file --remove-resources
 ```
 
 This will check the job status every 2 minutes and remove resources after all jobs succeed. If any job fails, resources will be kept.
@@ -144,13 +144,13 @@ This will check the job status every 2 minutes and remove resources after all jo
 If you want to manually remove resources later, use:
 
 ```bash
-agbench destroy-stack --config_file `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`
+agbench destroy-stack --config-file `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`
 ```
 
 Or you can remove specific stacks by running:
 
 ```bash
-agbench destroy-stack --static_resource_stack STATIC_RESOURCE_STACK_NAME --batch_stack BATCH_STACK_NAME --cdk_deploy_account CDK_DEPLOY_ACCOUNT --cdk_deploy_region CDK_DEPLOY_REGION
+agbench destroy-stack --static-resource-stack STATIC_RESOURCE_STACK_NAME --batch-stack BATCH_STACK_NAME --cdk-deploy-account CDK_DEPLOY_ACCOUNT --cdk-deploy-region CDK_DEPLOY_REGION
 ```
 where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`.
 
@@ -213,4 +213,3 @@ Step 3: Run evaluation on multiple cleaned files from `Step 2`
 ```
 agbench evaluate-amlb-results --frameworks_run framework_1 --frameworks_run framework_2 --results-dir-input data/results/input/prepared/openml --paths file_name_1.csv --paths file_name_2.csv --no-clean-data
 ```
-

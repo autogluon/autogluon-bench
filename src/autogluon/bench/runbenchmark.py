@@ -166,12 +166,8 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
 @app.command()
 def get_job_status(
     job_ids: Optional[List[str]] = typer.Option(None, "--job-ids", help="List of job ids, separated by space."),
-    cdk_deploy_region: Optional[str] = typer.Option(
-        None, "--cdk_deploy_region", help="AWS region that the Batch jobs run in."
-    ),
-    config_file: Optional[str] = typer.Option(
-        None, "--config-file", help="Path to YAML config file containing job ids."
-    ),
+    cdk_deploy_region: Optional[str] = typer.Option(None, help="AWS region that the Batch jobs run in."),
+    config_file: Optional[str] = typer.Option(None, help="Path to YAML config file containing job ids."),
 ):
     """
     Query the status of AWS Batch job ids.
@@ -264,10 +260,12 @@ def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
 
 @app.command()
 def run(
+    config_file: str = typer.Argument(..., help="Path to custom config file."),
+    remove_resources: bool = typer.Option(False, help="Remove resources after run."),
+    wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish."),
     dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
-
     configs = {}
     if config_file.startswith("s3"):
         config_file = download_config(s3_path=config_file)
@@ -309,7 +307,7 @@ def run(
             if remove_resources:
                 logger.info(
                     "Resources will be deleted after the jobs are finished. You can also call \n"
-                    f"`agbench destroy-stack --config_file {aws_config_path}` "
+                    f"`agbench destroy-stack --config-file {aws_config_path}` "
                     "to delete the stack after jobs have run to completion if you choose to quit now."
                 )
 
@@ -339,6 +337,7 @@ def run(
         if split_id is not None:
             benchmark_name += "_" + split_id
             benchmark_dir = os.path.join(benchmark_dir, benchmark_name)
+        logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
         if dev_branch is not None:
             logger.info(f"Using dev branch at {dev_branch}...")
         run_benchmark(
