@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import os
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import pandas as pd
 import typer
@@ -117,13 +119,13 @@ def evaluate(
     results_dir_input: str = None,
     results_dir_output: str = None,
     output_suffix: str = "ag_full_v5/1h8c",
-    framework_nan_fill: Optional[str] = None,
-    problem_type: Union[List[str], str, None] = None,
-    folds_to_keep: Optional[List[int]] = None,
+    framework_nan_fill: str | None = None,
+    problem_type: List[str] | str | None = None,
+    folds_to_keep: List[int] | None = None,
     compute_z_score: bool = True,
     treat_folds_as_datasets: bool = False,
-    banned_datasets: Optional[List[str]] = None,
-    infer_batch_size: Optional[int] = None,
+    banned_datasets: List[str] | None = None,
+    infer_batch_size: int | None = None,
     clean_data: bool = True,
     use_tid_as_dataset_name: bool = True,
     filter_errors: bool = False,
@@ -259,7 +261,7 @@ def evaluate(
         compute_win_rate_per_dataset(
             f1=frameworks_run[0], f2=frameworks_run[1], results_raw=results_raw, folds=folds_to_keep
         )
-    if compute_z_score and len(frameworks_run) > 1:
+    if compute_z_score and len(frameworks_run) > 1 and len(folds_to_keep) > 1:
         z_stat_df = compute_stderr_z_stat_bulk(
             framework=frameworks_run[0], frameworks_to_compare=frameworks_run[1:], results_raw=results_raw
         )
