@@ -1,7 +1,9 @@
-import os
+import logging
 
 from autogluon.bench.eval.benchmark_context.output_suite_context import OutputSuiteContext
 from autogluon.common.savers import save_pd
+
+logger = logging.getLogger(__name__)
 
 
 def aggregate_results(s3_bucket, s3_prefix, version_name, constraint, include_infer_speed=False, mode="ray"):
@@ -23,4 +25,4 @@ def aggregate_results(s3_bucket, s3_prefix, version_name, constraint, include_in
 
     save_path = f"s3://{s3_bucket}/aggregated/{result_path}{aggregated_results_name}"
     save_pd.save(path=save_path, df=results_df)
-    print(f"Saved to {save_path}!")
+    logger.info(f"Aggregated results saved to {save_path}!")

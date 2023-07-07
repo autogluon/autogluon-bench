@@ -1,10 +1,63 @@
-import argparse
+import logging
+import os
+from typing import List, Optional
 
 import pandas as pd
+import typer
+from typing_extensions import Annotated
 
 from autogluon.bench.eval.evaluation.constants import FRAMEWORK
 from autogluon.bench.eval.evaluation.preprocess import preprocess_openml
 from autogluon.common.savers import save_pd
+
+app = typer.Typer()
+logger = logging.getLogger(__name__)
+
+
+@app.command()
+def clean_amlb_results(
+    benchmark_name: Annotated[
+        str, typer.Argument(help="Benchmark name populated by benchmark run, in format <benchmark_name>_<timestamp>")
+    ],
+    results_dir: str = typer.Option("data/results/", help="Root directory of raw and prepared results."),
+    results_dir_input: str = typer.Option(
+        None,
+        help="Directory of the results file '<file_prefix><constraint_str><benchmark_name_str>.csv' getting cleaned. Can be an S3 URI. If not provided, it defaults to '<results_dir>input/raw/'",
+    ),
+    results_dir_output: str = typer.Option(
+        None,
+        help="Output directory of cleaned file. Can be an S3 URI. If not provided, it defaults to '<results_dir>input/prepared/openml/'",
+    ),
+    file_prefix: str = typer.Option("results_automlbenchmark", help="File prefix of the input results files."),
+    benchmark_name_in_input_path: bool = False,
+    constraints: Annotated[
+        Optional[List[str]],
+        typer.Option(
+            help="List of AMLB constraints, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml",
+        ),
+    ] = None,
+    out_path_prefix: str = typer.Option("openml_ag_", help="Prefix of result file."),
+    out_path_suffix: str = typer.Option("", help="suffix of result file."),
+    framework_suffix_column: str = typer.Option("constraint", help="Framework suffix column."),
+):
+    """
+    Cleans and aggregate results further with unified column names and adds benchmark name into framework column.
+
+    Example:
+        agbench clean-and-save-results ag_tabular_20230629T140546 --results-dir-input s3://autogluon-benchmark-metrics/aggregated/tabular/ag_tabular_20230629T140546/ --benchmark-name-in-input-path --constraints constratint_1 --constraints constratint_2
+    """
+    clean_and_save_results(
+        run_name=benchmark_name,
+        results_dir=results_dir,
+        results_dir_input=results_dir_input,
+        results_dir_output=results_dir_output,
+        file_prefix=file_prefix,
+        run_name_in_input_path=benchmark_name_in_input_path,
+        constraints=constraints if constraints else None,
+        out_path_prefix=out_path_prefix,
+        out_path_suffix=out_path_suffix,
+        framework_suffix_column=framework_suffix_column,
+    )
 
 
 def clean_and_save_results(
@@ -20,9 +73,9 @@ def clean_and_save_results(
     framework_suffix_column="constraint",
 ):
     if results_dir_input is None:
-        results_dir_input = results_dir + "input/raw/"
+        results_dir_input = os.path.join(results_dir, "input/raw/")
     if results_dir_output is None:
-        results_dir_output = results_dir + "input/prepared/openml/"
+        results_dir_output = os.path.join(results_dir, "input/prepared/openml/")
     run_name_str = f"_{run_name}" if run_name_in_input_path else ""
 
     results_list = []
@@ -31,7 +84,7 @@ def clean_and_save_results(
     for constraint in constraints:
         constraint_str = f"_{constraint}" if constraint is not None else ""
         results = preprocess_openml.preprocess_openml_input(
-            path=results_dir_input + f"{file_prefix}{constraint_str}{run_name_str}.csv",
+            path=os.path.join(results_dir_input, f"{file_prefix}{constraint_str}{run_name_str}.csv"),
             framework_suffix=constraint_str,
             framework_suffix_column=framework_suffix_column,
         )
@@ -44,26 +97,10 @@ def clean_and_save_results(
     else:
         results_raw[FRAMEWORK] = results_raw[FRAMEWORK] + "_" + run_name
 
-    save_path = results_dir_output + f"{out_path_prefix}{run_name}{out_path_suffix}.csv"
+    save_path = os.path.join(results_dir_output, f"{out_path_prefix}{run_name}{out_path_suffix}.csv")
     save_pd.save(path=save_path, df=results_raw)
-    print(f"Saved file: {save_path}")
+    logger.info(f"Cleaned results are saved in file: {save_path}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("--run_name", type=str, help="Name of run", nargs="?")
-    parser.add_argument("--file_prefix", type=str, help="Prefix of filename", nargs="?")
-    parser.add_argument("--results_input_dir", type=str, help="Results input directory", nargs="?")
-    parser.add_argument("--constraints", type=list, help="Time constraints", default=None, nargs="?")
-    parser.add_argument("--run_name_in_input_path", type=str, help="Run name in input path", default=False, nargs="?")
-    parser.add_argument("--out_path_suffix", type=str, help="Suffix added to output file name", default="", nargs="?")
-
-    args = parser.parse_args()
-
-    clean_and_save_results(
-        args.run_name,
-        file_prefix=args.file_prefix,
-        results_dir_input=args.results_input_dir,
-        constraints=args.constraints,
-        run_name_in_input_path=args.run_name_in_input_path,
-    )
+    app()

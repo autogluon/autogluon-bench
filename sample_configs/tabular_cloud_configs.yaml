@@ -11,7 +11,7 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
   # INSTANCE: g4dn.2xlarge  # optional
 
 # Benchmark configurations
-module: multimodal  # required
+module: tabular  # required
 mode: aws  # required
 benchmark_name: ag_bench  # required
 root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
@@ -32,5 +32,5 @@ module_configs:
         - vehicle
     amlb_constraint:  # optional
       - test
-    amlb_custom_branch:  # either framework or amlb_custom_branch is required, when both present, amlb_custom_branch takes precedence
-      - https://github.com/gidler/autogluon#update_google_analytic_id
+    # amlb_custom_branch: 
+    #   - https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` and `label` are overwritten when this is specified 
