@@ -177,7 +177,7 @@ Begin by setting up AWS credentials for the default profile for the AWS account 
 
 Step 1: Aggregate AMLB results on S3. After running the benchmark in [AWS mode](#run-benchmarks-on-aws), take note of the `benchmark_name` with timestamp in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/{module}_cloud_configs.yaml` and run the command below:
 ```
-agbench aggregate-amlb-results --s3-bucket {METRICS_BUCKET} --module {module} --benchmark-name {benchmark_name} --constraint {constraint}
+agbench aggregate-amlb-results {METRICS_BUCKET} {module} {benchmark_name} --constraint {constraint}
 ```
 
 This will create a new file on S3 with this signature:
@@ -194,11 +194,11 @@ Step 2: Further clean the aggregated results.
 
 If the file is still on S3 from the previous step, run:
 ```
-agbench clean-amlb-results --benchmark-name {benchmark_name} --results-input-dir s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path
+agbench clean-amlb-results {benchmark_name} --results-input-dir s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path --constraints constratint_1 --constraints constratint_2
 ```
 If the file is saved under a local directory `{results_input_dir}`, then run:
 ```
-agbench clean-amlb-results --results-input-dir {results_input_dir} --benchmark-name {benchmark_name} --benchmark-name-in-input-path
+agbench clean-amlb-results {benchmark_name} --results-input-dir {results_input_dir} --benchmark-name-in-input-path
 ```
 
 This will create a local file `{results_dir}{results_output_dir}/{out_path_prefix}{benchmark_name}{out_path_suffix}`.
@@ -211,6 +211,6 @@ agbench clean-amlb-results --help
 Step 3: Run evaluation on multiple cleaned files from `Step 2`
 
 ```
-agbench evaluate-amlb-results --frameworks '{framework1},{framework2},...' --results-input-dir {results_input_dir} --paths 'file_name1,file_name2,...'
+agbench evaluate-amlb-results --frameworks_run framework_1 --frameworks_run framework_2 --results-dir-input data/results/input/prepared/openml --paths file_name_1.csv --paths file_name_2.csv --no-clean-data
 ```
 
