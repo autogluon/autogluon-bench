@@ -1,4 +1,5 @@
 import io
+import os
 
 from autogluon.bench.runbenchmark import (
     download_config,
@@ -74,11 +75,13 @@ def test_get_kwargs_multimodal():
         "hyperparameters": {},
         "time_limit": 3600,
     }
+    agbench_dev_url = "https://github.com/autogluon/autogluon-bench.git#master"
 
     expected_result = {
         "setup_kwargs": {
             "git_uri": "https://github.com/project",
             "git_branch": "master",
+            "agbench_dev_url": "https://github.com/autogluon/autogluon-bench.git#master",
         },
         "run_kwargs": {
             "dataset_name": "dataset",
@@ -88,7 +91,7 @@ def test_get_kwargs_multimodal():
         },
     }
 
-    assert get_kwargs(module, configs) == expected_result
+    assert get_kwargs(module, configs, agbench_dev_url) == expected_result
 
 
 def test_get_kwargs_tabular():
@@ -100,6 +103,7 @@ def test_get_kwargs_tabular():
         "amlb_constraint": "test_constraint",
         "amlb_custom_branch": "https://github.com/test/autogluon",
     }
+    agbench_dev_url = None
 
     expected_result = {
         "setup_kwargs": {},
@@ -112,7 +116,7 @@ def test_get_kwargs_tabular():
         },
     }
 
-    assert get_kwargs(module, configs) == expected_result
+    assert get_kwargs(module, configs, agbench_dev_url) == expected_result
 
 
 def test_upload_config(mocker, tmp_path):
@@ -174,9 +178,8 @@ def test_invoke_lambda(mocker):
 
 def test_run_aws_mode(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
-    remove_resources = False
 
-    run(setup["config_file"], remove_resources)
+    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=None)
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
@@ -189,9 +192,8 @@ def test_run_aws_mode(mocker, tmp_path):
 
 def test_run_aws_mode_remove_resources(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
-    remove_resources = True
 
-    run(setup["config_file"], remove_resources)
+    run(setup["config_file"], remove_resources=True, wait=False, dev_branch=None)
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
@@ -211,9 +213,8 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
 
 def test_run_aws_mode_wait(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
-    wait = True
 
-    run(setup["config_file"], wait)
+    run(setup["config_file"], remove_resources=False, wait=True, dev_branch=None)
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
     setup["mock_upload_config"].assert_called_once_with(
@@ -222,6 +223,20 @@ def test_run_aws_mode_wait(mocker, tmp_path):
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
     setup["mock_wait_for_jobs"].assert_called_once_with(config_file="test_dump")
+
+
+def test_run_aws_mode_dev_branch(mocker, tmp_path):
+    setup = setup_mock(mocker, tmp_path)
+    dev_branch = "dev_branch_url"
+
+    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=dev_branch)
+
+    assert os.environ["AG_BENCH_DEV_URL"] == dev_branch
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
+    setup["mock_upload_config"].assert_called_once_with(
+        bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
+    )
+    setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
 
 def test_run_local_mode(mocker, tmp_path):
@@ -240,14 +255,14 @@ def test_run_local_mode(mocker, tmp_path):
     mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
     mock_run_benchmark = mocker.patch("autogluon.bench.runbenchmark.run_benchmark")
 
-    remove_resources = False
-    run(str(config_file), remove_resources)
+    run(str(config_file), remove_resources=False, wait=False, dev_branch=None)
 
     mock_open.assert_called_with(str(config_file), "r")
     mock_run_benchmark.assert_called_with(
         benchmark_name="test_benchmark_test_time",
         benchmark_dir=".ag_bench_runs/test_module/test_benchmark_test_time",
         configs=configs,
+        agbench_dev_url=None,
     )
 
 
