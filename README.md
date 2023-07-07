@@ -194,14 +194,10 @@ Step 2: Further clean the aggregated results.
 
 If the file is still on S3 from the previous step, run:
 ```
-agbench clean-amlb-results {benchmark_name} --results-input-dir s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path --constraints constratint_1 --constraints constratint_2
+agbench clean-amlb-results {benchmark_name} --results-dir-input s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path --constraints constratint_1 --constraints constratint_2 --results-dir-output {results_dir_output} 
+--out-path-prefix {out_path_prefix} --out-path-suffix {out_path_suffix}
 ```
-If the file is saved under a local directory `{results_input_dir}`, then run:
-```
-agbench clean-amlb-results {benchmark_name} --results-input-dir {results_input_dir} --benchmark-name-in-input-path
-```
-
-This will create a local file `{results_dir}{results_output_dir}/{out_path_prefix}{benchmark_name}{out_path_suffix}`.
+where `{results_dir_input}` can also be a local directory. This will create a local file `{results_dir_output}/{out_path_prefix}{benchmark_name}{out_path_suffix}`.
 
 For more details, run:
 ```

@@ -32,7 +32,7 @@ def evaluate_amlb_results(
     paths: Annotated[
         Optional[List[str]],
         typer.Option(
-            help="List of file paths under '<results_dir>input/prepared/openml/' or <results_input_dir> to load the input data from. Can also include files located in s3 assuming you have the proper read permissions. E.g. 'path1,path2,...",
+            help="List of file paths under '<results_dir>input/prepared/openml/' or <results_dir_input> to load the input data from. Can also include files located in s3 assuming you have the proper read permissions. E.g. 'path1,path2,...",
         ),
     ] = None,
     frameworks_run: Annotated[
@@ -234,8 +234,8 @@ def evaluate(
         frameworks_compare_vs_all = [frameworks_run[0]]
 
     benchmark_evaluator = BenchmarkEvaluator(
-        results_input_dir=results_dir_input,
-        results_output_dir=results_dir_output,
+        results_dir_input=results_dir_input,
+        results_dir_output=results_dir_output,
         output_suffix=output_suffix,
         use_tid_as_dataset_name=use_tid_as_dataset_name,
         framework_nan_fill=framework_nan_fill,

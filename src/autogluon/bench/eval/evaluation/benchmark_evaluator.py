@@ -16,8 +16,8 @@ class BenchmarkEvaluator:
     def __init__(
         self,
         results_dir: str = "data/results/",
-        results_input_dir: str = None,
-        results_output_dir: str = None,
+        results_dir_input: str = None,
+        results_dir_output: str = None,
         output_suffix: str = "ag_full_v5/1h8c",
         use_tid_as_dataset_name: bool = False,
         filter_errors: bool = False,
@@ -35,7 +35,11 @@ class BenchmarkEvaluator:
         Parameters
         ----------
         results_dir: str, default = 'data/results/'
-            # TODO: Add docstring
+            If results_dir_input or results_dir_output is absent,
+                results_dir_input = results_dir + "input/prepared/openml/"
+                results_dir_output = results_dir + f"output/openml/{output_suffix}/"
+        results_dir_input: str, default = None
+        results_dir_output: str, default = None
         output_suffix: str, default = 'ag_full_v5/1h8c'
             # TODO: Add docstring
         use_tid_as_dataset_name : bool, default = False
@@ -107,10 +111,10 @@ class BenchmarkEvaluator:
 
         self.results_dir = results_dir
         self.results_dir_input = (
-            results_dir + "input/prepared/openml/" if results_input_dir is None else results_input_dir
+            results_dir + "input/prepared/openml/" if results_dir_input is None else results_dir_input
         )
         self.results_dir_output = (
-            results_dir + f"output/openml/{output_suffix}/" if results_output_dir is None else results_output_dir
+            results_dir + f"output/openml/{output_suffix}/" if results_dir_output is None else results_dir_output
         )
         self._use_tid_as_dataset_name = use_tid_as_dataset_name
         self._filter_errors = filter_errors
