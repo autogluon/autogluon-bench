@@ -287,7 +287,10 @@ def run(
         cloud_config_path = _dump_configs(
             benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
         )
-        os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
+        if dev_branch is not None:
+            os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
+        else:
+            os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
         infra_configs = deploy_stack(custom_configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(
             bucket=infra_configs["METRICS_BUCKET"], benchmark_name=benchmark_name, file=cloud_config_path

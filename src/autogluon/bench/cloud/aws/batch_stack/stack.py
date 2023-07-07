@@ -154,7 +154,10 @@ class BatchJobStack(core.Stack):
             f"{prefix}-ecr-docker-image-asset",
             directory=docker_base_dir,
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
-            build_args={"AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest")},
+            build_args={
+                "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
+                "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
+            },
         )
 
         docker_container_image = ecs.ContainerImage.from_docker_image_asset(docker_image_asset)
@@ -167,6 +170,10 @@ class BatchJobStack(core.Stack):
             # Bug that this parameter is not rending in the CF stack under cdk.out
             # https://github.com/aws/aws-cdk/issues/13023
             linux_params=ecs.LinuxParameters(self, f"{prefix}-linux_params", shared_memory_size=container_memory),
+            environment={
+                "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
+                "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
+            },
         )
 
         job_definition = batch.JobDefinition(
