@@ -43,6 +43,7 @@ def get_kwargs(module: str, configs: dict):
             },
             "run_kwargs": {
                 "dataset_name": configs["dataset_name"],
+                "framework": configs["git_uri#branch"].split("/")[-1],
                 "presets": configs.get("presets"),
                 "hyperparameters": configs.get("hyperparameters"),
                 "time_limit": configs.get("time_limit"),

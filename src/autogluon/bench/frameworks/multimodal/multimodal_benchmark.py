@@ -53,6 +53,7 @@ class MultiModalBenchmark(Benchmark):
     def run(
         self,
         dataset_name: str,
+        framework: str,
         presets: Optional[str] = None,
         hyperparameters: Optional[dict] = None,
         time_limit: Optional[int] = None,
@@ -77,6 +78,8 @@ class MultiModalBenchmark(Benchmark):
             exec_path,
             "--dataset_name",
             dataset_name,
+            "--framework",
+            framework,
             "--benchmark_dir",
             self.benchmark_dir,
             "--metrics_dir",

@@ -15,6 +15,7 @@ from autogluon.bench.datasets.constants import (
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
 from autogluon.bench.utils.general_utils import NumpyEncoder
 from autogluon.multimodal import MultiModalPredictor
+from autogluon.multimodal import __version__ as ag_version
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def get_args():
         type=str,
         help="Dataset that has been registered with multimodal_dataset_registry.",
     )
-
+    parser.add_argument("--framework", type=str, help="Framework (and) branch/version.")
     parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
     parser.add_argument("--metrics_dir", type=str, help="Directory to save benchmarking metrics.")
     parser.add_argument(
@@ -83,6 +84,7 @@ def save_metrics(metrics_path: str, metrics):
 
 def run(
     dataset_name: str,
+    framework: str,
     benchmark_dir: str,
     metrics_dir: str,
     time_limit: Optional[int] = None,
@@ -166,8 +168,16 @@ def run(
     end_time = time.time()
     predict_duration = round(end_time - start_time, 1)
 
+    if "#" in framework:
+        framework, version = framework.split("#")
+    else:
+        framework, version = framework, ag_version
+
     metrics = {
-        "problem_type": predictor.problem_type,
+        "task": dataset_name,
+        "framework": framework,
+        "version": version,
+        "type": predictor.problem_type,
         "utc_time": utc_time,
         "training_duration": training_duration,
         "predict_duration": predict_duration,
@@ -183,6 +193,7 @@ if __name__ == "__main__":
 
     run(
         dataset_name=args.dataset_name,
+        framework=args.framework,
         benchmark_dir=args.benchmark_dir,
         metrics_dir=args.metrics_dir,
         time_limit=args.time_limit,
