@@ -82,6 +82,7 @@ def test_get_kwargs_multimodal():
         },
         "run_kwargs": {
             "dataset_name": "dataset",
+            "framework": "project#master",
             "presets": "preset1",
             "hyperparameters": {},
             "time_limit": 3600,

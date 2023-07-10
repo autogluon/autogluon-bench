@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import logging
 import os
@@ -13,10 +14,20 @@ from autogluon.bench.datasets.constants import (
     _TEXT_SIMILARITY,
 )
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
-from autogluon.bench.utils.general_utils import NumpyEncoder
 from autogluon.multimodal import MultiModalPredictor
+from autogluon.multimodal import __version__ as ag_version
 
 logger = logging.getLogger(__name__)
+
+
+def _flatten_dict(data, separator="_", prefix=""):
+    flattened = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            flattened.update(_flatten_dict(value, separator, prefix + key + separator))
+        else:
+            flattened[prefix + key] = value
+    return flattened
 
 
 def get_args():
@@ -27,7 +38,7 @@ def get_args():
         type=str,
         help="Dataset that has been registered with multimodal_dataset_registry.",
     )
-
+    parser.add_argument("--framework", type=str, help="Framework (and) branch/version.")
     parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
     parser.add_argument("--metrics_dir", type=str, help="Directory to save benchmarking metrics.")
     parser.add_argument(
@@ -58,7 +69,7 @@ def load_dataset(
     return train_data, val_data, test_data
 
 
-def save_metrics(metrics_path: str, metrics):
+def save_metrics(metrics_path: str, metrics: dict):
     """Saves evaluation metrics to a JSON file.
 
     Args:
@@ -74,15 +85,21 @@ def save_metrics(metrics_path: str, metrics):
 
     if not os.path.exists(metrics_path):
         os.makedirs(metrics_path)
-    file = os.path.join(metrics_path, "metrics.json")
-    with open(file, "w") as f:
-        json.dump(metrics, f, indent=2, cls=NumpyEncoder)
-        logger.info("Metrics saved to %s.", metrics_path)
+    file = os.path.join(metrics_path, "results.csv")
+    flat_metrics = _flatten_dict(metrics)
+    field_names = flat_metrics.keys()
+
+    with open(file, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=field_names)
+        writer.writeheader()
+        writer.writerow(flat_metrics)
+    logger.info("Metrics saved to %s.", file)
     f.close()
 
 
 def run(
     dataset_name: str,
+    framework: str,
     benchmark_dir: str,
     metrics_dir: str,
     time_limit: Optional[int] = None,
@@ -166,14 +183,22 @@ def run(
     end_time = time.time()
     predict_duration = round(end_time - start_time, 1)
 
+    if "#" in framework:
+        framework, version = framework.split("#")
+    else:
+        framework, version = framework, ag_version
+
     metrics = {
-        "problem_type": predictor.problem_type,
+        "task": dataset_name,
+        "framework": framework,
+        "version": version,
+        "type": predictor.problem_type,
         "utc_time": utc_time,
         "training_duration": training_duration,
         "predict_duration": predict_duration,
         "scores": scores,
     }
-    save_metrics(metrics_dir, metrics)
+    save_metrics(os.path.join(metrics_dir, "scores"), metrics)
 
 
 if __name__ == "__main__":
@@ -183,6 +208,7 @@ if __name__ == "__main__":
 
     run(
         dataset_name=args.dataset_name,
+        framework=args.framework,
         benchmark_dir=args.benchmark_dir,
         metrics_dir=args.metrics_dir,
         time_limit=args.time_limit,
