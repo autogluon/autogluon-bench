@@ -20,6 +20,18 @@ from autogluon.multimodal import __version__ as ag_version
 logger = logging.getLogger(__name__)
 
 
+def _flatten_dict(dd, separator="_", prefix=""):
+    return (
+        {
+            f"{prefix}{separator}{k}" if prefix else k: v
+            for kk, vv in dd.items()
+            for k, v in _flatten_dict(vv, separator, kk).items()
+        }
+        if isinstance(dd, dict)
+        else {prefix: dd}
+    )
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -75,10 +87,13 @@ def save_metrics(metrics_path: str, metrics):
 
     if not os.path.exists(metrics_path):
         os.makedirs(metrics_path)
-    file = os.path.join(metrics_path, "metrics.json")
-    with open(file, "w") as f:
-        json.dump(metrics, f, indent=2, cls=NumpyEncoder)
-        logger.info("Metrics saved to %s.", metrics_path)
+    flat_metrics = _flatten_dict(metrics)
+    field_names = flat_metrics.keys()
+
+    with open(file, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=field_names)
+        writer.writeheader()
+        writer.writerow(flat_metrics)
     f.close()
 
 
