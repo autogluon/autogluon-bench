@@ -20,16 +20,14 @@ from autogluon.multimodal import __version__ as ag_version
 logger = logging.getLogger(__name__)
 
 
-def _flatten_dict(dd, separator="_", prefix=""):
-    return (
-        {
-            f"{prefix}{separator}{k}" if prefix else k: v
-            for kk, vv in dd.items()
-            for k, v in _flatten_dict(vv, separator, kk).items()
-        }
-        if isinstance(dd, dict)
-        else {prefix: dd}
-    )
+def _flatten_dict(data, separator="_", prefix=""):
+    flattened = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            flattened.update(_flatten_dict(value, separator, prefix + key + separator))
+        else:
+            flattened[prefix + key] = value
+    return flattened
 
 
 def get_args():
