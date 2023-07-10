@@ -185,6 +185,8 @@ This will create a new file on S3 with this signature:
 s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/results_automlbenchmark_{constraint}_{benchmark_name}.csv
 ```
 
+Currently, aggregation is also supported for multimodal benchmark results without the `--constratint` option.
+
 For more details, run:
 ```
 agbench aggregate-amlb-results --help

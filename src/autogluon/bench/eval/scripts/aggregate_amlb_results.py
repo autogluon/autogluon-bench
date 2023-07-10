@@ -20,7 +20,7 @@ def aggregate_amlb_results(
     ],
     constraint: str = typer.Option(
         None,
-        help="Name of constraint used in benchmark, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml",
+        help="Name of constraint used in benchmark, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml. Not applicable when `module==multimodal`",
     ),
     include_infer_speed: bool = typer.Option(False, help="Include inference speed in aggregation."),
     mode: str = typer.Option("ray", help='Aggregation mode: "seq" or "ray".'),
