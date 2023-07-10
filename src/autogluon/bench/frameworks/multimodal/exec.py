@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import logging
 import os
@@ -13,7 +14,6 @@ from autogluon.bench.datasets.constants import (
     _TEXT_SIMILARITY,
 )
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
-from autogluon.bench.utils.general_utils import NumpyEncoder
 from autogluon.multimodal import MultiModalPredictor
 from autogluon.multimodal import __version__ as ag_version
 
@@ -71,7 +71,7 @@ def load_dataset(
     return train_data, val_data, test_data
 
 
-def save_metrics(metrics_path: str, metrics):
+def save_metrics(metrics_path: str, metrics: dict):
     """Saves evaluation metrics to a JSON file.
 
     Args:
@@ -87,6 +87,7 @@ def save_metrics(metrics_path: str, metrics):
 
     if not os.path.exists(metrics_path):
         os.makedirs(metrics_path)
+    file = os.path.join(metrics_path, "results.csv")
     flat_metrics = _flatten_dict(metrics)
     field_names = flat_metrics.keys()
 
@@ -94,6 +95,7 @@ def save_metrics(metrics_path: str, metrics):
         writer = csv.DictWriter(f, fieldnames=field_names)
         writer.writeheader()
         writer.writerow(flat_metrics)
+    logger.info("Metrics saved to %s.", file)
     f.close()
 
 
@@ -198,7 +200,7 @@ def run(
         "predict_duration": predict_duration,
         "scores": scores,
     }
-    save_metrics(metrics_dir, metrics)
+    save_metrics(os.path.join(metrics_dir, "scores"), metrics)
 
 
 if __name__ == "__main__":
