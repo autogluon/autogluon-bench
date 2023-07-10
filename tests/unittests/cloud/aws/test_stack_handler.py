@@ -40,7 +40,9 @@ def test_construct_context():
     custom_configs = {"CDK_DEPLOY_ACCOUNT": "123456789012", "CDK_DEPLOY_REGION": "us-west-1", "PREFIX": "test"}
 
     with patch("builtins.open", mock_open(read_data=json.dumps(default_configs))) as mock_file:
-        context = construct_context(custom_configs=custom_configs)
+        with patch("autogluon.bench.cloud.aws.stack_handler.get_instance_type_specs") as mock_instance_specs:
+            mock_instance_specs.return_value = (1, 8, 32000)
+            context = construct_context(custom_configs=custom_configs)
 
     prefix = custom_configs["PREFIX"]
     assert context["CDK_DEPLOY_ACCOUNT"] == custom_configs["CDK_DEPLOY_ACCOUNT"]
@@ -51,6 +53,10 @@ def test_construct_context():
     assert context["VPC_NAME"] == default_configs["VPC_NAME"]
     assert context["STATIC_RESOURCE_STACK_NAME"] == f"{prefix}-static-resource-stack"
     assert context["BATCH_STACK_NAME"] == f"{prefix}-batch-stack"
+    assert context["CONTAINER_GPU"] == 1
+    assert context["CONTAINER_VCPU"] == 8
+    assert context["CONTAINER_MEMORY"] == 22000
+    assert context["COMPUTE_ENV_MAXV_CPUS"] == 16
 
 
 def test_deploy_stack(mocker):

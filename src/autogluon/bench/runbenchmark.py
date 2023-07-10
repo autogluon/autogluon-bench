@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def get_kwargs(module: str, configs: dict):
+def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
     """Returns a dictionary of keyword arguments to be used for setting up and running the benchmark.
 
     Args:
@@ -40,6 +40,7 @@ def get_kwargs(module: str, configs: dict):
             "setup_kwargs": {
                 "git_uri": git_uri,
                 "git_branch": git_branch,
+                "agbench_dev_url": agbench_dev_url,
             },
             "run_kwargs": {
                 "dataset_name": configs["dataset_name"],
@@ -68,11 +69,7 @@ def _get_benchmark_name(configs: dict) -> str:
     return benchmark_name
 
 
-def run_benchmark(
-    benchmark_name: str,
-    benchmark_dir: str,
-    configs: dict,
-):
+def run_benchmark(benchmark_name: str, benchmark_dir: str, configs: dict, agbench_dev_url: str = None):
     """Runs a benchmark based on the provided configuration options.
 
     Args:
@@ -94,7 +91,7 @@ def run_benchmark(
 
     benchmark = benchmark_class(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir)
 
-    module_kwargs = get_kwargs(module=module_name, configs=configs)
+    module_kwargs = get_kwargs(module=module_name, configs=configs, agbench_dev_url=agbench_dev_url)
     benchmark.setup(**module_kwargs.get("setup_kwargs", {}))
     benchmark.run(**module_kwargs.get("run_kwargs", {}))
     logger.info(f"Backing up benchmarking configs to {benchmark.metrics_dir}/configs.yaml")
@@ -170,12 +167,8 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
 @app.command()
 def get_job_status(
     job_ids: Optional[List[str]] = typer.Option(None, "--job-ids", help="List of job ids, separated by space."),
-    cdk_deploy_region: Optional[str] = typer.Option(
-        None, "--cdk_deploy_region", help="AWS region that the Batch jobs run in."
-    ),
-    config_file: Optional[str] = typer.Option(
-        None, "--config-file", help="Path to YAML config file containing job ids."
-    ),
+    cdk_deploy_region: Optional[str] = typer.Option(None, help="AWS region that the Batch jobs run in."),
+    config_file: Optional[str] = typer.Option(None, help="Path to YAML config file containing job ids."),
 ):
     """
     Query the status of AWS Batch job ids.
@@ -268,14 +261,12 @@ def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
 
 @app.command()
 def run(
-    config_file: Annotated[str, typer.Argument(help="Path to custom config file.")],
-    remove_resources: Annotated[bool, typer.Option("--remove_resources", help="Remove resources after run.")] = False,
-    wait: Annotated[
-        bool, typer.Option("--wait", help="Whether to block and wait for the benchmark to finish")
-    ] = False,
+    config_file: str = typer.Argument(..., help="Path to custom config file."),
+    remove_resources: bool = typer.Option(False, help="Remove resources after run."),
+    wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish."),
+    dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
-
     configs = {}
     if config_file.startswith("s3"):
         config_file = download_config(s3_path=config_file)
@@ -295,7 +286,10 @@ def run(
         cloud_config_path = _dump_configs(
             benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
         )
-        os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
+        if dev_branch is not None:
+            os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
+        else:
+            os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
         infra_configs = deploy_stack(custom_configs=configs.get("cdk_context", {}))
         config_s3_path = upload_config(
             bucket=infra_configs["METRICS_BUCKET"], benchmark_name=benchmark_name, file=cloud_config_path
@@ -314,7 +308,7 @@ def run(
             if remove_resources:
                 logger.info(
                     "Resources will be deleted after the jobs are finished. You can also call \n"
-                    f"`agbench destroy-stack --config_file {aws_config_path}` "
+                    f"`agbench destroy-stack --config-file {aws_config_path}` "
                     "to delete the stack after jobs have run to completion if you choose to quit now."
                 )
 
@@ -344,10 +338,11 @@ def run(
         if split_id is not None:
             benchmark_name += "_" + split_id
             benchmark_dir = os.path.join(benchmark_dir, benchmark_name)
+        logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
+        if dev_branch is not None:
+            logger.info(f"Using dev branch at {dev_branch}...")
         run_benchmark(
-            benchmark_name=benchmark_name,
-            benchmark_dir=benchmark_dir,
-            configs=configs,
+            benchmark_name=benchmark_name, benchmark_dir=benchmark_dir, configs=configs, agbench_dev_url=dev_branch
         )
     else:
         raise NotImplementedError

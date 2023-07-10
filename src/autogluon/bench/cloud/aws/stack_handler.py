@@ -6,16 +6,33 @@ import subprocess
 import tempfile
 from typing import Optional
 
+import boto3
 import typer
 import yaml
-
-from autogluon.bench.cloud.aws.constants import gpu_map, memory_map, vcpu_map
 
 with importlib.resources.path("autogluon.bench.cloud.aws", "stack_handler.py") as file_path:
     module_base_dir = os.path.dirname(file_path)
 CONTEXT_FILE = "./cdk.context.json"
 
 app = typer.Typer()
+
+
+def get_instance_type_specs(instance_type, region):
+    ec2_client = boto3.client("ec2", region_name=region)
+    response = ec2_client.describe_instance_types(InstanceTypes=[instance_type])
+
+    instance_type_info = response["InstanceTypes"][0]
+
+    gpu_info_list = instance_type_info.get("GpuInfo", [])
+    gpu_count = sum(gpu_info.get("Count", 0) for gpu_info in gpu_info_list["Gpus"])
+
+    vcpu_info = instance_type_info.get("VCpuInfo", {})
+    vcpu_count = vcpu_info.get("DefaultVCpus", 0)
+
+    memory_info = instance_type_info.get("MemoryInfo", {})
+    memory = memory_info.get("SizeInMiB", 0)
+
+    return gpu_count, vcpu_count, memory
 
 
 def _get_temp_cdk_app_path():
@@ -45,6 +62,9 @@ def construct_context(custom_configs: dict) -> dict:
         configs = yaml.safe_load(f)
     configs.update(custom_configs)
     prefix = configs["PREFIX"]
+    gpu_count, vcpu_count, memory = get_instance_type_specs(
+        instance_type=configs["INSTANCE"], region=configs["CDK_DEPLOY_REGION"]
+    )
     context_to_parse = {
         "CDK_DEPLOY_ACCOUNT": configs["CDK_DEPLOY_ACCOUNT"],
         "CDK_DEPLOY_REGION": configs["CDK_DEPLOY_REGION"],
@@ -55,11 +75,11 @@ def construct_context(custom_configs: dict) -> dict:
         "METRICS_BUCKET": configs["METRICS_BUCKET"],  # bucket to upload metrics
         "DATA_BUCKET": configs.get("DATA_BUCKET", None),  # bucket to download data
         "INSTANCE_TYPES": [configs["INSTANCE"]],  # can be a list of instance families or instance types
-        "COMPUTE_ENV_MAXV_CPUS": vcpu_map[configs["INSTANCE"]]
+        "COMPUTE_ENV_MAXV_CPUS": vcpu_count
         * configs["MAX_MACHINE_NUM"],  # total max v_cpus in batch compute environment
-        "CONTAINER_GPU": gpu_map[configs["INSTANCE"]],  # GPU reserved for container
-        "CONTAINER_VCPU": vcpu_map[configs["INSTANCE"]],  # v_cpus reserved for container
-        "CONTAINER_MEMORY": memory_map[configs["INSTANCE"]]
+        "CONTAINER_GPU": gpu_count,  # GPU reserved for container
+        "CONTAINER_VCPU": vcpu_count,  # v_cpus reserved for container
+        "CONTAINER_MEMORY": memory
         - configs[
             "RESERVED_MEMORY_SIZE"
         ],  # memory in MB reserved for container, also used for shm_size, i.e. `shared_memory_size`
@@ -119,15 +139,11 @@ def deploy_stack(custom_configs: dict) -> dict:
 
 @app.command()
 def destroy_stack(
-    static_resource_stack: Optional[str] = typer.Option(
-        None, "--static_resource_stack", help="The static resource stack name."
-    ),
-    batch_stack: Optional[str] = typer.Option(None, "--batch_stack", help="The batch stack name."),
-    cdk_deploy_account: Optional[str] = typer.Option(None, "--cdk_deploy_account", help="The CDK deploy account ID."),
-    cdk_deploy_region: Optional[str] = typer.Option(None, "--cdk_deploy_region", help="The CDK deploy region."),
-    config_file: Optional[str] = typer.Option(
-        None, "--config_file", help="Path to YAML config file containing stack information."
-    ),
+    static_resource_stack: Optional[str] = typer.Option(None, help="The static resource stack name."),
+    batch_stack: Optional[str] = typer.Option(None, help="The batch stack name."),
+    cdk_deploy_account: Optional[str] = typer.Option(None, help="The CDK deploy account ID."),
+    cdk_deploy_region: Optional[str] = typer.Option(None, help="The CDK deploy region."),
+    config_file: Optional[str] = typer.Option(None, help="Path to YAML config file containing stack information."),
 ):
     """
     This function destroys AWS CloudFormation stacks using the AWS Cloud Development Kit (CDK).

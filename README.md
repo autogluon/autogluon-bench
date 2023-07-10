@@ -32,7 +32,11 @@ cd autogluon-bench
 pip install -e .
 ```
 
-For development, please be aware that `autogluon.bench` is installed as a dependency in certain places, such as the [Dockerfile](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/Dockerfile) and [Multimodal Setup](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/frameworks/multimodal/setup.sh). To ensure that your local changes are reflected in the installed package, you may need to adjust the installation command as necessary. A recommended approach is to push your changes to a remote git branch and then pull from this branch, installing the package from source in the scripts.
+For development, please be aware that `autogluon.bench` is installed as a dependency in certain places, such as the [Dockerfile](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/Dockerfile) and [Multimodal Setup](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/frameworks/multimodal/setup.sh). We made it possible to reflect the development changes by pushing the changes to a remote GitHub branch, and providing the URI when testing on benchmark runs:
+
+```
+agbench run sample_configs/multimodal_cloud_configs.yaml --dev-branch https://github.com/suzhoum/autogluon-bench.git\#add_dev_branch
+```
 
 
 ## Run benchmarks locally
@@ -132,7 +136,7 @@ A cloud configuration file with time-stamped `benchmark_name` is also saved unde
 By default, the infrastructure created is retained for future use. To automatically remove resources after the run, use the `--remove_resources` option:
 
 ```bash
-agbench run path/to/cloud_config_file --remove_resources
+agbench run path/to/cloud_config_file --remove-resources
 ```
 
 This will check the job status every 2 minutes and remove resources after all jobs succeed. If any job fails, resources will be kept.
@@ -140,13 +144,13 @@ This will check the job status every 2 minutes and remove resources after all jo
 If you want to manually remove resources later, use:
 
 ```bash
-agbench destroy-stack --config_file `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`
+agbench destroy-stack --config-file `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`
 ```
 
 Or you can remove specific stacks by running:
 
 ```bash
-agbench destroy-stack --static_resource_stack STATIC_RESOURCE_STACK_NAME --batch_stack BATCH_STACK_NAME --cdk_deploy_account CDK_DEPLOY_ACCOUNT --cdk_deploy_region CDK_DEPLOY_REGION
+agbench destroy-stack --static-resource-stack STATIC_RESOURCE_STACK_NAME --batch-stack BATCH_STACK_NAME --cdk-deploy-account CDK_DEPLOY_ACCOUNT --cdk-deploy-region CDK_DEPLOY_REGION
 ```
 where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`.
 
@@ -211,4 +215,3 @@ Step 3: Run evaluation on multiple cleaned files from `Step 2`
 ```
 agbench evaluate-amlb-results --frameworks_run framework_1 --frameworks_run framework_2 --results-dir-input data/results/input/prepared/openml --paths file_name_1.csv --paths file_name_2.csv --no-clean-data
 ```
-
