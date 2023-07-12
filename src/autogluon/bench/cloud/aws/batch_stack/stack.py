@@ -157,6 +157,7 @@ class BatchJobStack(core.Stack):
             build_args={
                 "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
                 "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
+                "CDK_DEPLOY_REGION": os.environ["CDK_DEPLOY_REGION"],
             },
         )
 
