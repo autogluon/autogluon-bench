@@ -146,6 +146,13 @@ class BatchJobStack(core.Stack):
             vpc=vpc,
         )
 
+        # Add inbound rule for ssh access
+        # sg.add_ingress_rule(
+        #     peer=ec2.Peer.any_ipv4(),
+        #     connection=ec2.Port.tcp(22),
+        #     description="Allow SSH access from Internet"
+        # )
+
         # Currently CDK can only push to the default repo aws-cdk/assets
         # https://github.com/aws/aws-cdk/issues/12597
         # TODO: use https://github.com/cdklabs/cdk-docker-image-deployment
@@ -244,6 +251,7 @@ class BatchJobStack(core.Stack):
                 allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
                 vpc=vpc,
                 vpc_subnets=ec2.SubnetSelection(subnets=vpc.private_subnets),
+                # vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets),  # use public subnet for ssh
                 maxv_cpus=compute_env_maxv_cpus,
                 instance_role=batch_instance_profile.profile_arn,
                 instance_types=instances,
