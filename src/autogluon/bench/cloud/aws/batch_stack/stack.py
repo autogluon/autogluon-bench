@@ -198,6 +198,8 @@ class BatchJobStack(core.Stack):
                     volume=ec2.BlockDeviceVolume.ebs(block_device_volume),
                 )
             ],
+            http_tokens=ec2.LaunchTemplateHttpTokens.OPTIONAL,
+            http_endpoint=True,
         )
 
         cloudwatch_policy = iam.Policy(
