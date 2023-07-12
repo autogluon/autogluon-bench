@@ -200,6 +200,18 @@ class BatchJobStack(core.Stack):
             ],
         )
 
+        cloudwatch_policy = iam.Policy(
+            self,
+            f"{prefix}-cloudwatch-policy",
+            policy_name=f"{prefix}-cloudwatch-policy",
+            statements=[
+                iam.PolicyStatement(
+                    actions=["cloudwatch:PutMetricData"],
+                    effect=iam.Effect.ALLOW,
+                    resources=["*"],
+                )
+            ],
+        )
         batch_instance_role = iam.Role(
             self,
             f"{prefix}-instance-role",
@@ -212,6 +224,7 @@ class BatchJobStack(core.Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonEC2ContainerServiceforEC2Role"),
             ],
         )
+        batch_instance_role.attach_inline_policy(cloudwatch_policy)
 
         metrics_bucket = static_stack.metrics_bucket
         data_bucket = static_stack.data_bucket
