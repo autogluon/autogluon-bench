@@ -1,5 +1,4 @@
 import typer
-from typing_extensions import Annotated
 
 from autogluon.bench.eval.aggregate.results import aggregate_results
 
@@ -8,16 +7,11 @@ app = typer.Typer()
 
 @app.command()
 def aggregate_amlb_results(
-    s3_bucket: Annotated[
-        str, typer.Argument(help="Name of the S3 bucket to which the aggregated results will be outputted.")
-    ],
-    module: Annotated[str, typer.Argument(help="Can be one of ['tabular', 'multimodal'].")],
-    benchmark_name: Annotated[
-        str,
-        typer.Argument(
-            help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
-        ),
-    ],
+    s3_bucket: str = typer.Argument(help="Name of the S3 bucket to which the aggregated results will be outputted."),
+    module: str = typer.Argument(help="Can be one of ['tabular', 'multimodal']."),
+    benchmark_name: str = typer.Argument(
+        help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
+    ),
     constraint: str = typer.Option(
         None,
         help="Name of constraint used in benchmark, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml. Not applicable when `module==multimodal`",

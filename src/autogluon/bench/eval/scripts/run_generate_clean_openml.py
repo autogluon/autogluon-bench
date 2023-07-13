@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 @app.command()
 def clean_amlb_results(
-    benchmark_name: Annotated[
-        str, typer.Argument(help="Benchmark name populated by benchmark run, in format <benchmark_name>_<timestamp>")
-    ],
+    benchmark_name: str = typer.Argument(
+        help="Benchmark name populated by benchmark run, in format <benchmark_name>_<timestamp>"
+    ),
     results_dir: str = typer.Option("data/results/", help="Root directory of raw and prepared results."),
     results_dir_input: str = typer.Option(
         None,
@@ -30,12 +30,10 @@ def clean_amlb_results(
     ),
     file_prefix: str = typer.Option("results_automlbenchmark", help="File prefix of the input results files."),
     benchmark_name_in_input_path: bool = False,
-    constraints: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of AMLB constraints, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml",
-        ),
-    ] = None,
+    constraints: Optional[List[str]] = typer.Option(
+        None,
+        help="List of AMLB constraints, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml",
+    ),
     out_path_prefix: str = typer.Option("openml_ag_", help="Prefix of result file."),
     out_path_suffix: str = typer.Option("", help="suffix of result file."),
     framework_suffix_column: str = typer.Option("constraint", help="Framework suffix column."),

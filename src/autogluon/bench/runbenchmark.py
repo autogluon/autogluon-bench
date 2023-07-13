@@ -9,7 +9,6 @@ import boto3
 import botocore
 import typer
 import yaml
-from typing_extensions import Annotated
 
 from autogluon.bench import __version__ as agbench_version
 from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack

@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 import typer
-from typing_extensions import Annotated
 
 from autogluon.bench.eval.evaluation import evaluate_results
 from autogluon.bench.eval.evaluation.benchmark_evaluator import BenchmarkEvaluator
@@ -31,18 +30,14 @@ def evaluate_amlb_results(
         None,
         help="Output directory of evaluation files. If not provided, it defaults to '<results_dir>output/openml/<output_suffix>/'",
     ),
-    paths: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of file paths under '<results_dir>input/prepared/openml/' or <results_dir_input> to load the input data from. Can also include files located in s3 assuming you have the proper read permissions. E.g. 'path1,path2,...",
-        ),
-    ] = None,
-    frameworks_run: Annotated[
-        Optional[List[str]],
-        typer.Option(
-            help="List of framework to compare. These frameworks must be present in the 'framework' column of the loaded input files listed in the `paths` arg. E.g. 'framework1,framework2,...",
-        ),
-    ] = None,
+    paths: Optional[List[str]] = typer.Option(
+        None,
+        help="List of file paths under '<results_dir>input/prepared/openml/' or <results_dir_input> to load the input data from. Can also include files located in s3 assuming you have the proper read permissions. E.g. 'path1,path2,...",
+    ),
+    frameworks_run: Optional[List[str]] = typer.Option(
+        None,
+        help="List of framework to compare. These frameworks must be present in the 'framework' column of the loaded input files listed in the `paths` arg. E.g. 'framework1,framework2,...",
+    ),
     output_suffix: str = typer.Option(
         "ag_eval",
         help="Output suffix of the path to save the output files, e.g. '<results_dir>output/openml/<output_suffix>/'.",
@@ -51,17 +46,15 @@ def evaluate_amlb_results(
         None,
         help="Framework used as the default result to fill missing values for the frameworks in `frameworks`. E.g., if `framework_nan_fill='foo'`, for dataset A of `framework='bar'` has no result (or NaN result), it is replaced by the result of `'foo'` on dataset A.",
     ),
-    problem_types: Annotated[
-        Optional[List[str]],
-        typer.Option(help="List of problem types to filter results to. E.g. 'problem_type1,problem_type2,..."),
-    ] = None,
-    folds_to_keep: Annotated[
-        Optional[List[int]], typer.Option(help="List of result folds to use. By default folds 0-9 (10-fold) are used.")
-    ] = None,
-    banned_datasets: Annotated[
-        Optional[List[str]],
-        typer.Option(help="List of datasets to skip during evaluation. E.g. 'dataset1,dataset2,..."),
-    ] = None,
+    problem_types: Optional[List[str]] = typer.Option(
+        None, help="List of problem types to filter results to. E.g. 'problem_type1,problem_type2,..."
+    ),
+    folds_to_keep: Optional[List[int]] = typer.Option(
+        None, help="List of result folds to use. By default folds 0-9 (10-fold) are used."
+    ),
+    banned_datasets: Optional[List[str]] = typer.Option(
+        None, help="List of datasets to skip during evaluation. E.g. 'dataset1,dataset2,..."
+    ),
     infer_batch_size: int = typer.Option(
         None,
         help="If specified, will replace the `time_infer_s` column with the value in column `pred_time_test_with_transform_batch_size_{infer_batch_size}`. If a given row does not have a value in the infer_batch_size column, the original `time_infer_s` value is used.",
