@@ -15,20 +15,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v3
     - name: Set up Python
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: '3.8'
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install setuptools wheel twine
+        pip install build twine
     - name: Build and publish
       env:
         TWINE_USERNAME: ${{ secrets. PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets. PYPI_PASSWORD }}
-        RELEASE: 1
       run: |
-        python3 setup.py sdist bdist_wheel
+        python -m build
         twine upload dist/* --verbose
