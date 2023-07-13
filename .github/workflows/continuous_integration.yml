@@ -11,24 +11,35 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Set up Python
+      - name: Set up Python 3.8
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-      - name: Lint Check
+          python-version: '3.8'
+      - name: Install dependencies
         run: |
-          chmod +x ./.github/workflow_scripts/lint_check.sh && ./.github/workflow_scripts/lint_check.sh
+          python -m pip install --upgrade pip
+          python -m pip install tox
+      - name: Lint Check
+        run: tox -e lint
   
   run_tests:
     needs: lint_check
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-      - name: Run Bench Tests
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
         run: |
-          chmod +x ./.github/workflow_scripts/test_bench.sh && ./.github/workflow_scripts/test_bench.sh
+          python -m pip install --upgrade pip
+          pip install tox
+      - name: Run Unit Tests
+        run: |
+          tox -e py${{ matrix.python-version }}

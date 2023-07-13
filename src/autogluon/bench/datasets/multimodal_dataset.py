@@ -141,7 +141,7 @@ class Shopee(BaseImageDataset):
                 lambda ele: _path_expander(ele, base_folder=self._base_folder)
             )
         except FileNotFoundError as e:
-            logger.warn(e)
+            logger.warn(f"The data split {self._split} is not available.")
             self._data = None
 
     @property
@@ -198,7 +198,7 @@ class StanfordOnline(BaseMatcherDataset):
                     lambda ele: _path_expander(ele, base_folder=self._base_folder)
                 )
         except FileNotFoundError as e:
-            logger.warn(e)
+            logger.warn(f"The data split {self._split} is not available.")
             self._data = None
 
     @property
@@ -255,7 +255,7 @@ class Flickr30k(BaseMatcherDataset):
             self._label_col = "relevance"
             self._data[self._label_col] = [1] * len(self._data)
         except FileNotFoundError as e:
-            logger.warn(e)
+            logger.warn(f"The data split {self._split} is not available.")
             self._data = None
 
     @property
