@@ -11,9 +11,10 @@ Welcome to AutoGluon-Bench, a suite for benchmarking your AutoML frameworks.
 Follow the steps below to set up autogluon-bench:
 
 ```bash
-# create virtual env
+# create virtual env and update pip
 python3 -m venv .venv_agbench
 source .venv_agbench/bin/activate
+python3 -m pip install --upgrade pip
 ```
 
 Install `autogloun-bench` from PyPI:
@@ -22,14 +23,14 @@ Install `autogloun-bench` from PyPI:
 python3 -m pip install autogluon.bench
 ```
 
-Or install `autogluon-bench` from source:
+Install `autogluon-bench` from source for development:
 
 ```bash
 git clone https://github.com/autogluon/autogluon-bench.git
 cd autogluon-bench
 
 # install from source in editable mode
-pip install -e .
+pip install -e ".[tests]"
 ```
 
 For development, please be aware that `autogluon.bench` is installed as a dependency in certain places, such as the [Dockerfile](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/Dockerfile) and [Multimodal Setup](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/frameworks/multimodal/setup.sh). We made it possible to reflect the development changes by pushing the changes to a remote GitHub branch, and providing the URI when testing on benchmark runs:
@@ -167,6 +168,13 @@ where:
 - `LAMBDA_FUNCTION_NAME` lambda function to submit jobs to AWS Batch.
 
 To override these configurations, use the `cdk_context` key in your custom config file. See our [sample cloud config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabular_cloud_configs.yaml) for reference.
+
+
+### Monitoring metrics for your instances on AWS
+
+A variety of metrics are available for the EC2 instances that are launched during benchmarking. These can be accessed through the AWS Console by following this navigation path: `CloudWatch` -> `All metrics` -> `AWS namespaces` -> `EC2`. For a comprehensive list of these metrics, refer to the [official AWS documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html).
+
+In addition to the standard metrics, we also provide a custom metric for `GPUUtilization`. This can be found in the `CloudWatch` section under `All metrics` -> `Custom namespaces` -> `EC2`. Please note that the `GPUUtilization` metric is also updated every five minutes.
 
 
 ## Evaluating bechmark runs
