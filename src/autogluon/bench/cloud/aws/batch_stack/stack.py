@@ -22,7 +22,7 @@ Sample CDK code for creating the required infrastructure for running a AWS Batch
 AWS Batch as the compute enviroment in which a docker image runs the benchmarking script.
 """
 
-with importlib.resources.path("autogluon.bench", "Dockerfile") as file_path:
+with importlib.resources.path("autogluon.bench.cloud.aws.docker", "Dockerfile") as file_path:
     docker_base_dir = os.path.dirname(file_path)
 
 with importlib.resources.path("autogluon.bench.cloud.aws.batch_stack.lambdas", "lambda_function.py") as file_path:
@@ -146,6 +146,13 @@ class BatchJobStack(core.Stack):
             vpc=vpc,
         )
 
+        # Add inbound rule for ssh access
+        # sg.add_ingress_rule(
+        #     peer=ec2.Peer.any_ipv4(),
+        #     connection=ec2.Port.tcp(22),
+        #     description="Allow SSH access from Internet"
+        # )
+
         # Currently CDK can only push to the default repo aws-cdk/assets
         # https://github.com/aws/aws-cdk/issues/12597
         # TODO: use https://github.com/cdklabs/cdk-docker-image-deployment
@@ -157,6 +164,7 @@ class BatchJobStack(core.Stack):
             build_args={
                 "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
                 "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
+                "CDK_DEPLOY_REGION": os.environ["CDK_DEPLOY_REGION"],
             },
         )
 
@@ -197,8 +205,22 @@ class BatchJobStack(core.Stack):
                     volume=ec2.BlockDeviceVolume.ebs(block_device_volume),
                 )
             ],
+            http_tokens=ec2.LaunchTemplateHttpTokens.OPTIONAL,
+            http_endpoint=True,
         )
 
+        cloudwatch_policy = iam.Policy(
+            self,
+            f"{prefix}-cloudwatch-policy",
+            policy_name=f"{prefix}-cloudwatch-policy",
+            statements=[
+                iam.PolicyStatement(
+                    actions=["cloudwatch:PutMetricData"],
+                    effect=iam.Effect.ALLOW,
+                    resources=["*"],
+                )
+            ],
+        )
         batch_instance_role = iam.Role(
             self,
             f"{prefix}-instance-role",
@@ -211,6 +233,7 @@ class BatchJobStack(core.Stack):
                 iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonEC2ContainerServiceforEC2Role"),
             ],
         )
+        batch_instance_role.attach_inline_policy(cloudwatch_policy)
 
         metrics_bucket = static_stack.metrics_bucket
         data_bucket = static_stack.data_bucket
@@ -228,6 +251,7 @@ class BatchJobStack(core.Stack):
                 allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
                 vpc=vpc,
                 vpc_subnets=ec2.SubnetSelection(subnets=vpc.private_subnets),
+                # vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets),  # use public subnet for ssh
                 maxv_cpus=compute_env_maxv_cpus,
                 instance_role=batch_instance_profile.profile_arn,
                 instance_types=instances,
