@@ -11,6 +11,7 @@ if [ ! -d $DIR ]; then
   mkdir -p $DIR
 fi
 
+echo "Cloning $GIT_URI#$BRANCH..."
 repo_name=$(basename -s .git $(echo $GIT_URI))
 git clone --depth 1 --single-branch --branch ${BRANCH} --recurse-submodules ${GIT_URI} $DIR/$repo_name
 

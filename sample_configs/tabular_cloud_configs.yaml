@@ -20,6 +20,8 @@ module_configs:
   # Tabular specific
   # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
   tabular:
+    git_uri#branch:  # required, can be any AMLB custom fork and branch
+      - https://github.com/openml/automlbenchmark.git#stable
     framework:  # either framework or amlb_custom_branch is required
       - AutoGluon:stable
     amlb_benchmark:  # required, each benchmark contains a list of datasets, can be subsetted by amlb_task below
@@ -33,4 +35,4 @@ module_configs:
     amlb_constraint:  # optional
       - test
     # amlb_custom_branch: 
-    #   - https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` is overwritten when this is specified 
+    #   - https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` value is overriden when this is specified 

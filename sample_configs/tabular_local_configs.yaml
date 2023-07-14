@@ -6,6 +6,7 @@ root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 # METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
 
 # Tabular specific
+git_uri#branch: https://github.com/openml/automlbenchmark.git#stable  # required, can be any AMLB custom fork and branch
 framework: AutoGluon:stable  # required
 amlb_benchmark: test  # optional
 amlb_task:   # optional

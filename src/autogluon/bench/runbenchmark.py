@@ -33,8 +33,8 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
 
+    git_uri, git_branch = configs["git_uri#branch"].split("#")
     if module == "multimodal":
-        git_uri, git_branch = configs["git_uri#branch"].split("#")
         return {
             "setup_kwargs": {
                 "git_uri": git_uri,
@@ -51,7 +51,10 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
         }
     elif module == "tabular":
         return {
-            "setup_kwargs": {},
+            "setup_kwargs": {
+                "git_uri": git_uri,
+                "git_branch": git_branch,
+            },
             "run_kwargs": {
                 "benchmark": configs["amlb_benchmark"],
                 "constraint": configs["amlb_constraint"],
