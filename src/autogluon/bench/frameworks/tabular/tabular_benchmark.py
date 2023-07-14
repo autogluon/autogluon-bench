@@ -91,8 +91,6 @@ class TabularBenchmark(Benchmark):
 
         result = subprocess.run(command)
         if result.returncode != 0:
-            logger.error(result.stderr)
             sys.exit(1)
         else:
-            logger.info(result.stdout)
             logger.info(f"Benchmark {self.benchmark_name} is complete.")

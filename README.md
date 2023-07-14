@@ -36,7 +36,7 @@ pip install -e ".[tests]"
 For development, please be aware that `autogluon.bench` is installed as a dependency in certain places, such as the [Dockerfile](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/Dockerfile) and [Multimodal Setup](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/frameworks/multimodal/setup.sh). We made it possible to reflect the development changes by pushing the changes to a remote GitHub branch, and providing the URI when testing on benchmark runs:
 
 ```
-agbench run sample_configs/multimodal_cloud_configs.yaml --dev-branch https://github.com/suzhoum/autogluon-bench.git\#add_dev_branch
+agbench run sample_configs/multimodal_cloud_configs.yaml --dev-branch https://github.com/<username>/autogluon-bench.git#<dev_branch>
 ```
 
 

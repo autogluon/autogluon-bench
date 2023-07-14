@@ -49,10 +49,8 @@ class MultiModalBenchmark(Benchmark):
             command.append(f"--AG_BENCH_VER={agbench_version}")
         result = subprocess.run(command)
         if result.returncode != 0:
-            logger.error(result.stderr)
             sys.exit(1)
         else:
-            logger.info(result.stdout)
             logger.info("Successfully set up the environment under %s/.venv.", self.benchmark_dir)
 
     def run(
@@ -98,8 +96,6 @@ class MultiModalBenchmark(Benchmark):
             command += ["--time_limit", str(time_limit)]
         result = subprocess.run(command)
         if result.returncode != 0:
-            logger.error(result.stderr)
             sys.exit(1)
         else:
-            logger.info(result.stdout)
             logger.info(f"Benchmark {self.benchmark_name} on dataset {dataset_name} is complete.")
