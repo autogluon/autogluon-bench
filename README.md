@@ -55,11 +55,18 @@ The results are stored in the following directory: `{WORKING_DIR}/{root_dir}/{mo
 
 ### Tabular Benchmark
 
-To perform tabular benchmarking, set the module to tabular. You must set both Benchmark Configurations and Tabular Specific configurations, and each should have a single value. Refer to the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/local_configs.yaml) for more details.
+To perform tabular benchmarking, set the module to tabular. You must set both Benchmark Configurations and Tabular Specific configurations, and each should have a single value. Refer to the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml) for more details.
 
 The tabular module leverages the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via the configuration file mentioned previously.
 
-To benchmark a custom branch of AutoGluon on `tabular` module, use `amlb_custom_branch: https://github.com/REPO/autogluon#BRANCH` in the configuration file.
+Custom configuration is supported by providing a local directory to `amlb_user_dir` in the config, by which custom frameworks, constraints and datasets can be overriden. We have a minimum working [custom config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/amlb_configs) setup for benchmarking on a custom framework (a `AutoGluon` dev branch). In the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml), change the following field to:
+
+```
+framework: AutoGluon_dev:example
+amlb_user_dir: path_to/sample_configs/amlb_configs 
+```
+
+For more customizations, please follow the [example custom configuration folder](https://github.com/openml/automlbenchmark/tree/master/examples/custom) provided by AMLB and their [documentation](https://github.com/openml/automlbenchmark/blob/master/docs/HOWTO.md#custom-configuration). 
 
 
 ### Multimodal Benchmark

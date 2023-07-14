@@ -102,7 +102,7 @@ def test_get_kwargs_tabular():
         "amlb_benchmark": "test_bench",
         "amlb_task": "iris",
         "amlb_constraint": "test_constraint",
-        "amlb_custom_branch": "https://github.com/test/autogluon",
+        "amlb_user_dir": "sample_configs/amlb_configs",
     }
     agbench_dev_url = None
 
@@ -113,7 +113,7 @@ def test_get_kwargs_tabular():
             "benchmark": "test_bench",
             "constraint": "test_constraint",
             "task": "iris",
-            "custom_branch": "https://github.com/test/autogluon",
+            "user_dir": "sample_configs/amlb_configs",
         },
     }
 

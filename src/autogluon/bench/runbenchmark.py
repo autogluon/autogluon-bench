@@ -60,7 +60,7 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
                 "constraint": configs["amlb_constraint"],
                 "task": configs.get("amlb_task") if configs.get("amlb_task") else None,
                 "framework": configs.get("framework"),
-                "custom_branch": configs.get("amlb_custom_branch"),
+                "user_dir": configs.get("amlb_user_dir"),
             },
         }
 

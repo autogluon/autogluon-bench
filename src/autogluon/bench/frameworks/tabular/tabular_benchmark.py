@@ -34,7 +34,7 @@ class TabularBenchmark(Benchmark):
         constraint: str = "test",
         task: List[str] = None,
         framework: str = None,
-        custom_branch: str = None,
+        user_dir: str = None,
     ):
         """Runs the tabular benchmark.
 
@@ -43,37 +43,11 @@ class TabularBenchmark(Benchmark):
             constraint (str): The name of the constraint to use (default: "test").
             task (List[str]): The name of the task to run (default: None).
             framework (str): The name of the framework to use (default: None). Examples: "AutoGluon:latest", "AutoGluon:stable".
-            custom_branch (str): The name of the custom branch to use (default: None).
+            user_dir (str): Path to custom configs to use (default: None).
 
         Returns:
             None
         """
-        if framework is None and custom_branch is None:
-            raise KeyError("Either 'framework' or 'custom_branch' should be provided.")
-
-        custom_branch_dir = None
-        if custom_branch is not None:
-            custom_repo, custom_branch_name = tuple(custom_branch.split("#"))
-            custom_branch_dir = self.benchmark_dir
-
-            framework = "AutoGluon_dev"
-
-            custom_config_contents = {
-                "frameworks": {
-                    "definition_file": ["{root}/resources/frameworks.yaml", "{user}/frameworks.yaml"],
-                    "allow_duplicates": "true",
-                }
-            }
-
-            with open(os.path.join(custom_branch_dir, "amlb_configs.yaml"), "w") as fo:
-                yaml.dump(custom_config_contents, fo)
-
-            custom_framework_contents = {
-                framework: {"extends": "AutoGluon", "repo": custom_repo, "version": custom_branch_name}
-            }
-
-            with open(os.path.join(custom_branch_dir, "frameworks.yaml"), "w") as fo:
-                yaml.dump(custom_framework_contents, fo)
 
         exec_script_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.sh"
         command = [
@@ -85,11 +59,11 @@ class TabularBenchmark(Benchmark):
             self.metrics_dir,
         ]
 
-        if custom_branch_dir is not None:
-            command += ["-c", custom_branch_dir]
-
         if task is not None:
             command += ["-t", " ".join(task)]
+
+        if user_dir is not None:
+            command += ["-u", user_dir]
 
         result = subprocess.run(command)
         if result.returncode != 0:

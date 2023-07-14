@@ -28,7 +28,7 @@ def generate_cloud_config(
     ),
     instance: str = typer.Option(None, help="EC2 Instance type (optional, default = 'g4dn.2xlarge')"),
     git_uri_branch: str = typer.Option(
-        "", help="AutoGluon MultiModal git_uri#branch (in the format 'git_uri1#branch1,git_uri2#branch2,...')"
+        "", help="AutoGluon MultiModal or AMLB git_uri#branch (in the format 'git_uri1#branch1,git_uri2#branch2,...')"
     ),
     dataset_names: str = typer.Option(
         "",
@@ -62,9 +62,9 @@ def generate_cloud_config(
         "",
         help="AMLB Constraints for '--module tabular', in the format 'test,1h4c,...'. Refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml for details.",
     ),
-    amlb_custom_branch: str = typer.Option(
+    amlb_user_dir: str = typer.Option(
         None,
-        help="Custom branch for '--module tabular', in the format 'https://github.com/<ACCOUNT1>/autogluon#<CUSTOM_BRANCH1>,https://github.com/<ACCOUNT2>/autogluon#<CUSTOM_BRANCH2>,...'",
+        help="Custom config directory.",
     ),
 ):
     config = {
@@ -93,9 +93,9 @@ def generate_cloud_config(
         cdk_context["INSTANCE"] = instance
 
     config["cdk_context"] = cdk_context
+    git_uri_branch = git_uri_branch.split(",") if git_uri_branch else None
 
     if module == "multimodal":
-        git_uri_branch = git_uri_branch.split(",") if git_uri_branch else None
         dataset_names = dataset_names.split(",") if dataset_names else None
         presets = presets.split(",") if presets else None
         time_limit = [int(t.strip()) for t in time_limit.split(",")] if time_limit else None
@@ -137,9 +137,10 @@ def generate_cloud_config(
                     amlb_task_dict[benchmark] = task_list
             amlb_task = amlb_task_dict
         amlb_constraint = amlb_constraint.split(",") if amlb_constraint else None
-        amlb_custom_branch = amlb_custom_branch.split(",") if amlb_custom_branch else None
+        amlb_user_dir = amlb_user_dir.split(",") if amlb_user_dir else None
 
         module_configs = {
+            "git_uri#branch": git_uri_branch,
             "framework": framework,
             "amlb_benchmark": amlb_benchmark,
             "amlb_constraint": amlb_constraint,
@@ -147,8 +148,8 @@ def generate_cloud_config(
 
         if amlb_task:
             module_configs["amlb_task"] = amlb_task
-        if amlb_custom_branch:
-            module_configs["amlb_custom_branch"] = amlb_custom_branch
+        if amlb_user_dir:
+            module_configs["amlb_user_dir"] = amlb_user_dir
 
         config["module_configs"] = {"tabular": module_configs}
     else:
