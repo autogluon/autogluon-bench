@@ -277,7 +277,7 @@ def run(
     if not re.search(timestamp_pattern, benchmark_name):
         benchmark_name += "_" + formatted_time()
 
-    root_dir = configs.get("root_dir", ".ag_bench_runs")
+    root_dir = configs.get("root_dir", "ag_bench_runs")
     benchmark_dir = os.path.join(root_dir, configs["module"], benchmark_name)
 
     if configs["mode"] == "aws":

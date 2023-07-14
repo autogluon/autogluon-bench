@@ -14,7 +14,7 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
 module: tabular  # required
 mode: aws  # required
 benchmark_name: ag_bench  # required
-root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
+root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
 module_configs:
   # Tabular specific

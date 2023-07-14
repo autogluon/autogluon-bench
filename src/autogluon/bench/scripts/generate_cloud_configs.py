@@ -7,7 +7,7 @@ app = typer.Typer()
 @app.command()
 def generate_cloud_config(
     module: str = typer.Option(..., help="The module to generate config for: 'multimodal' or 'tabular'"),
-    root_dir: str = typer.Option(".ag_bench_runs", help="Root directory (optional, default = '.ag_bench_runs')"),
+    root_dir: str = typer.Option("ag_bench_runs", help="Root directory (optional, default = 'ag_bench_runs')"),
     benchmark_name: str = typer.Option("ag_bench", help="Benchmark name (optional, default = 'ag_bench')"),
     cdk_deploy_account: str = typer.Option(..., help="CDK deploy account"),
     cdk_deploy_region: str = typer.Option(..., help="CDK deploy region"),

@@ -261,7 +261,7 @@ def test_run_local_mode(mocker, tmp_path):
     mock_open.assert_called_with(str(config_file), "r")
     mock_run_benchmark.assert_called_with(
         benchmark_name="test_benchmark_test_time",
-        benchmark_dir=".ag_bench_runs/test_module/test_benchmark_test_time",
+        benchmark_dir="ag_bench_runs/test_module/test_benchmark_test_time",
         configs=configs,
         agbench_dev_url=None,
     )
