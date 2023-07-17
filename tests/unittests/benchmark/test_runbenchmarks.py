@@ -98,6 +98,7 @@ def test_get_kwargs_multimodal():
 def test_get_kwargs_tabular():
     module = "tabular"
     configs = {
+        "git_uri#branch": "https://github.com/openml/automlbenchmark.git#stable",
         "framework": "AutoGluon:stable",
         "amlb_benchmark": "test_bench",
         "amlb_task": "iris",
@@ -107,7 +108,10 @@ def test_get_kwargs_tabular():
     agbench_dev_url = None
 
     expected_result = {
-        "setup_kwargs": {},
+        "setup_kwargs": {
+            "git_uri": "https://github.com/openml/automlbenchmark.git",
+            "git_branch": "stable",
+        },
         "run_kwargs": {
             "framework": "AutoGluon:stable",
             "benchmark": "test_bench",
