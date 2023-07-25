@@ -14,13 +14,15 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
 module: tabular  # required
 mode: aws  # required
 benchmark_name: ag_bench  # required
-root_dir: .ag_bench_runs  # optional, default = ".ag_bench_runs"
+root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
 module_configs:
   # Tabular specific
   # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
   tabular:
-    framework:  # either framework or amlb_custom_branch is required
+    git_uri#branch:  # required, can be any AMLB custom fork and branch
+      - https://github.com/openml/automlbenchmark.git#stable
+    framework:  # required
       - AutoGluon:stable
     amlb_benchmark:  # required, each benchmark contains a list of datasets, can be subsetted by amlb_task below
       - test
@@ -32,5 +34,5 @@ module_configs:
         - vehicle
     amlb_constraint:  # optional
       - test
-    # amlb_custom_branch: 
-    #   - https://github.com/<ACCOUNT>/autogluon#<CUSTOM_BRANCH>  # optional, `framework` is overwritten when this is specified 
+    # amlb_user_dir:  # optional, local folder where all the amlb customizations are stored
+    #   - sample_configs/amlb_configs

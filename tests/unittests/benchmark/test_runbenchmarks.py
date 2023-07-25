@@ -98,22 +98,26 @@ def test_get_kwargs_multimodal():
 def test_get_kwargs_tabular():
     module = "tabular"
     configs = {
+        "git_uri#branch": "https://github.com/openml/automlbenchmark.git#stable",
         "framework": "AutoGluon:stable",
         "amlb_benchmark": "test_bench",
         "amlb_task": "iris",
         "amlb_constraint": "test_constraint",
-        "amlb_custom_branch": "https://github.com/test/autogluon",
+        "amlb_user_dir": "sample_configs/amlb_configs",
     }
     agbench_dev_url = None
 
     expected_result = {
-        "setup_kwargs": {},
+        "setup_kwargs": {
+            "git_uri": "https://github.com/openml/automlbenchmark.git",
+            "git_branch": "stable",
+        },
         "run_kwargs": {
             "framework": "AutoGluon:stable",
             "benchmark": "test_bench",
             "constraint": "test_constraint",
             "task": "iris",
-            "custom_branch": "https://github.com/test/autogluon",
+            "user_dir": "sample_configs/amlb_configs",
         },
     }
 
@@ -261,7 +265,7 @@ def test_run_local_mode(mocker, tmp_path):
     mock_open.assert_called_with(str(config_file), "r")
     mock_run_benchmark.assert_called_with(
         benchmark_name="test_benchmark_test_time",
-        benchmark_dir=".ag_bench_runs/test_module/test_benchmark_test_time",
+        benchmark_dir="ag_bench_runs/test_module/test_benchmark_test_time",
         configs=configs,
         agbench_dev_url=None,
     )

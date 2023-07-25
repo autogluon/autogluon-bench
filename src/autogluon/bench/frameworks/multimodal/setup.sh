@@ -11,6 +11,7 @@ if [ ! -d $DIR ]; then
   mkdir -p $DIR
 fi
 
+echo "Cloning $GIT_URI#$BRANCH..."
 repo_name=$(basename -s .git $(echo $GIT_URI))
 git clone --depth 1 --single-branch --branch ${BRANCH} --recurse-submodules ${GIT_URI} $DIR/$repo_name
 
@@ -33,7 +34,14 @@ if [[ "$ARG" == "--AGBENCH_DEV_URL="* ]]; then
   cd -
 elif [[ "$ARG" == "--AG_BENCH_VER="* ]]; then
   AG_BENCH_VER="${ARG#*=}"
-  python3 -m pip install autogluon.bench==$AG_BENCH_VER
+  output=$(python3 -m pip install autogluon.bench==$AG_BENCH_VER 2>&1) || {
+    err_message=$output
+    if [[ $err_message == *"No matching distribution"* ]]; then
+      echo -e "ERROR: No matching distribution found for autogluon.bench==$AG_BENCH_VER\n \
+      To resolve the issue, try 'agbench run <config_file> --dev-branch <autogluon_bench_uri>#<git_branch>"
+    fi
+    exit 1
+  }
 else
   echo "Invalid argument: $ARG"
   exit 1
@@ -48,4 +56,3 @@ python3 -m pip install -e multimodal/[tests]
 
 python3 -m mim install mmcv
 python3 -m pip install "mmdet==3.0.0"
-

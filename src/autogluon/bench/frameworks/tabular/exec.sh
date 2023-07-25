@@ -9,10 +9,10 @@ benchmark_dir=${4}  # from root of project
 metrics_dir=${5}
 shift 5
 
-while getopts "t:c:" opt; do
+while getopts "t:u:" opt; do
     case $opt in
         t) task=$OPTARG;;
-        c) custom_dir=$OPTARG;;
+        u) user_dir=$OPTARG;;
         :\?) echo "Error: invaled option -$OPTARG"; exit1;;
         :) echo "Error: option -$OPTARG requires an argument"; exit1;;
     esac
@@ -24,9 +24,9 @@ if [ -n "$task" ]; then
     amlb_args+=" -t $task"
 fi
 
-if [ -n "$custom_dir" ]; then
-    cp -r $custom_dir $benchmark_dir
-    amlb_args+=" -u $custom_dir"
+if [ -n "$user_dir" ]; then
+    cp -r $user_dir $benchmark_dir
+    amlb_args+=" -u $user_dir"
 fi
 
 amlb_args+=" -o $metrics_dir"

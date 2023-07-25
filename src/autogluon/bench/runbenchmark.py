@@ -33,8 +33,8 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
 
+    git_uri, git_branch = configs["git_uri#branch"].split("#")
     if module == "multimodal":
-        git_uri, git_branch = configs["git_uri#branch"].split("#")
         return {
             "setup_kwargs": {
                 "git_uri": git_uri,
@@ -51,13 +51,16 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
         }
     elif module == "tabular":
         return {
-            "setup_kwargs": {},
+            "setup_kwargs": {
+                "git_uri": git_uri,
+                "git_branch": git_branch,
+            },
             "run_kwargs": {
                 "benchmark": configs["amlb_benchmark"],
                 "constraint": configs["amlb_constraint"],
                 "task": configs.get("amlb_task") if configs.get("amlb_task") else None,
                 "framework": configs.get("framework"),
-                "custom_branch": configs.get("amlb_custom_branch"),
+                "user_dir": configs.get("amlb_user_dir"),
             },
         }
 
@@ -277,7 +280,7 @@ def run(
     if not re.search(timestamp_pattern, benchmark_name):
         benchmark_name += "_" + formatted_time()
 
-    root_dir = configs.get("root_dir", ".ag_bench_runs")
+    root_dir = configs.get("root_dir", "ag_bench_runs")
     benchmark_dir = os.path.join(root_dir, configs["module"], benchmark_name)
 
     if configs["mode"] == "aws":
