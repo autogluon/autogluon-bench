@@ -32,8 +32,7 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
     Returns:
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
-
-    git_uri, git_branch = configs["git_uri#branch"].split("#")
+    git_uri, git_branch = _get_git_info(configs["git_uri#branch"])
     if module == "multimodal":
         return {
             "setup_kwargs": {
@@ -56,10 +55,11 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
                 "git_branch": git_branch,
             },
             "run_kwargs": {
-                "benchmark": configs["amlb_benchmark"],
-                "constraint": configs["amlb_constraint"],
-                "task": configs.get("amlb_task") if configs.get("amlb_task") else None,
-                "framework": configs.get("framework"),
+                "framework": configs["framework"],
+                "benchmark": configs.get("amlb_benchmark", "test"),
+                "constraint": configs.get("amlb_constraint", "test"),
+                "task": configs.get("amlb_task"),
+                "fold": configs.get("fold_to_run"),
                 "user_dir": configs.get("amlb_user_dir"),
             },
         }
@@ -260,6 +260,15 @@ def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
         logger.info(f"Configs have been saved to {config_path}")
     return config_path
 
+
+def _get_git_info(git_uri_branch: str):
+    git_info = git_uri_branch.split("#")
+    if len(git_info) == 2:
+        git_uri, git_branch = git_info
+    elif len(git_info) == 1:
+        git_uri = git_info[0]
+        git_branch = "stable"
+    return git_uri, git_branch
 
 @app.command()
 def run(
