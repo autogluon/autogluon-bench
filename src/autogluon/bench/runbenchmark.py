@@ -14,7 +14,12 @@ from autogluon.bench import __version__ as agbench_version
 from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
-from autogluon.bench.utils.general_utils import formatted_time
+from autogluon.bench.utils.general_utils import (
+    download_dir_from_s3,
+    download_file_from_s3,
+    formatted_time,
+    upload_to_s3,
+)
 
 app = typer.Typer()
 
@@ -122,25 +127,6 @@ def upload_config(bucket: str, benchmark_name: str, file: str):
     s3.upload_file(file, bucket, s3_path)
     logger.info(f"Config file has been uploaded to S3://{bucket}/{s3_path}")
     return f"s3://{bucket}/{s3_path}"
-
-
-def download_config(s3_path: str, dir: str = "/tmp"):
-    """Downloads a configuration file from an S3 bucket.
-
-    Args:
-        s3_path (str): The S3 path of the file to download.
-        dir (str): The local directory to download the file to (default: "/tmp").
-
-    Returns:
-        The local path of the downloaded file.
-    """
-
-    s3 = boto3.client("s3")
-    file_path = os.path.join(dir, s3_path.split("/")[-1])
-    bucket = s3_path.strip("s3://").split("/")[0]
-    s3_path = s3_path.split(bucket)[-1].lstrip("/")
-    s3.download_file(bucket, s3_path, file_path)
-    return file_path
 
 
 def invoke_lambda(configs: dict, config_file: str) -> dict:
@@ -280,7 +266,7 @@ def run(
     """Main function that runs the benchmark based on the provided configuration options."""
     configs = {}
     if config_file.startswith("s3"):
-        config_file = download_config(s3_path=config_file)
+        config_file = download_file_from_s3(s3_path=config_file)
     with open(config_file, "r") as f:
         configs = yaml.safe_load(f)
 
@@ -301,9 +287,13 @@ def run(
             os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
         else:
             os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
-        infra_configs = deploy_stack(custom_configs=configs.get("cdk_context", {}))
-        config_s3_path = upload_config(
-            bucket=infra_configs["METRICS_BUCKET"], benchmark_name=benchmark_name, file=cloud_config_path
+        infra_configs = deploy_stack(custom_configs=configs)
+
+        cloud_config_path = _dump_configs(
+            benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
+        )
+        config_s3_path = upload_to_s3(
+            s3_bucket=infra_configs["METRICS_BUCKET"], s3_dir=f"configs/{benchmark_name}", local_path=cloud_config_path
         )
         lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
         aws_configs = {**infra_configs, **lambda_response}
