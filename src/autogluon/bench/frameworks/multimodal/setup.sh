@@ -49,10 +49,10 @@ fi
 
 cd $DIR/$repo_name
 
-python3 -m pip install -e common/[tests]
-python3 -m pip install -e core/[all,tests]
-python3 -m pip install -e features/
-python3 -m pip install -e multimodal/[tests]
+python3 -m pip install -e common
+python3 -m pip install -e core[all]
+python3 -m pip install -e features
+python3 -m pip install -e multimodal
 
 python3 -m mim install mmcv
 python3 -m pip install "mmdet==3.0.0"
