@@ -76,7 +76,13 @@ def _get_benchmark_name(configs: dict) -> str:
     return benchmark_name
 
 
-def run_benchmark(benchmark_name: str, benchmark_dir: str, configs: dict, agbench_dev_url: str = None):
+def run_benchmark(
+    benchmark_name: str,
+    benchmark_dir: str,
+    configs: dict,
+    benchmark_dir_s3: str = None,
+    agbench_dev_url: str = None,
+):
     """Runs a benchmark based on the provided configuration options.
 
     Args:
@@ -105,8 +111,7 @@ def run_benchmark(benchmark_name: str, benchmark_dir: str, configs: dict, agbenc
     _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
     if configs.get("METRICS_BUCKET", None):
-        s3_dir = f"{module_name}{benchmark_dir.split(module_name, 1)[-1]}"
-        benchmark.upload_metrics(s3_bucket=configs["METRICS_BUCKET"], s3_dir=s3_dir)
+        benchmark.upload_metrics(s3_bucket=configs["METRICS_BUCKET"], s3_dir=benchmark_dir_s3)
 
 
 def upload_config(bucket: str, benchmark_name: str, file: str):
@@ -121,7 +126,7 @@ def upload_config(bucket: str, benchmark_name: str, file: str):
     """
     s3 = boto3.client("s3")
     config_file_name = os.path.basename(file)
-    file_name = benchmark_name + "_" + config_file_name
+    file_name = benchmark_name + "/" + config_file_name
 
     s3_path = f"configs/{file_name}"
     s3.upload_file(file, bucket, s3_path)
@@ -336,14 +341,19 @@ def run(
 
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
+        benchmark_dir_s3 = f"{module}/{benchmark_name}"
         if split_id is not None:
-            benchmark_name += "_" + split_id
-            benchmark_dir = os.path.join(benchmark_dir, benchmark_name)
+            benchmark_dir_s3 += f"/{benchmark_name}_{split_id}"
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
         if dev_branch is not None:
             logger.info(f"Using dev branch at {dev_branch}...")
+
         run_benchmark(
-            benchmark_name=benchmark_name, benchmark_dir=benchmark_dir, configs=configs, agbench_dev_url=dev_branch
+            benchmark_name=benchmark_name,
+            benchmark_dir=benchmark_dir,
+            configs=configs,
+            benchmark_dir_s3=benchmark_dir_s3,
+            agbench_dev_url=dev_branch,
         )
     else:
         raise NotImplementedError
