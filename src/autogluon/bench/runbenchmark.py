@@ -82,6 +82,7 @@ def run_benchmark(
     configs: dict,
     benchmark_dir_s3: str = None,
     agbench_dev_url: str = None,
+    skip_setup: str = False,
 ):
     """Runs a benchmark based on the provided configuration options.
 
@@ -105,8 +106,10 @@ def run_benchmark(
     benchmark = benchmark_class(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir)
 
     module_kwargs = get_kwargs(module=module_name, configs=configs, agbench_dev_url=agbench_dev_url)
-    benchmark.setup(**module_kwargs.get("setup_kwargs", {}))
-    benchmark.run(**module_kwargs.get("run_kwargs", {}))
+    if not skip_setup:
+        benchmark.setup(**module_kwargs["setup_kwargs"])
+
+    benchmark.run(**module_kwargs["run_kwargs"])
     logger.info(f"Backing up benchmarking configs to {benchmark.metrics_dir}/configs.yaml")
     _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
@@ -342,8 +345,10 @@ def run(
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
         benchmark_dir_s3 = f"{module}/{benchmark_name}"
+        skip_setup = False
         if split_id is not None:
             benchmark_dir_s3 += f"/{benchmark_name}_{split_id}"
+            skip_setup = True
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
         if dev_branch is not None:
             logger.info(f"Using dev branch at {dev_branch}...")
@@ -354,6 +359,7 @@ def run(
             configs=configs,
             benchmark_dir_s3=benchmark_dir_s3,
             agbench_dev_url=dev_branch,
+            skip_setup=skip_setup,
         )
     else:
         raise NotImplementedError
