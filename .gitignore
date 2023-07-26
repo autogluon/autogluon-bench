@@ -1,3 +1,6 @@
+# hidden directories
+.*/
+
 AutogluonModels
 ag_bench_runs
 data
