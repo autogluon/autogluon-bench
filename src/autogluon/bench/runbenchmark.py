@@ -258,7 +258,7 @@ def _validate_single_value(configs: dict, key: str):
 
 
 def _is_mounted(path: str):
-    with open('/proc/mounts', 'r') as mounts:
+    with open("/proc/mounts", "r") as mounts:
         for line in mounts:
             parts = line.split()
             if len(parts) > 1 and parts[1] == path:
