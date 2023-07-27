@@ -165,6 +165,12 @@ class BatchJobStack(core.Stack):
                 "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
                 "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
                 "CDK_DEPLOY_REGION": os.environ["CDK_DEPLOY_REGION"],
+                "FRAMEWORK_PATH": os.environ["FRAMEWORK_PATH"],
+                "GIT_URI": os.environ["GIT_URI"],
+                "GIT_BRANCH": os.environ["GIT_BRANCH"],
+                "BENCHMARK_DIR": os.environ["BENCHMARK_DIR"],
+                "AMLB_FRAMEWORK": os.getenv("AMLB_FRAMEWORK", ""),
+                "AMLB_USER_DIR": os.getenv("AMLB_USER_DIR", ""),
             },
         )
 

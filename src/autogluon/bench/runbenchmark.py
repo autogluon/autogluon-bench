@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import re
+import subprocess
+import tempfile
 import time
 from typing import List, Optional
 
@@ -58,6 +60,8 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
             "setup_kwargs": {
                 "git_uri": git_uri,
                 "git_branch": git_branch,
+                "framework": configs["framework"],
+                "user_dir": configs.get("amlb_user_dir"),
             },
             "run_kwargs": {
                 "framework": configs["framework"],
@@ -115,26 +119,6 @@ def run_benchmark(
 
     if configs.get("METRICS_BUCKET", None):
         benchmark.upload_metrics(s3_bucket=configs["METRICS_BUCKET"], s3_dir=benchmark_dir_s3)
-
-
-def upload_config(bucket: str, benchmark_name: str, file: str):
-    """Uploads a configuration file to an S3 bucket.
-
-    Args:
-        bucket (str): The name of the S3 bucket to upload the file to.
-        file (str): The path to the local file to upload.
-
-    Returns:
-        The S3 path of the uploaded file.
-    """
-    s3 = boto3.client("s3")
-    config_file_name = os.path.basename(file)
-    file_name = benchmark_name + "/" + config_file_name
-
-    s3_path = f"configs/{file_name}"
-    s3.upload_file(file, bucket, s3_path)
-    logger.info(f"Config file has been uploaded to S3://{bucket}/{s3_path}")
-    return f"s3://{bucket}/{s3_path}"
 
 
 def invoke_lambda(configs: dict, config_file: str) -> dict:
@@ -264,6 +248,36 @@ def _get_git_info(git_uri_branch: str):
         git_branch = "stable"
     return git_uri, git_branch
 
+
+def _validate_single_value(configs: dict, key: str):
+    value = configs[key]
+    if isinstance(value, str):
+        configs[key] = [value]
+    elif isinstance(value, list) and len(value) != 1:
+        raise ValueError(f"Only single value (str, list[str]) is supported for {key}.")
+
+
+def _is_mounted(path: str):
+    with open('/proc/mounts', 'r') as mounts:
+        for line in mounts:
+            parts = line.split()
+            if len(parts) > 1 and parts[1] == path:
+                return True
+
+
+def _umount_if_needed(path: str = None):
+    if not path:
+        return
+    if _is_mounted(path):
+        logging.info(f"{path} is a mount point, attempting to umount.")
+        subprocess.run(["sudo", "umount", path])
+        logging.info(f"Successfully umounted {path}.")
+
+
+def _mount_dir(orig_path: str, new_path: str):
+    subprocess.run(["sudo", "mount", "--bind", orig_path, new_path])
+
+
 @app.command()
 def run(
     config_file: str = typer.Argument(..., help="Path to custom config file."),
@@ -284,17 +298,63 @@ def run(
         benchmark_name += "_" + formatted_time()
 
     root_dir = configs.get("root_dir", "ag_bench_runs")
-    benchmark_dir = os.path.join(root_dir, configs["module"], benchmark_name)
+    module = configs["module"]
+    benchmark_dir = os.path.join(root_dir, module, benchmark_name)
+    tmpdir = None
 
     if configs["mode"] == "aws":
         configs["benchmark_name"] = benchmark_name
-        cloud_config_path = _dump_configs(
-            benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
-        )
+        # setting environment variables for docker build ARG
         if dev_branch is not None:
             os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
         else:
             os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
+
+        os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
+        os.environ["BENCHMARK_DIR"] = benchmark_dir
+
+        _validate_single_value(configs["module_configs"][module], "git_uri#branch")
+        os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(
+            configs["module_configs"][module]["git_uri#branch"][0]
+        )
+
+        custom_configs_path = None
+        lambda_custom_configs_path = None
+        paths = []
+        if module == "tabular":
+            _validate_single_value(configs["module_configs"]["tabular"], "framework")
+            os.environ["AMLB_FRAMEWORK"] = configs["module_configs"]["tabular"]["framework"][0]
+
+            if configs["module_configs"]["tabular"].get("amlb_constraint"):
+                _validate_single_value(configs["module_configs"]["tabular"], "amlb_constraint")
+            else:
+                configs["module_configs"]["tabular"]["amlb_constraint"] = ["test"]
+
+            amlb_user_dir = configs["module_configs"]["tabular"].get("amlb_user_dir")
+            tmpdir = None
+            if amlb_user_dir is not None:
+                _validate_single_value(configs["module_configs"]["tabular"], "amlb_user_dir")
+
+                if amlb_user_dir[0].startswith("s3://"):
+                    tmpdir = tempfile.TemporaryDirectory()
+                    amlb_user_dir_local = download_dir_from_s3(s3_path=amlb_user_dir[0], local_path=tmpdir.name)
+                else:
+                    amlb_user_dir_local = amlb_user_dir[0]
+
+                current_path = os.path.dirname(os.path.abspath(__file__))
+                custom_configs_path = os.path.join(current_path, "custom_configs/amlb_configs")
+                lambda_custom_configs_path = os.path.join(current_path, "cloud/aws/batch_stack/lambdas/amlb_configs")
+
+                paths += [custom_configs_path, lambda_custom_configs_path]
+                for path in paths:
+                    _umount_if_needed(path)
+                    _mount_dir(orig_path=amlb_user_dir_local, new_path=path)
+
+                # after mounting to custom_configs_path, custom_configs_path is copied to $WORKDIR in Dockerfile.
+                # Contents under AMLB_USER_DIR will be seen in $WORKDIR/amlb_configs
+                os.environ["AMLB_USER_DIR"] = "amlb_configs"
+                configs["module_configs"]["tabular"]["amlb_user_dir"] = ["amlb_configs"]
+
         infra_configs = deploy_stack(custom_configs=configs)
 
         cloud_config_path = _dump_configs(
@@ -342,6 +402,9 @@ def run(
                     )
                     logger.info("Resources removed successfully.")
 
+        for path in paths:
+            _umount_if_needed(path)
+
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
         benchmark_dir_s3 = f"{module}/{benchmark_name}"
@@ -349,6 +412,13 @@ def run(
         if split_id is not None:
             benchmark_dir_s3 += f"/{benchmark_name}_{split_id}"
             skip_setup = True
+
+        if module == "tabular":
+            amlb_user_dir = configs.get("amlb_user_dir")
+            if amlb_user_dir and amlb_user_dir.startswith("s3://"):
+                tmpdir = tempfile.TemporaryDirectory()
+                configs["amlb_user_dir"] = download_dir_from_s3(s3_path=amlb_user_dir, local_path=tmpdir.name)
+
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
         if dev_branch is not None:
             logger.info(f"Using dev branch at {dev_branch}...")
@@ -363,3 +433,6 @@ def run(
         )
     else:
         raise NotImplementedError
+
+    if tmpdir:
+        tmpdir.cleanup()

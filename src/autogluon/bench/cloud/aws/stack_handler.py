@@ -118,20 +118,20 @@ def deploy_stack(custom_configs: dict) -> dict:
         dict: A dictionary containing the CDK context settings used for the deployment.
     """
     cdk_path = _get_temp_cdk_app_path()
-    infra_configs = construct_context(custom_configs=custom_configs)
+    custom_infra_configs = custom_configs.get("cdk_context", {})
+    infra_configs = construct_context(custom_configs=custom_infra_configs)
+    command = [
+        os.path.join(module_base_dir, "deploy.sh"),
+        infra_configs["STACK_NAME_PREFIX"],
+        infra_configs["STACK_NAME_TAG"],
+        infra_configs["STATIC_RESOURCE_STACK_NAME"],
+        infra_configs["BATCH_STACK_NAME"],
+        str(infra_configs["CONTAINER_MEMORY"]),
+        infra_configs["CDK_DEPLOY_REGION"],
+        cdk_path,
+    ]
 
-    subprocess.check_call(
-        [
-            os.path.join(module_base_dir, "deploy.sh"),
-            infra_configs["STACK_NAME_PREFIX"],
-            infra_configs["STACK_NAME_TAG"],
-            infra_configs["STATIC_RESOURCE_STACK_NAME"],
-            infra_configs["BATCH_STACK_NAME"],
-            str(infra_configs["CONTAINER_MEMORY"]),
-            infra_configs["CDK_DEPLOY_REGION"],
-            cdk_path,
-        ]
-    )
+    subprocess.check_call(command)
     shutil.rmtree(os.path.dirname(cdk_path))
 
     return infra_configs
