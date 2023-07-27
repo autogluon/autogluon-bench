@@ -303,107 +303,110 @@ def run(
     tmpdir = None
 
     if configs["mode"] == "aws":
-        configs["benchmark_name"] = benchmark_name
-        # setting environment variables for docker build ARG
-        if dev_branch is not None:
-            os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
-        else:
-            os.environ["AG_BENCH_VERSION"] = agbench_version  # set the installed version for Dockerfile to align with
-
-        os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
-        os.environ["BENCHMARK_DIR"] = benchmark_dir
-
-        _validate_single_value(configs["module_configs"][module], "git_uri#branch")
-        os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(
-            configs["module_configs"][module]["git_uri#branch"][0]
-        )
-
-        custom_configs_path = None
-        lambda_custom_configs_path = None
-        paths = []
-        if module == "tabular":
-            _validate_single_value(configs["module_configs"]["tabular"], "framework")
-            os.environ["AMLB_FRAMEWORK"] = configs["module_configs"]["tabular"]["framework"][0]
-
-            if configs["module_configs"]["tabular"].get("amlb_constraint"):
-                _validate_single_value(configs["module_configs"]["tabular"], "amlb_constraint")
+        current_path = os.path.dirname(os.path.abspath(__file__))
+        custom_configs_path = os.path.join(current_path, "custom_configs/amlb_configs")
+        lambda_custom_configs_path = os.path.join(current_path, "cloud/aws/batch_stack/lambdas/amlb_configs")
+        paths = [custom_configs_path, lambda_custom_configs_path]
+        try:
+            configs["benchmark_name"] = benchmark_name
+            # setting environment variables for docker build ARG
+            if dev_branch is not None:
+                os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
             else:
-                configs["module_configs"]["tabular"]["amlb_constraint"] = ["test"]
+                os.environ[
+                    "AG_BENCH_VERSION"
+                ] = agbench_version  # set the installed version for Dockerfile to align with
 
-            amlb_user_dir = configs["module_configs"]["tabular"].get("amlb_user_dir")
-            tmpdir = None
-            if amlb_user_dir is not None:
-                _validate_single_value(configs["module_configs"]["tabular"], "amlb_user_dir")
+            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
+            os.environ["BENCHMARK_DIR"] = benchmark_dir
 
-                if amlb_user_dir[0].startswith("s3://"):
-                    tmpdir = tempfile.TemporaryDirectory()
-                    amlb_user_dir_local = download_dir_from_s3(s3_path=amlb_user_dir[0], local_path=tmpdir.name)
-                else:
-                    amlb_user_dir_local = amlb_user_dir[0]
-
-                current_path = os.path.dirname(os.path.abspath(__file__))
-                custom_configs_path = os.path.join(current_path, "custom_configs/amlb_configs")
-                lambda_custom_configs_path = os.path.join(current_path, "cloud/aws/batch_stack/lambdas/amlb_configs")
-
-                paths += [custom_configs_path, lambda_custom_configs_path]
-                for path in paths:
-                    _umount_if_needed(path)
-                    _mount_dir(orig_path=amlb_user_dir_local, new_path=path)
-
-                # after mounting to custom_configs_path, custom_configs_path is copied to $WORKDIR in Dockerfile.
-                # Contents under AMLB_USER_DIR will be seen in $WORKDIR/amlb_configs
-                os.environ["AMLB_USER_DIR"] = "amlb_configs"
-                configs["module_configs"]["tabular"]["amlb_user_dir"] = ["amlb_configs"]
-
-        infra_configs = deploy_stack(custom_configs=configs)
-
-        cloud_config_path = _dump_configs(
-            benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
-        )
-        config_s3_path = upload_to_s3(
-            s3_bucket=infra_configs["METRICS_BUCKET"], s3_dir=f"configs/{benchmark_name}", local_path=cloud_config_path
-        )
-        lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
-        aws_configs = {**infra_configs, **lambda_response}
-        logger.info(f"Saving infra configs and submitted job configs under {benchmark_dir}.")
-        aws_config_path = _dump_configs(benchmark_dir=benchmark_dir, configs=aws_configs, file_name="aws_configs.yaml")
-
-        if remove_resources:
-            wait = True
-        if wait:
-            logger.info(
-                "Waiting for jobs to complete. You can quit at anytime and the benchmark will continue to run on the cloud"
+            _validate_single_value(configs["module_configs"][module], "git_uri#branch")
+            os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(
+                configs["module_configs"][module]["git_uri#branch"][0]
             )
+
+            if module == "tabular":
+                _validate_single_value(configs["module_configs"]["tabular"], "framework")
+                os.environ["AMLB_FRAMEWORK"] = configs["module_configs"]["tabular"]["framework"][0]
+
+                if configs["module_configs"]["tabular"].get("amlb_constraint"):
+                    _validate_single_value(configs["module_configs"]["tabular"], "amlb_constraint")
+                else:
+                    configs["module_configs"]["tabular"]["amlb_constraint"] = ["test"]
+
+                amlb_user_dir = configs["module_configs"]["tabular"].get("amlb_user_dir")
+                tmpdir = None
+                if amlb_user_dir is not None:
+                    _validate_single_value(configs["module_configs"]["tabular"], "amlb_user_dir")
+
+                    if amlb_user_dir[0].startswith("s3://"):
+                        tmpdir = tempfile.TemporaryDirectory()
+                        amlb_user_dir_local = download_dir_from_s3(s3_path=amlb_user_dir[0], local_path=tmpdir.name)
+                    else:
+                        amlb_user_dir_local = amlb_user_dir[0]
+
+                    for path in paths:
+                        _umount_if_needed(path)
+                        _mount_dir(orig_path=amlb_user_dir_local, new_path=path)
+
+                    # after mounting to custom_configs_path, custom_configs_path is copied to $WORKDIR in Dockerfile.
+                    # Contents under AMLB_USER_DIR will be seen in $WORKDIR/amlb_configs
+                    os.environ["AMLB_USER_DIR"] = "amlb_configs"
+                    configs["module_configs"]["tabular"]["amlb_user_dir"] = ["amlb_configs"]
+
+            infra_configs = deploy_stack(custom_configs=configs)
+
+            cloud_config_path = _dump_configs(
+                benchmark_dir=benchmark_dir, configs=configs, file_name=os.path.basename(config_file)
+            )
+            config_s3_path = upload_to_s3(
+                s3_bucket=infra_configs["METRICS_BUCKET"],
+                s3_dir=f"configs/{benchmark_name}",
+                local_path=cloud_config_path,
+            )
+            lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
+            aws_configs = {**infra_configs, **lambda_response}
+            logger.info(f"Saving infra configs and submitted job configs under {benchmark_dir}.")
+            aws_config_path = _dump_configs(
+                benchmark_dir=benchmark_dir, configs=aws_configs, file_name="aws_configs.yaml"
+            )
+
             if remove_resources:
+                wait = True
+            if wait:
                 logger.info(
-                    "Resources will be deleted after the jobs are finished. You can also call \n"
-                    f"`agbench destroy-stack --config-file {aws_config_path}` "
-                    "to delete the stack after jobs have run to completion if you choose to quit now."
+                    "Waiting for jobs to complete. You can quit at anytime and the benchmark will continue to run on the cloud"
                 )
-
-            failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
-            if len(failed_jobs) > 0:
-                logger.warning("Some jobs have failed: %s.", failed_jobs)
                 if remove_resources:
-                    logger.warning("Resources will be kept so error logs can be accessed")
-            elif failed_jobs is None:
-                if remove_resources:
-                    logger.error("Resources are not being removed due to errors.")
-            else:
-                logger.info("All job succeeded.")
-                if remove_resources:
-                    logger.info("Removing resoureces...")
-                    destroy_stack(
-                        static_resource_stack=infra_configs["STATIC_RESOURCE_STACK_NAME"],
-                        batch_stack=infra_configs["BATCH_STACK_NAME"],
-                        cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
-                        cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
-                        config_file=None,
+                    logger.info(
+                        "Resources will be deleted after the jobs are finished. You can also call \n"
+                        f"`agbench destroy-stack --config-file {aws_config_path}` "
+                        "to delete the stack after jobs have run to completion if you choose to quit now."
                     )
-                    logger.info("Resources removed successfully.")
 
-        for path in paths:
-            _umount_if_needed(path)
+                failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
+                if len(failed_jobs) > 0:
+                    logger.warning("Some jobs have failed: %s.", failed_jobs)
+                    if remove_resources:
+                        logger.warning("Resources will be kept so error logs can be accessed")
+                elif failed_jobs is None:
+                    if remove_resources:
+                        logger.error("Resources are not being removed due to errors.")
+                else:
+                    logger.info("All job succeeded.")
+                    if remove_resources:
+                        logger.info("Removing resoureces...")
+                        destroy_stack(
+                            static_resource_stack=infra_configs["STATIC_RESOURCE_STACK_NAME"],
+                            batch_stack=infra_configs["BATCH_STACK_NAME"],
+                            cdk_deploy_account=infra_configs["CDK_DEPLOY_ACCOUNT"],
+                            cdk_deploy_region=infra_configs["CDK_DEPLOY_REGION"],
+                            config_file=None,
+                        )
+                        logger.info("Resources removed successfully.")
+        finally:
+            for path in paths:
+                _umount_if_needed(path)
 
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
