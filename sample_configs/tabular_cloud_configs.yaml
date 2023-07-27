@@ -20,19 +20,22 @@ module_configs:
   # Tabular specific
   # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
   tabular:
-    git_uri#branch:  # required, can be any AMLB custom fork and branch
-      - https://github.com/openml/automlbenchmark.git#stable
-    framework:  # required
+    git_uri#branch:  # required, can be any AMLB custom fork and branch, only one value allowed
+      - https://github.com/openml/automlbenchmark.git#master
+    framework:  # required, only one value allowed
       - AutoGluon:stable
     amlb_benchmark:  # required, each benchmark contains a list of datasets, can be subsetted by amlb_task below
-      - test
       - small
     amlb_task:  # optional, value of each key is a subset of dataset names in each 'amlb_benchmark'
-      test: null
       small:
         - credit-g
         - vehicle
-    amlb_constraint:  # optional
+    amlb_constraint:  # optional, only one value allowed
       - test
-    # amlb_user_dir:  # optional, local folder where all the amlb customizations are stored
+    # fold_to_run:  # optional, capped by `folds` in amlb_constraint
+    #   small:
+    #     credit-g:
+    #       - 3
+    #       - 6
+    # amlb_user_dir:  # optional, local/s3 path where all the amlb customizations are stored, only one value allowed
     #   - sample_configs/amlb_configs
