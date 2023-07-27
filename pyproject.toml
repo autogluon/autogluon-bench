@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A benchmarking tool for AutoML"
 authors = [{name = "AutoGluon Community"}]
 readme = "README.md"
-requires-python = ">=3.8, <3.11"
+requires-python = ">=3.9, <3.11"
 license = {file = "LICENSE"}
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -25,7 +25,6 @@ classifiers = [
     "Operating System :: POSIX",
     "Operating System :: Unix",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Topic :: Software Development",
@@ -38,13 +37,14 @@ dependencies = [
     "aws-cdk-lib >=2.0.0,<2.70.0",
     "aws-cdk.aws-batch-alpha >=2.0.0a1,<2.70.0a0",
     "awscliv2 >=2.2.0,<2.3.0",
-    "boto3 >=1.26.0,<1.26.99",
+    "boto3 >=1.26.0,<1.28.0",
     "constructs >=10.0.0,<10.1.289",
     "fsspec >=2023.5.0,<=2023.6.0",
     "matplotlib >=3.4,<3.7",
     "pandas >=1.2.5,<2.0",
+    "pydantic>=1.10.4,<2.0", # https://github.com/ray-project/ray/issues/36990
     "pyyaml >=5.4,<=6.0",
-    "ray >=2.3.0,<2.4.0",
+    "ray[default] >=2.3.0,<2.4.0",
     "s3fs >=2023.5.0,<=2023.6.0",
     "typer >=0.9.0,<1.0.0",
     "wheel >0.38.0,<=0.40.0",
@@ -63,7 +63,7 @@ agbench = "autogluon.bench.main:app"
 # Testing and formatting configurations
 [tool.black]
 line-length = 119
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py39', 'py310']
 
 [tool.isort]
 known_first_party = "autogluon"
@@ -82,7 +82,7 @@ profile = "black"
 legacy_tox_ini = """
     [tox]
     min_version = 4.0
-    envlist = py38, py39, py310
+    envlist = py39, py310
     isolated_build = True
 
     [testenv]

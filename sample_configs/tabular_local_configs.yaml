@@ -6,9 +6,10 @@ root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 # METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
 
 # Tabular specific
-git_uri#branch: https://github.com/Innixma/automlbenchmark.git#2023_06_19  # required, can be any AMLB custom fork and branch
+git_uri#branch: https://github.com/openml/automlbenchmark.git#stable  # required, can be any AMLB custom fork and branch
 framework: AutoGluon:stable  # required
-amlb_benchmark: test  # optional
-amlb_task:   # optional
+amlb_benchmark: small  # required
+amlb_task: vehicle # optional
 amlb_constraint: test  # optional
-# amlb_user_dir: sample_configs/amlb_configs  # optional, local folder where all the amlb customizations are stored
+fold_to_run: 1  # optional, the specific data fold to run
+amlb_user_dir: sample_configs/amlb_configs  # optional, local/s3 path where all the amlb customizations are stored
