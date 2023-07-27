@@ -1,15 +1,7 @@
 import io
 import os
 
-from autogluon.bench.runbenchmark import (
-    download_config,
-    get_job_status,
-    get_kwargs,
-    invoke_lambda,
-    run,
-    run_benchmark,
-    upload_config,
-)
+from autogluon.bench.runbenchmark import get_job_status, get_kwargs, invoke_lambda, run, run_benchmark
 
 
 def setup_mock(mocker, tmp_path):
@@ -32,12 +24,23 @@ def setup_mock(mocker, tmp_path):
         "CDK_DEPLOY_REGION": "test_region",
         "METRICS_BUCKET": "test_bucket",
     }
+
+    module_configs = {
+        "tabular": {
+            "git_uri#branch": "https://github.com/openml/automlbenchmark.git#master",
+            "framework": "AutoGluon:stable",
+            "amlb_benchmark": "small",
+            "amlb_user_dir": "sample_configs/amlb_configs",
+        }
+    }
+
     mock_yaml = mocker.patch("yaml.safe_load")
     yaml_value = {
         "mode": "aws",
-        "module": "test_module",
+        "module": "tabular",
         "cdk_context": cdk_context,
         "job_configs": job_configs,
+        "module_configs": module_configs,
     }
     yaml_value.update(infra_configs)
     mock_yaml.return_value = yaml_value
@@ -47,7 +50,7 @@ def setup_mock(mocker, tmp_path):
     mocker.patch("os.environ.__setitem__")
 
     mock_deploy_stack = mocker.patch("autogluon.bench.runbenchmark.deploy_stack", return_value=infra_configs)
-    mock_upload_config = mocker.patch("autogluon.bench.runbenchmark.upload_config", return_value="test_s3_path")
+    mock_upload_to_s3 = mocker.patch("autogluon.bench.runbenchmark.upload_to_s3", return_value="test_s3_path")
     mock_invoke_lambda = mocker.patch("autogluon.bench.runbenchmark.invoke_lambda", return_value={})
 
     mock_wait_for_jobs = mocker.patch("autogluon.bench.runbenchmark.wait_for_jobs_to_complete", return_value=[])
@@ -57,12 +60,13 @@ def setup_mock(mocker, tmp_path):
         "config_file": str(config_file),
         "infra_configs": infra_configs,
         "mock_deploy_stack": mock_deploy_stack,
-        "mock_upload_config": mock_upload_config,
+        "mock_upload_to_s3": mock_upload_to_s3,
         "mock_invoke_lambda": mock_invoke_lambda,
         "mock_wait_for_jobs": mock_wait_for_jobs,
         "mock_destroy_stack": mock_destroy_stack,
         "cdk_context": cdk_context,
         "job_configs": job_configs,
+        "custom_configs": yaml_value,
     }
 
 
@@ -103,6 +107,7 @@ def test_get_kwargs_tabular():
         "amlb_benchmark": "test_bench",
         "amlb_task": "iris",
         "amlb_constraint": "test_constraint",
+        "fold_to_run": 6,
         "amlb_user_dir": "sample_configs/amlb_configs",
     }
     agbench_dev_url = None
@@ -111,53 +116,20 @@ def test_get_kwargs_tabular():
         "setup_kwargs": {
             "git_uri": "https://github.com/openml/automlbenchmark.git",
             "git_branch": "stable",
+            "framework": "AutoGluon:stable",
+            "user_dir": "sample_configs/amlb_configs",
         },
         "run_kwargs": {
             "framework": "AutoGluon:stable",
             "benchmark": "test_bench",
             "constraint": "test_constraint",
             "task": "iris",
+            "fold": 6,
             "user_dir": "sample_configs/amlb_configs",
         },
     }
 
     assert get_kwargs(module, configs, agbench_dev_url) == expected_result
-
-
-def test_upload_config(mocker, tmp_path):
-    config_file = tmp_path / "config.yaml"
-    config_file.touch()
-
-    s3_client_mock = mocker.Mock()
-    mocker.patch("boto3.client", return_value=s3_client_mock)
-
-    bucket = "test_bucket"
-    benchmark_name = "test_benchmark"
-    s3_path = upload_config(bucket, benchmark_name, str(config_file))
-
-    s3_client_mock.upload_file.assert_called_once_with(
-        str(config_file),
-        bucket,
-        f"configs/{benchmark_name}_config.yaml",
-    )
-
-    assert s3_path == f"s3://{bucket}/configs/{benchmark_name}_config.yaml"
-
-
-def test_download_config(mocker, tmp_path):
-    s3_client_mock = mocker.Mock()
-    mocker.patch("boto3.client", return_value=s3_client_mock)
-
-    s3_path = "s3://test_bucket/configs/test_benchmark_config.yaml"
-    local_path = download_config(s3_path, str(tmp_path))
-
-    s3_client_mock.download_file.assert_called_once_with(
-        "test_bucket",
-        "configs/test_benchmark_config.yaml",
-        str(tmp_path / "test_benchmark_config.yaml"),
-    )
-
-    assert local_path == str(tmp_path / "test_benchmark_config.yaml")
 
 
 def test_invoke_lambda(mocker):
@@ -172,13 +144,13 @@ def test_invoke_lambda(mocker):
     mock_lambda_client = mocker.MagicMock()
     mock_lambda_client.invoke.return_value = mock_response
 
-    with mocker.patch("boto3.client", return_value=mock_lambda_client):
-        invoke_lambda(configs, config_file)
-        mock_lambda_client.invoke.assert_called_once_with(
-            FunctionName=configs["LAMBDA_FUNCTION_NAME"] + "-" + configs["STACK_NAME_PREFIX"],
-            InvocationType="RequestResponse",
-            Payload='{"config_file": "test_config_file"}',
-        )
+    mocker.patch("boto3.client", return_value=mock_lambda_client)
+    invoke_lambda(configs, config_file)
+    mock_lambda_client.invoke.assert_called_once_with(
+        FunctionName=configs["LAMBDA_FUNCTION_NAME"] + "-" + configs["STACK_NAME_PREFIX"],
+        InvocationType="RequestResponse",
+        Payload='{"config_file": "test_config_file"}',
+    )
 
 
 def test_run_aws_mode(mocker, tmp_path):
@@ -186,9 +158,9 @@ def test_run_aws_mode(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources=False, wait=False, dev_branch=None)
 
-    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
-    setup["mock_upload_config"].assert_called_once_with(
-        bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
+    setup["mock_upload_to_s3"].assert_called_once_with(
+        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
     setup["mock_wait_for_jobs"].assert_not_called()
@@ -200,9 +172,9 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources=True, wait=False, dev_branch=None)
 
-    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
-    setup["mock_upload_config"].assert_called_once_with(
-        bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
+    setup["mock_upload_to_s3"].assert_called_once_with(
+        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
@@ -221,9 +193,9 @@ def test_run_aws_mode_wait(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources=False, wait=True, dev_branch=None)
 
-    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
-    setup["mock_upload_config"].assert_called_once_with(
-        bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
+    setup["mock_upload_to_s3"].assert_called_once_with(
+        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
@@ -237,11 +209,32 @@ def test_run_aws_mode_dev_branch(mocker, tmp_path):
     run(setup["config_file"], remove_resources=False, wait=False, dev_branch=dev_branch)
 
     assert os.environ["AG_BENCH_DEV_URL"] == dev_branch
-    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["cdk_context"])
-    setup["mock_upload_config"].assert_called_once_with(
-        bucket="test_bucket", benchmark_name="test_benchmark_test_time", file="test_dump"
+    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
+    setup["mock_upload_to_s3"].assert_called_once_with(
+        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
+
+
+def test_run_aws_tabular_user_dir(mocker, tmp_path):
+    setup = setup_mock(mocker, tmp_path)
+    temp_dir_mock = mocker.patch("tempfile.TemporaryDirectory")
+    s3_mock = mocker.patch("autogluon.bench.utils.general_utils.download_dir_from_s3")
+    mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
+    umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
+
+    run(setup["config_file"], remove_resources=False, wait=False, dev_branch="https://git_url#git_branch")
+    assert os.environ["AG_BENCH_DEV_URL"] == "https://git_url#git_branch"
+    assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular"
+    assert os.environ["BENCHMARK_DIR"] == "ag_bench_runs/tabular/test_benchmark_test_time"
+    assert os.environ["GIT_URI"] == "https://github.com/openml/automlbenchmark.git"
+    assert os.environ["GIT_BRANCH"] == "master"
+    assert os.environ["AMLB_FRAMEWORK"] == "AutoGluon:stable"
+    assert os.environ["AMLB_USER_DIR"] == "amlb_configs"
+    temp_dir_mock.assert_not_called()
+    s3_mock.assert_not_called()
+    assert umount_mock.call_count == 4
+    assert mount_mock.call_count == 2
 
 
 def test_run_local_mode(mocker, tmp_path):
@@ -252,7 +245,7 @@ def test_run_local_mode(mocker, tmp_path):
     configs = {
         "mode": "local",
         "metrics_bucket": "test_bucket",
-        "module": "test_module",
+        "module": "tabular",
     }
     mock_yaml = mocker.patch("yaml.safe_load")
     mock_yaml.return_value = configs
@@ -265,9 +258,11 @@ def test_run_local_mode(mocker, tmp_path):
     mock_open.assert_called_with(str(config_file), "r")
     mock_run_benchmark.assert_called_with(
         benchmark_name="test_benchmark_test_time",
-        benchmark_dir="ag_bench_runs/test_module/test_benchmark_test_time",
+        benchmark_dir="ag_bench_runs/tabular/test_benchmark_test_time",
         configs=configs,
+        benchmark_dir_s3="tabular/test_benchmark_test_time",
         agbench_dev_url=None,
+        skip_setup=False,
     )
 
 
@@ -285,13 +280,40 @@ def test_run_benchmark(mocker):
     upload_metrics_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.upload_metrics")
     mocker.patch("autogluon.bench.runbenchmark._dump_configs")
 
-    run_benchmark(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir, configs=configs)
+    run_benchmark(
+        benchmark_name=benchmark_name, benchmark_dir=benchmark_dir, configs=configs, benchmark_dir_s3="s3_dir"
+    )
 
     setup_mock.assert_called_once_with()
     run_mock.assert_called_once_with()
-    upload_metrics_mock.assert_called_once_with(
-        s3_bucket=configs["METRICS_BUCKET"], s3_dir=f"{configs['module']}{benchmark_dir.split(configs['module'])[-1]}"
+    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir")
+
+
+def test_run_benchmark_skip_setup(mocker):
+    benchmark_name = "test_benchmark"
+    benchmark_dir = "test_dir"
+    configs = {
+        "module": "tabular",
+        "METRICS_BUCKET": "test_bucket",
+    }
+
+    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
+    setup_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.setup")
+    run_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.run")
+    upload_metrics_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.upload_metrics")
+    mocker.patch("autogluon.bench.runbenchmark._dump_configs")
+
+    run_benchmark(
+        benchmark_name=benchmark_name,
+        benchmark_dir=benchmark_dir,
+        configs=configs,
+        benchmark_dir_s3="s3_dir",
+        skip_setup=True,
     )
+
+    setup_mock.assert_not_called()
+    run_mock.assert_called_once_with()
+    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir")
 
 
 def test_get_job_status_with_config_file(mocker, tmp_path):

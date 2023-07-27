@@ -69,8 +69,10 @@ def test_deploy_stack(mocker):
         "CDK_DEPLOY_REGION": "us-west-2",
     }
     custom_configs = {
-        "METRICS_BUCKET": "test-metrics-bucket",
-        "DATA_BUCKET": "test-data-bucket",
+        "cdk_context": {
+            "METRICS_BUCKET": "test-metrics-bucket",
+            "DATA_BUCKET": "test-data-bucket",
+        },
     }
 
     mock_subprocess = mocker.patch("subprocess.check_call")
@@ -90,7 +92,7 @@ def test_deploy_stack(mocker):
 
     assert not os.path.exists(temp_dir)
     mock_cdk_path.assert_called_once()
-    mock_get_context.assert_called_with(custom_configs=custom_configs)
+    mock_get_context.assert_called_with(custom_configs=custom_configs["cdk_context"])
     mock_subprocess.assert_called_once_with(
         [
             os.path.join(module_base_dir, "deploy.sh"),
