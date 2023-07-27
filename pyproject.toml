@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A benchmarking tool for AutoML"
 authors = [{name = "AutoGluon Community"}]
 readme = "README.md"
-requires-python = ">=3.8, <3.11"
+requires-python = ">=3.9, <3.11"
 license = {file = "LICENSE"}
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -25,7 +25,6 @@ classifiers = [
     "Operating System :: POSIX",
     "Operating System :: Unix",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Topic :: Software Development",
@@ -64,7 +63,7 @@ agbench = "autogluon.bench.main:app"
 # Testing and formatting configurations
 [tool.black]
 line-length = 119
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py39', 'py310']
 
 [tool.isort]
 known_first_party = "autogluon"
@@ -83,7 +82,7 @@ profile = "black"
 legacy_tox_ini = """
     [tox]
     min_version = 4.0
-    envlist = py38, py39, py310
+    envlist = py39, py310
     isolated_build = True
 
     [testenv]
