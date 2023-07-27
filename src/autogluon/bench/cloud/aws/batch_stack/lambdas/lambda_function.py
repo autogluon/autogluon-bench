@@ -121,7 +121,15 @@ def save_configs(configs: dict, uid: str):
     return config_file_path
 
 
-def clone_automlbenchmark_repo():
+def download_automlbenchmark_resources():
+    """
+    Clones the stable version of the AutoML Benchmark repository from GitHub as a zip file,
+    and extracts all files under 'resources' directory into a local path.
+
+    Returns:
+        str: The local path of the cloned repository.
+    """
+
     amlb_zip = "https://github.com/openml/automlbenchmark/archive/refs/tags/stable.zip"
     resources_path = "automlbenchmark-stable/resources"
     automlbenchmark_repo_path = "/tmp"
@@ -176,6 +184,14 @@ def get_max_fold(amlb_constraint_search_files: list, constraint: str):
 
 
 def process_benchmark_runs(module_configs: dict, amlb_benchmark_search_dirs: list, default_max_folds: int = 10):
+    """
+    Updates module_configs["fold_to_run"] with tasks and folds defined in config files
+
+    Only amlb_benchmark was required,
+    if amlb_task does not have keys, we assume all tasks in the amlb_benchmark will be run;
+    similarly, if folds_to_run does not have any key, we assume all folds in amlb_task will be run.
+    If the aforementioned have keys, we only populate folds_to_run for the existing keys.
+    """
     module_configs.setdefault("amlb_task", {})
     module_configs.setdefault("fold_to_run", {})
 
@@ -256,7 +272,7 @@ def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_qu
     specific_keys = ["git_uri#branch", "dataset_name", "presets", "hyperparameters", "time_limit"]
 
     job_configs = {}
-    specific_key_combinations = list(
+    specific_value_combinations = list(
         itertools.product(
             *(
                 config["module_configs"]["multimodal"][key]
@@ -266,7 +282,7 @@ def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_qu
         )
     )
 
-    for combo in specific_key_combinations:
+    for combo in specific_value_combinations:
         new_config = {key: config[key] for key in common_keys}
         new_config.update(dict(zip(specific_keys, combo)))
 
@@ -282,8 +298,8 @@ def generate_tabular_config_combinations(config, metrics_bucket, batch_job_queue
 
     job_configs = {}
 
-    # Generate combinations for the first set of keys
-    specific_key_combinations = list(
+    # Generate combinations for the specific keys
+    specific_value_combinations = list(
         itertools.product(
             *(
                 config["module_configs"]["tabular"][key]
@@ -293,8 +309,9 @@ def generate_tabular_config_combinations(config, metrics_bucket, batch_job_queue
         )
     )
 
-    # Iterate through the combinations and the second set of keys
-    for combo in specific_key_combinations:
+    # Iterate through the combinations and the amlb benchmark task keys
+    # Generates a config for each combination of specific key and keys in `fold_to_run`
+    for combo in specific_value_combinations:
         for benchmark, tasks in config["module_configs"]["tabular"]["fold_to_run"].items():
             for task, fold_numbers in tasks.items():
                 for fold_num in fold_numbers:
@@ -385,8 +402,8 @@ def handler(event, context):
     configs["mode"] = "local"
 
     if configs["module"] == "tabular":
-        # download the almb repo to process the default resources
-        amlb_repo_path = clone_automlbenchmark_repo()
+        # download the almb repo resources/ to process the default resources
+        amlb_repo_path = download_automlbenchmark_resources()
         amlb_benchmark_search_dirs = []
         amlb_constraint_search_files = []
         amlb_user_dir = module_configs.get("amlb_user_dir")
@@ -402,6 +419,7 @@ def handler(event, context):
             # check if default amlb resources are required
             user_config_file = os.path.join(amlb_user_dir_local, "config.yaml")
             with open(user_config_file, "r") as f:
+                # check the user_dir config.yaml and append search directories accordingly
                 user_configs = yaml.safe_load(f)
                 if user_configs.get("benchmarks"):
                     if user_configs["benchmarks"].get("definition_dir"):
@@ -426,6 +444,7 @@ def handler(event, context):
                     else:
                         amlb_constraint_search_files.append(os.path.join(amlb_repo_path, "constraints.yaml"))
         else:
+            # if no amlb_user_dir is specified, default resources/ from amlb stable version is used
             amlb_benchmark_search_dirs.append(os.path.join(amlb_repo_path, "resources/benchmarks"))
             amlb_constraint_search_files.append(os.path.join(amlb_repo_path, "resources/constraints.yaml"))
 
