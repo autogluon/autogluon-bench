@@ -10,12 +10,13 @@ ARG AMLB_FRAMEWORK
 ARG AMLB_USER_DIR
 
 WORKDIR /app/
-COPY entrypoint.sh utils/gpu_utilization.sh $FRAMEWORK_PATH/setup.sh custom_configs/ /app/
 
 RUN apt-get update && apt-get install -y --no-install-recommends cron unzip curl && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /var/spool/cron/crontabs \
     && touch /var/log/cron.log \
+    && rm -rf /usr/local/aws \
+    && pip freeze | cut -d "@" -f1 | xargs pip uninstall -y \
     && curl "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip -q awscliv2.zip \
     && ./aws/install \
@@ -36,6 +37,8 @@ RUN if [ -n "$AG_BENCH_DEV_URL" ]; then \
             exit 1; \
         fi; \
     fi
+
+COPY entrypoint.sh utils/gpu_utilization.sh $FRAMEWORK_PATH/setup.sh custom_configs/ /app/
 
 RUN chmod +x setup.sh entrypoint.sh /app/gpu_utilization.sh \
     && if echo "$FRAMEWORK_PATH" | grep -q "tabular"; then \
