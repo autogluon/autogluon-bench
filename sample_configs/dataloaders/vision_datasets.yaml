@@ -1,0 +1,31 @@
+# data = custom_class(dataset_name=dataset_name, split=split, **kwargs)
+# custom_class: custom dataloader class, e.g. sample_configs/vision_dataset.py
+# When running in AWS mode, DATA_BUCKET: <dataset_bucket> needs to be specified in the run config
+
+base: &base
+  url: s3://<dataset_bucket>/vision_datasets/{name}.zip
+  splits:
+    - train
+    - test
+  feature_columns:
+    - ImageID
+  label_columns:
+    - LabelName
+  annotation: "{name}_{split}_annotations.csv"
+  image_path: "{name}/{value}"
+  metric: acc
+  problem_type: multiclass
+  
+
+dataset_1:
+  <<: *base
+  image_path: "{split}/{value}"
+  problem_type: binary
+
+dataset_2:
+  <<: *base
+
+dataset_3:
+  <<: *base
+  image_path: "{name}/{split}/{value}"
+

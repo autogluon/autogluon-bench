@@ -4,7 +4,7 @@ import os
 
 import pandas as pd
 
-from autogluon.bench.utils.dataset_utils import get_data_home_dir, get_repo_url
+from autogluon.bench.utils.dataset_utils import get_data_home_dir, get_repo_url, path_expander
 from autogluon.common.loaders import load_zip
 from autogluon.common.loaders._utils import download
 
@@ -38,11 +38,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-def _path_expander(path, base_folder):
-    path_l = path.split(";")
-    return ";".join([os.path.abspath(os.path.join(base_folder, path)) for path in path_l])
 
 
 class BaseMultiModalDataset(abc.ABC):
@@ -138,7 +133,7 @@ class Shopee(BaseImageDataset):
             data_path = os.path.join(self._base_folder, f"{self._split}.csv")
             self._data = pd.read_csv(data_path)
             self._data["image"] = self._data["image"].apply(
-                lambda ele: _path_expander(ele, base_folder=self._base_folder)
+                lambda ele: path_expander(ele, base_folder=self._base_folder)
             )
         except FileNotFoundError as e:
             logger.warn(f"The data split {self._split} is not available.")
@@ -195,7 +190,7 @@ class StanfordOnline(BaseMatcherDataset):
             self._image_columns = ["Image1", "Image2"]
             for image_col in self._image_columns:
                 self._data[image_col] = self._data[image_col].apply(
-                    lambda ele: _path_expander(ele, base_folder=self._base_folder)
+                    lambda ele: path_expander(ele, base_folder=self._base_folder)
                 )
         except FileNotFoundError as e:
             logger.warn(f"The data split {self._split} is not available.")
@@ -250,7 +245,7 @@ class Flickr30k(BaseMatcherDataset):
             self._text_col = "caption"
 
             self._data[self._image_col] = self._data[self._image_col].apply(
-                lambda ele: _path_expander(ele, base_folder=self._base_folder)
+                lambda ele: path_expander(ele, base_folder=self._base_folder)
             )
             self._label_col = "relevance"
             self._data[self._label_col] = [1] * len(self._data)

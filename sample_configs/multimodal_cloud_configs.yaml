@@ -24,14 +24,20 @@ module_configs:
       - https://github.com/autogluon/autogluon#master
     dataset_name:  # required
       - shopee
-      - stanford_online
+      # - stanford_online
+    # custom_dataloader:
+    #   dataloader_file: sample_configs/dataloaders/text_dataloader.py   # required, relative path to WORKDIR
+    #   class_name: TextDataLoaer  # required
+    #   lang: en
+    #   dataset_config_file: sample_configs/dataloaders/text_datasets.yaml  # required, dataset definition yaml
+
     presets:  # optional
       - medium_quality
-      - high_quality
+      # - high_quality
     time_limit:  # optional
       - 10
     hyperparameters:  # optional
       - optimization.max_epochs: 2
         optimization.learning_rate: 0.005
-      - optimization.max_epochs: 5
-        optimization.learning_rate: 0.0005
+      # - optimization.max_epochs: 5
+      #   optimization.learning_rate: 0.0005

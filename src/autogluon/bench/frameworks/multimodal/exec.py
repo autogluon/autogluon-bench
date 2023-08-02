@@ -1,11 +1,12 @@
 import argparse
 import csv
+import importlib
 import json
 import logging
 import os
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
 
 from autogluon.bench.datasets.constants import (
     _IMAGE_SIMILARITY,
@@ -46,14 +47,15 @@ def get_args():
     )
     parser.add_argument("--presets", type=str, default=None, help="Preset configurations to use in the benchmark.")
     parser.add_argument("--hyperparameters", type=str, default=None, help="Hyperparameters to use in the benchmark.")
+    parser.add_argument(
+        "--custom_dataloader", type=str, default=None, help="Custom dataloader to use in the benchmark."
+    )
 
     args = parser.parse_args()
     return args
 
 
-def load_dataset(
-    dataset_name: str,  # dataset name
-):
+def load_dataset(dataset_name: str, custom_dataloader: dict = None):  # dataset name
     """Loads and preprocesses a dataset.
 
     Args:
@@ -62,11 +64,26 @@ def load_dataset(
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame]: A tuple containing the training and test datasets.
     """
-    train_data = multimodal_dataset_registry.create(dataset_name, "train")
-    val_data = multimodal_dataset_registry.create(dataset_name, "val")
-    test_data = multimodal_dataset_registry.create(dataset_name, "test")
+    splits = ["train", "val", "test"]
+    data = {}
+    if dataset_name in multimodal_dataset_registry.list_keys():
+        logger.info(f"Loading dataset {dataset_name} from multimodal_dataset_registry")
+        for split in splits:
+            data[split] = multimodal_dataset_registry.create(dataset_name, split)
+    elif custom_dataloader is not None:
+        logger.info(f"Loading dataset {dataset_name} from custom dataloader {custom_dataloader}.")
+        custom_dataloader_file = custom_dataloader.pop("dataloader_file")
+        class_name = custom_dataloader.pop("class_name")
+        spec = importlib.util.spec_from_file_location(class_name, custom_dataloader_file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        custom_class = getattr(module, class_name)
+        for split in splits:
+            data[split] = custom_class(dataset_name=dataset_name, split=split, **custom_dataloader)
+    else:
+        raise ModuleNotFoundError(f"Dataset Loader for dataset {dataset_name} is not available.")
 
-    return train_data, val_data, test_data
+    return data.values()
 
 
 def save_metrics(metrics_path: str, metrics: dict):
@@ -98,18 +115,19 @@ def save_metrics(metrics_path: str, metrics: dict):
 
 
 def run(
-    dataset_name: str,
+    dataset_name: Union[str, dict],
     framework: str,
     benchmark_dir: str,
     metrics_dir: str,
     time_limit: Optional[int] = None,
     presets: Optional[str] = None,
     hyperparameters: Optional[dict] = None,
+    custom_dataloader: Optional[dict] = None,
 ):
     """Runs the AutoGluon multimodal benchmark on a given dataset.
 
     Args:
-        dataset_name (str): Dataset that has been registered with multimodal_dataset_registry.
+        dataset_name (Union[str, dict]): Dataset that has been registered with multimodal_dataset_registry.
 
                             To get a list of datasets:
 
@@ -119,13 +137,19 @@ def run(
         benchmark_dir (str): The path to the directory where benchmarking artifacts should be saved.
         time_limit (int): The maximum amount of time (in seconds) to spend training the predictor (default: 10).
         presets (str): The name of the AutoGluon preset to use (default: "None").
-        hyperparameters (str): A JSON of hyperparameters to use for training (default: None).
+        hyperparameters (dict): A JSON of hyperparameters to use for training (default: None).
+        custom_dataloader (dict): A dictionary containing information about a custom dataloader to use. Defaults to None.
+                                To define a custom dataloader in the config file:
 
+                                custom_dataloader:
+                                    dataloader_file: path_to/dataloader.py   # relative path to WORKDIR
+                                    class_name: DataLoaderClass
+                                    dataset_config_file: path_to/dataset_config.yaml
+                                    **kwargs (of DataLoaderClass)
     Returns:
         None
     """
-    train_data, val_data, test_data = load_dataset(dataset_name=dataset_name)
-
+    train_data, val_data, test_data = load_dataset(dataset_name=dataset_name, custom_dataloader=custom_dataloader)
     try:
         label_column = train_data.label_columns[0]
     except (AttributeError, IndexError):  # Object Detection does not have label columns
@@ -205,6 +229,8 @@ if __name__ == "__main__":
     args = get_args()
     if args.hyperparameters is not None:
         args.hyperparameters = json.loads(args.hyperparameters)
+    if args.custom_dataloader is not None:
+        args.custom_dataloader = json.loads(args.custom_dataloader)
 
     run(
         dataset_name=args.dataset_name,
@@ -214,4 +240,5 @@ if __name__ == "__main__":
         time_limit=args.time_limit,
         presets=args.presets,
         hyperparameters=args.hyperparameters,
+        custom_dataloader=args.custom_dataloader,
     )

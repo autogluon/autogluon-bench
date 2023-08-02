@@ -73,7 +73,14 @@ For more customizations, please follow the [example custom configuration folder]
 
 For multimodal benchmarking, set the module to multimodal. We currently support benchmarking multimodal on a custom branch. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular.
 
-You can add more datasets to your benchmarking jobs. We provided sample [multimodal datasets](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/datasets/multimodal_dataset.py) and [object detection dataset](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/datasets/object_detection_dataset.py). Follow these samples to add custom datasets, then specify dataset_name in your local config file. Please follow the section `Install From Source` for more instructions on how to develop with source.
+You can add more datasets to your benchmarking jobs. We support custom datasets with custom defined data loaders. Follow these steps:
+  1. Create a folder under the working directory, e.g. `custom_dataloader/`
+  2. Create a dataset yaml file, `custom_dataloader/datasets.yaml` which includes all required properties for your problem type, please refer to the [function](https://github.com/autogluon/autogluon-bench/blob/52eee491018f6281236416f4b1bece14b88610e8/src/autogluon/bench/frameworks/multimodal/exec.py#L100-L201).
+  3. Create a dataset loader class, `custom_dataloader/dataloader.py`, which downloads and loads the dataset as a dataframe. Please set the required properties as mentioned above.
+  4. Add `custom_dataloader` in the `agbench run` configuration, where `dataloader_file`, `class_name` and `dataset_config_file` are required. 
+  5. Make sure you have the proper permission to download the dataset. If running in `AWS mode`, we support downloading from the S3 bucket specified as `DATA_BUCKET` in the `agbench run` configuration under the same AWS Batch deployment account.
+
+  Please refer to `sample_configs/dataloaders` for more examples.
 
 ## Run benchmarks on AWS
 
