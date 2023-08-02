@@ -22,3 +22,8 @@ def get_repo_url():
     if repo_url[-1] != "/":
         repo_url = repo_url + "/"
     return repo_url
+
+
+def path_expander(path, base_folder):
+    path_l = path.split(";")
+    return ";".join([os.path.abspath(os.path.join(base_folder, path)) for path in path_l])
