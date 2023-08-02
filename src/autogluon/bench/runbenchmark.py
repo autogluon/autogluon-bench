@@ -355,11 +355,11 @@ def run(
             elif module == "multimodal":
                 if configs["module_configs"]["multimodal"].get("custom_dataloader") is not None:
                     custom_dataloader_file = configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataloader_path"
+                        "dataloader_file"
                     ]
                     original_path = os.path.dirname(custom_dataloader_file)
                     custom_dataset_config = configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataset_config_path"
+                        "dataset_config_file"
                     ]
                     if original_path != os.path.dirname(custom_dataset_config):
                         raise ValueError(
@@ -367,13 +367,13 @@ def run(
                         )
                     dataloader_file_name = os.path.basename(custom_dataloader_file)
                     dataset_config_file_name = os.path.basename(custom_dataset_config)
-                    custom_dataloader_path = os.path.join(current_path, "custom_configs/dataloaders")
-                    paths.append(custom_dataloader_path)
+                    custom_dataloader_file = os.path.join(current_path, "custom_configs/dataloaders")
+                    paths.append(custom_dataloader_file)
                     configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataloader_path"
+                        "dataloader_file"
                     ] = f"dataloaders/{dataloader_file_name}"
                     configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataset_config_path"
+                        "dataset_config_file"
                     ] = f"dataloaders/{dataset_config_file_name}"
 
             for path in paths:

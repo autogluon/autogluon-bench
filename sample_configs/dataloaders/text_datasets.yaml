@@ -1,20 +1,20 @@
 # supports both regular and fewshot datasets
 # for fullshot:
 # custom_dataloader:
-#     dataloader_path: sample_configs/text_dataset.py   # relative path to WORKDIR
+#     dataloader_file: sample_configs/text_dataset.py   # relative path to WORKDIR
 #     class_name: TextDataset
 #     lang: en
-#     dataset_config_path: test/automm_text_datasets.yaml
+#     dataset_config_file: test/automm_text_datasets.yaml
 
 # for fewshot:
 # custom_dataloader:
-#     dataloader_path: sample_configs/text_dataset.py   # relative path to WORKDIR
+#     dataloader_file: sample_configs/text_dataset.py   # relative path to WORKDIR
 #     class_name: TextDataset
 #     lang: en
 #     fewshot: True
 #     shot: 10
 #     seed: 8
-#     dataset_config_path: test/automm_text_datasets.yaml
+#     dataset_config_file: test/automm_text_datasets.yaml
 # 
 # When running in AWS mode, DATA_BUCKET: <dataset_bucket> needs to be specified in the run config
 

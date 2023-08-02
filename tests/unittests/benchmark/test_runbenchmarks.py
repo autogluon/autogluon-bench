@@ -40,9 +40,9 @@ def setup_mock(mocker, tmp_path, module="tabular"):
                 "git_uri#branch": "https://github.com/openml/automlbenchmark.git#master",
                 "dataset_name": "data",
                 "custom_dataloader": {
-                    "dataloader_path": "path_to/dataset.py",
+                    "dataloader_file": "path_to/dataset.py",
                     "class_name": "CustomDataset",
-                    "dataset_config_path": "path_to/datasets.yaml",
+                    "dataset_config_file": "path_to/datasets.yaml",
                 },
             }
         }
@@ -258,11 +258,11 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
 
     run(setup["config_file"], remove_resources=False, wait=False, dev_branch="https://git_url#git_branch")
     assert (
-        setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataloader_path"]
+        setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataloader_file"]
         == "dataloaders/dataset.py"
     )
     assert (
-        setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataset_config_path"]
+        setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataset_config_file"]
         == "dataloaders/datasets.yaml"
     )
     assert umount_mock.call_count == 2

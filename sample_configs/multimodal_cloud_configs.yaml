@@ -26,10 +26,10 @@ module_configs:
       - shopee
       # - stanford_online
     # custom_dataloader:
-    #   dataloader_path: sample_configs/dataloaders/text_dataloader.py   # required, relative path to WORKDIR
+    #   dataloader_file: sample_configs/dataloaders/text_dataloader.py   # required, relative path to WORKDIR
     #   class_name: TextDataLoaer  # required
     #   lang: en
-    #   dataset_config_path: sample_configs/dataloaders/text_datasets.yaml  # required, dataset definition yaml
+    #   dataset_config_file: sample_configs/dataloaders/text_datasets.yaml  # required, dataset definition yaml
 
     presets:  # optional
       - medium_quality

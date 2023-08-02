@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class VisionDataLoaer:
-    def __init__(self, dataset_name: str, dataset_config_path: str, split: str = "train"):
-        with open(dataset_config_path, "r") as f:
+    def __init__(self, dataset_name: str, dataset_config_file: str, split: str = "train"):
+        with open(dataset_config_file, "r") as f:
             config = yaml.safe_load(f)
 
         self.dataset_config = config[dataset_name]

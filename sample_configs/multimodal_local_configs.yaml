@@ -10,10 +10,10 @@ git_uri#branch: https://github.com/autogluon/autogluon#master  # required
 dataset_name: 
   melbourne_airbnb  # required
 # custom_dataloader:
-#     dataloader_path: sample_configs/dataloaders/text_dataloader.py   # relative path to WORKDIR
+#     dataloader_file: sample_configs/dataloaders/text_dataloader.py   # relative path to WORKDIR
 #     class_name: TextDataLoaer
 #     lang: en
-#     dataset_config_path: sample_configs/dataloaders/text_datasets.yaml 
+#     dataset_config_file: sample_configs/dataloaders/text_datasets.yaml 
 presets: medium_quality  # optional
 hyperparameters:  # optional
   optimization.learning_rate: 0.0005

@@ -79,9 +79,9 @@ class MultiModalBenchmark(Benchmark):
                                 To define a custom dataloader in the config file:
 
                                 custom_dataloader:
-                                    dataloader_path: path_to/dataloader.py   # relative path to WORKDIR
+                                    dataloader_file: path_to/dataloader.py   # relative path to WORKDIR
                                     class_name: DataLoaderClass
-                                    dataset_config_path: path_to/dataset_config.yaml
+                                    dataset_config_file: path_to/dataset_config.yaml
                                     **kwargs (of DataLoaderClass)
 
         Returns:

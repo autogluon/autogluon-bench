@@ -14,14 +14,14 @@ class TextDataLoaer:
     def __init__(
         self,
         dataset_name: str,
-        dataset_config_path: str,
+        dataset_config_file: str,
         split: str = "train",
         lang: str = "en",
         fewshot: bool = False,
         shot: int = 50,
         seed: int = 0,
     ):
-        with open(dataset_config_path, "r") as f:
+        with open(dataset_config_file, "r") as f:
             config = yaml.safe_load(f)
         self.dataset_config = config[dataset_name]
         if split == "val":
@@ -42,9 +42,9 @@ class TextDataLoaer:
             split=self.split,
         )
         base_dir = get_data_home_dir()
-        data_dir = f"{self.name}/{lang}/"
+        data_dir = os.path.join(self.name, lang)
         if fewshot:
-            data_dir += f"subsampling/{shot}_shot-seed{seed}/"
+            data_dir = os.path.join(data_dir, "subsampling", f"{shot}_shot-seed{seed}")
         self.dataset_dir = os.path.join(base_dir, data_dir)
         data_path = os.path.join(self.dataset_dir, f"{split}.csv")
         download(url, path=data_path)

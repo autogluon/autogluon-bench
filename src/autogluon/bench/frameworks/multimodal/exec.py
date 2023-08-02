@@ -72,7 +72,7 @@ def load_dataset(dataset_name: str, custom_dataloader: dict = None):  # dataset 
             data[split] = multimodal_dataset_registry.create(dataset_name, split)
     elif custom_dataloader is not None:
         logger.info(f"Loading dataset {dataset_name} from custom dataloader {custom_dataloader}.")
-        custom_dataloader_file = custom_dataloader.pop("dataloader_path")
+        custom_dataloader_file = custom_dataloader.pop("dataloader_file")
         class_name = custom_dataloader.pop("class_name")
         spec = importlib.util.spec_from_file_location(class_name, custom_dataloader_file)
         module = importlib.util.module_from_spec(spec)
@@ -142,9 +142,9 @@ def run(
                                 To define a custom dataloader in the config file:
 
                                 custom_dataloader:
-                                    dataloader_path: path_to/dataloader.py   # relative path to WORKDIR
+                                    dataloader_file: path_to/dataloader.py   # relative path to WORKDIR
                                     class_name: DataLoaderClass
-                                    dataset_config_path: path_to/dataset_config.yaml
+                                    dataset_config_file: path_to/dataset_config.yaml
                                     **kwargs (of DataLoaderClass)
     Returns:
         None
