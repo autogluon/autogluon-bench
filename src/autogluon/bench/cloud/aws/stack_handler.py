@@ -23,8 +23,8 @@ def get_instance_type_specs(instance_type, region):
 
     instance_type_info = response["InstanceTypes"][0]
 
-    gpu_info_list = instance_type_info.get("GpuInfo", [])
-    gpu_count = sum(gpu_info.get("Count", 0) for gpu_info in gpu_info_list["Gpus"])
+    gpu_info_list = instance_type_info.get("GpuInfo", {}).get("Gpus", [{}])
+    gpu_count = sum(gpu_info.get("Count", 0) for gpu_info in gpu_info_list)
 
     vcpu_info = instance_type_info.get("VCpuInfo", {})
     vcpu_count = vcpu_info.get("DefaultVCpus", 0)
