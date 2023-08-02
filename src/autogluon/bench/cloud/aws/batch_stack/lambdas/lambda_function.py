@@ -286,6 +286,8 @@ def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_qu
         new_config = {key: config[key] for key in common_keys}
         new_config.update(dict(zip(specific_keys, combo)))
 
+        if "custom_dataloader" in config["module_configs"]["multimodal"]:
+            new_config["custom_dataloader"] = config["module_configs"]["multimodal"]["custom_dataloader"]
         job_id, config_s3_path = process_combination(new_config, metrics_bucket, batch_job_queue, batch_job_definition)
         job_configs[job_id] = config_s3_path
 
