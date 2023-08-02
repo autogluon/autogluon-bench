@@ -60,21 +60,35 @@ class MultiModalBenchmark(Benchmark):
         presets: Optional[str] = None,
         hyperparameters: Optional[dict] = None,
         time_limit: Optional[int] = None,
+        custom_dataloader: Optional[dict] = None,
     ):
         """
         Runs the benchmark on a given dataset.
 
         Args:
-            dataset_name (str): Dataset that has been registered with multimodal_dataset_registry.
+            dataset_name (str): Dataset name, can be registered with multimodal_dataset_registry or a custom dataset.
 
                                 To get a list of datasets:
-
                                 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
                                 multimodal_dataset_registry.list_keys()
+            framework (str): The name of the framework to use for the benchmark.
+            presets (Optional[str], optional): Presets to use for the benchmark. Defaults to None.
+            hyperparameters (Optional[dict], optional): A dictionary of hyperparameters to use for the benchmark. Defaults to None.
+            time_limit (Optional[int], optional): The maximum time limit for the benchmark in seconds. Defaults to None.
+            custom_dataloader (Optional[dict], optional): A dictionary containing information about a custom dataloader to use. Defaults to None.
+                                To define a custom dataloader in the config file:
+
+                                custom_dataloader:
+                                    dataloader_path: path_to/dataloader.py   # relative path to WORKDIR
+                                    class_name: DataLoaderClass
+                                    dataset_config_path: path_to/dataset_config.yaml
+                                    **kwargs (of DataLoaderClass)
+
         Returns:
             None
         """
         PY_EXC_PATH = self.benchmark_dir + "/.venv/bin/python"
+
         exec_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.py"
         command = [
             PY_EXC_PATH,
@@ -94,6 +108,8 @@ class MultiModalBenchmark(Benchmark):
             command += ["--hyperparameters", json.dumps(hyperparameters)]
         if time_limit is not None:
             command += ["--time_limit", str(time_limit)]
+        if custom_dataloader is not None:
+            command += ["--custom_dataloader", json.dumps(custom_dataloader)]
         result = subprocess.run(command)
         if result.returncode != 0:
             sys.exit(1)

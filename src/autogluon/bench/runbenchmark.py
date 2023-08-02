@@ -53,6 +53,7 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
                 "presets": configs.get("presets"),
                 "hyperparameters": configs.get("hyperparameters"),
                 "time_limit": configs.get("time_limit"),
+                "custom_dataloader": configs.get("custom_dataloader"),
             },
         }
     elif module == "tabular":
@@ -342,27 +343,39 @@ def run(
                         amlb_user_dir_local = download_dir_from_s3(s3_path=amlb_user_dir[0], local_path=tmpdir.name)
                     else:
                         amlb_user_dir_local = amlb_user_dir[0]
-                    
+
                     custom_configs_path = os.path.join(current_path, "custom_configs/amlb_configs")
-                    lambda_custom_configs_path = os.path.join(current_path, "cloud/aws/batch_stack/lambdas/amlb_configs")
+                    lambda_custom_configs_path = os.path.join(
+                        current_path, "cloud/aws/batch_stack/lambdas/amlb_configs"
+                    )
                     original_path = amlb_user_dir_local
                     paths += [custom_configs_path, lambda_custom_configs_path]
                     os.environ["AMLB_USER_DIR"] = "amlb_configs"
                     configs["module_configs"]["tabular"]["amlb_user_dir"] = ["amlb_configs"]
             elif module == "multimodal":
                 if configs["module_configs"]["multimodal"].get("custom_dataloader") is not None:
-                    custom_dataloader_file = configs["module_configs"]["multimodal"]["custom_dataloader"]["dataloader_path"]
+                    custom_dataloader_file = configs["module_configs"]["multimodal"]["custom_dataloader"][
+                        "dataloader_path"
+                    ]
                     original_path = os.path.dirname(custom_dataloader_file)
-                    custom_dataset_config = configs["module_configs"]["multimodal"]["custom_dataloader"]["dataset_config_path"]
+                    custom_dataset_config = configs["module_configs"]["multimodal"]["custom_dataloader"][
+                        "dataset_config_path"
+                    ]
                     if original_path != os.path.dirname(custom_dataset_config):
-                        raise ValueError("Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory.")
+                        raise ValueError(
+                            "Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory."
+                        )
                     dataloader_file_name = os.path.basename(custom_dataloader_file)
                     dataset_config_file_name = os.path.basename(custom_dataset_config)
                     custom_dataloader_path = os.path.join(current_path, "custom_configs/dataloaders")
                     paths.append(custom_dataloader_path)
-                    configs["module_configs"]["multimodal"]["custom_dataloader"]["dataloader_path"] = f"dataloaders/{dataloader_file_name}"
-                    configs["module_configs"]["multimodal"]["custom_dataloader"]["dataset_config_path"] = f"dataloaders/{dataset_config_file_name}"
-            
+                    configs["module_configs"]["multimodal"]["custom_dataloader"][
+                        "dataloader_path"
+                    ] = f"dataloaders/{dataloader_file_name}"
+                    configs["module_configs"]["multimodal"]["custom_dataloader"][
+                        "dataset_config_path"
+                    ] = f"dataloaders/{dataset_config_file_name}"
+
             for path in paths:
                 # mounting custom directory to a predefined directory in the package
                 # to make it available for Docker build
