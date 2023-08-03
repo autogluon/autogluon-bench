@@ -162,7 +162,7 @@ class BatchJobStack(core.Stack):
             directory=docker_base_dir,
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
             build_args={
-                "AG_BENCH_BASE_IMAGE": os.getenv("AG_BENCH_BASE_IMAGE", None),
+                "AG_BENCH_BASE_IMAGE": os.environ["AG_BENCH_BASE_IMAGE"],
                 "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
                 "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
                 "CDK_DEPLOY_REGION": os.environ["CDK_DEPLOY_REGION"],

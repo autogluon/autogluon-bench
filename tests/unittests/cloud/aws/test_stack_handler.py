@@ -67,6 +67,7 @@ def test_deploy_stack(mocker):
         "BATCH_STACK_NAME": "test-prefix-batch-stack",
         "CONTAINER_MEMORY": 10000,
         "CDK_DEPLOY_REGION": "us-west-2",
+        "INSTANCE_TYPES": ["m5.2xlarge"],
     }
     custom_configs = {
         "cdk_context": {
