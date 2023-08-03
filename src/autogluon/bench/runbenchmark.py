@@ -326,6 +326,10 @@ def run(
             )
 
             if module == "tabular":
+                instance_type: str = configs["cdk_context"]["INSTANCE"]
+                if not instance_type.startswith(("p", "g")):
+                    # CPU instances
+                    os.environ["AG_BENCH_BASE_IMAGE"] = "763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-cpu-py39-ubuntu20.04-ec2"
                 _validate_single_value(configs["module_configs"]["tabular"], "framework")
                 os.environ["AMLB_FRAMEWORK"] = configs["module_configs"]["tabular"]["framework"][0]
 

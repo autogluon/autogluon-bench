@@ -1,4 +1,5 @@
-FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-gpu-py39-cu117-ubuntu20.04-ec2
+ARG AG_BENCH_BASE_IMAGE=763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-gpu-py39-cu117-ubuntu20.04-ec2
+FROM $AG_BENCH_BASE_IMAGE
 ARG AG_BENCH_DEV_URL
 ARG AG_BENCH_VERSION
 ARG CDK_DEPLOY_REGION
