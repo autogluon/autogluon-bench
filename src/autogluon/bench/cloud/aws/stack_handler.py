@@ -120,6 +120,12 @@ def deploy_stack(custom_configs: dict) -> dict:
     cdk_path = _get_temp_cdk_app_path()
     custom_infra_configs = custom_configs.get("cdk_context", {})
     infra_configs = construct_context(custom_configs=custom_infra_configs)
+    instance_type: str = infra_configs["INSTANCE_TYPES"][0]
+    if not instance_type.startswith(("p", "g")):
+        # CPU instances
+        os.environ[
+            "AG_BENCH_BASE_IMAGE"
+        ] = "763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-cpu-py39-ubuntu20.04-ec2"
     command = [
         os.path.join(module_base_dir, "deploy.sh"),
         infra_configs["STACK_NAME_PREFIX"],
