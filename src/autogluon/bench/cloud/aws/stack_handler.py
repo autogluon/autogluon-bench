@@ -23,8 +23,8 @@ def get_instance_type_specs(instance_type, region):
 
     instance_type_info = response["InstanceTypes"][0]
 
-    gpu_info_list = instance_type_info.get("GpuInfo", [])
-    gpu_count = sum(gpu_info.get("Count", 0) for gpu_info in gpu_info_list["Gpus"])
+    gpu_info_list = instance_type_info.get("GpuInfo", {}).get("Gpus", [{}])
+    gpu_count = sum(gpu_info.get("Count", 0) for gpu_info in gpu_info_list)
 
     vcpu_info = instance_type_info.get("VCpuInfo", {})
     vcpu_count = vcpu_info.get("DefaultVCpus", 0)
@@ -120,6 +120,15 @@ def deploy_stack(custom_configs: dict) -> dict:
     cdk_path = _get_temp_cdk_app_path()
     custom_infra_configs = custom_configs.get("cdk_context", {})
     infra_configs = construct_context(custom_configs=custom_infra_configs)
+    instance_type: str = infra_configs["INSTANCE_TYPES"][0]
+    os.environ[
+        "AG_BENCH_BASE_IMAGE"
+    ] = "763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-gpu-py39-cu117-ubuntu20.04-ec2"
+    if not instance_type.startswith(("p", "g")):
+        # CPU instances
+        os.environ[
+            "AG_BENCH_BASE_IMAGE"
+        ] = "763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-cpu-py39-ubuntu20.04-ec2"
     command = [
         os.path.join(module_base_dir, "deploy.sh"),
         infra_configs["STACK_NAME_PREFIX"],
