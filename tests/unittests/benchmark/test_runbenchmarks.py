@@ -11,6 +11,7 @@ def setup_mock(mocker, tmp_path):
     mocker.patch("re.search", return_value=False)
     cdk_context = {
         "METRICS_BUCKET": "test_bucket",
+        "INSTANCE": "m5.2xlarge",
     }
     job_configs = {
         "job_id_1": "config_spit_1",
