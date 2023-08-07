@@ -14,7 +14,9 @@ from .preprocess import preprocess_utils
 logger = logging.getLogger(__name__)
 
 
-def compute_vs_diff(results_ranked_by_dataset: pd.DataFrame, framework_1: str, framework_2: str) -> Tuple[float, float]:
+def compute_vs_diff(
+    results_ranked_by_dataset: pd.DataFrame, framework_1: str, framework_2: str
+) -> Tuple[float, float]:
     """
     Compare two frameworks across a suite of datasets and calculate mean_diff and median_diff.
 
@@ -46,12 +48,12 @@ def compute_vs_diff(results_ranked_by_dataset: pd.DataFrame, framework_1: str, f
 
     results_ranked_by_dataset = copy.deepcopy(results_ranked_by_dataset)
 
-    results_ranked_by_dataset.loc[results_ranked_by_dataset[FRAMEWORK] == framework_1, 'sign'] = -1
-    results_ranked_by_dataset.loc[results_ranked_by_dataset[FRAMEWORK] == framework_2, 'sign'] = 1
+    results_ranked_by_dataset.loc[results_ranked_by_dataset[FRAMEWORK] == framework_1, "sign"] = -1
+    results_ranked_by_dataset.loc[results_ranked_by_dataset[FRAMEWORK] == framework_2, "sign"] = 1
 
     results_ranked_by_dataset = results_ranked_by_dataset.sort_values(by=[BESTDIFF], ascending=False)
-    results_ranked_by_dataset = results_ranked_by_dataset.drop_duplicates(subset=[DATASET], keep='first')
-    results_ranked_by_dataset[BESTDIFF] = results_ranked_by_dataset[BESTDIFF] * results_ranked_by_dataset['sign']
+    results_ranked_by_dataset = results_ranked_by_dataset.drop_duplicates(subset=[DATASET], keep="first")
+    results_ranked_by_dataset[BESTDIFF] = results_ranked_by_dataset[BESTDIFF] * results_ranked_by_dataset["sign"]
 
     mean_diff = results_ranked_by_dataset[BESTDIFF].mean()
     median_diff = results_ranked_by_dataset[BESTDIFF].median()
@@ -140,9 +142,9 @@ def evaluate(
         framework_fold_errors = num_datasets * num_folds - num_rows_framework
         print("framework:", framework)
         print(
-            f'\tdatasets_errors: {datasets_framework_errors_count}'
-            f'\tfold_errors: {framework_fold_errors}'
-            f'\tdatasets_framework_errors: {datasets_framework_errors}'
+            f"\tdatasets_errors: {datasets_framework_errors_count}"
+            f"\tfold_errors: {framework_fold_errors}"
+            f"\tdatasets_framework_errors: {datasets_framework_errors}"
         )
     print("################################################")
     print("%s VS %s" % ("all", "all"))
@@ -222,7 +224,9 @@ def evaluate(
                 verbose=False,
             )
 
-            mean_diff, median_diff = compute_vs_diff(results_ranked_by_dataset=results_ranked_by_dataset, framework_1=framework_1, framework_2=framework_2)
+            mean_diff, median_diff = compute_vs_diff(
+                results_ranked_by_dataset=results_ranked_by_dataset, framework_1=framework_1, framework_2=framework_2
+            )
 
             # Convert proportion to percentile
             mean_diff *= 100
