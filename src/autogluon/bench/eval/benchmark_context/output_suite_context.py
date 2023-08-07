@@ -185,9 +185,9 @@ class OutputSuiteContext:
         return leaderboards_df
 
     def load_model_failures(self) -> List[pd.DataFrame]:
-        return self._loop_func(func=OutputContext.get_model_failures,
-                               input_list=self.output_contexts,
-                               allow_exception=True)
+        return self._loop_func(
+            func=OutputContext.get_model_failures, input_list=self.output_contexts, allow_exception=True
+        )
 
     def aggregate_model_failures(self) -> pd.DataFrame:
         model_failures_list = self.load_model_failures()

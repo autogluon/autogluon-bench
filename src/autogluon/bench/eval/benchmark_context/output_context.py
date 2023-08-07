@@ -49,7 +49,7 @@ class OutputContext:
 
     @property
     def path_model_failures(self):
-        return self.path + 'model_failures.csv'
+        return self.path + "model_failures.csv"
 
     @property
     def path_infer_speed(self):
@@ -226,13 +226,12 @@ class OutputContext:
         try:
             model_failures_df = self.load_model_failures()
         except Exception as e:
-            print(f'FAILURE:\n'
-                  f'\t{e.__class__.__name__}: {e}')
+            print(f"FAILURE:\n" f"\t{e.__class__.__name__}: {e}")
             return None
         else:
-            results = results.rename(columns={'framework': 'framework_parent'})
-            model_failures_df['id'] = results['id'][0]
-            model_failures_full_df = pd.merge(model_failures_df, results, on='id', how='left')
+            results = results.rename(columns={"framework": "framework_parent"})
+            model_failures_df["id"] = results["id"][0]
+            model_failures_full_df = pd.merge(model_failures_df, results, on="id", how="left")
             return model_failures_full_df
 
     def _merge_leaderboard_with_infer_speed(self, leaderboard: pd.DataFrame) -> pd.DataFrame:
