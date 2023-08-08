@@ -12,10 +12,8 @@ ARG AMLB_USER_DIR
 
 WORKDIR /app/
 
-RUN apt-get update && apt-get install -y --no-install-recommends cron unzip curl && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update && apt-get install -y --no-install-recommends unzip curl && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /var/spool/cron/crontabs \
-    && touch /var/log/cron.log \
     && rm -rf /usr/local/aws \
     && pip freeze | cut -d "@" -f1 | xargs pip uninstall -y \
     && curl "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
@@ -39,9 +37,9 @@ RUN if [ -n "$AG_BENCH_DEV_URL" ]; then \
         fi; \
     fi
 
-COPY entrypoint.sh utils/gpu_utilization.sh $FRAMEWORK_PATH/setup.sh custom_configs/ /app/
+COPY entrypoint.sh utils/hardware_utilization.sh $FRAMEWORK_PATH/setup.sh custom_configs/ /app/
 
-RUN chmod +x setup.sh entrypoint.sh /app/gpu_utilization.sh \
+RUN chmod +x setup.sh entrypoint.sh hardware_utilization.sh \
     && if echo "$FRAMEWORK_PATH" | grep -q "tabular"; then \
         if [ -n "$AMLB_USER_DIR" ]; then \
             bash setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR $AMLB_FRAMEWORK $AMLB_USER_DIR; \
@@ -55,8 +53,6 @@ RUN chmod +x setup.sh entrypoint.sh /app/gpu_utilization.sh \
             bash setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR --AG_BENCH_VER=$AG_BENCH_VERSION; \
         fi; \
     fi \
-    && echo "*/5 * * * * /app/gpu_utilization.sh >> /var/log/cron.log 2>&1" > /var/spool/cron/crontabs/root \
-    && chmod 600 /var/spool/cron/crontabs/root \
     && echo "CDK_DEPLOY_REGION=$CDK_DEPLOY_REGION" >> /etc/environment
 
 ENTRYPOINT ["./entrypoint.sh"]

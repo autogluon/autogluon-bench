@@ -287,8 +287,9 @@ def _mount_dir(orig_path: str, new_path: str):
 def run(
     config_file: str = typer.Argument(..., help="Path to custom config file."),
     remove_resources: bool = typer.Option(False, help="Remove resources after run."),
-    wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish."),
+    wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish, default to False."),
     dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
+    skip_setup: bool = typer.Option(False, help="Whether to skip setting up framework, default to False."),
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
     configs = {}
@@ -443,10 +444,8 @@ def run(
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
         benchmark_dir_s3 = f"{module}/{benchmark_name}"
-        skip_setup = False
         if split_id is not None:
             benchmark_dir_s3 += f"/{benchmark_name}_{split_id}"
-            skip_setup = True
 
         if module == "tabular":
             amlb_user_dir = configs.get("amlb_user_dir")
