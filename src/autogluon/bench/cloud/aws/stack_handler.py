@@ -123,7 +123,7 @@ def deploy_stack(custom_configs: dict) -> dict:
     instance_type: str = infra_configs["INSTANCE_TYPES"][0]
     os.environ[
         "AG_BENCH_BASE_IMAGE"
-    ] = "763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-gpu-py39-cu117-ubuntu20.04-ec2"
+    ] = "nvidia/cuda:12.2.0-runtime-ubuntu20.04"
     if not instance_type.startswith(("p", "g")):
         # CPU instances
         os.environ[
