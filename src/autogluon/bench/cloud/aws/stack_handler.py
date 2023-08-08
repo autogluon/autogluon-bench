@@ -128,7 +128,7 @@ def deploy_stack(custom_configs: dict) -> dict:
         # CPU instances
         os.environ[
             "AG_BENCH_BASE_IMAGE"
-        ] = "763104351884.dkr.ecr.us-east-1.amazonaws.com/pytorch-training:1.13.1-cpu-py39-ubuntu20.04-ec2"
+        ] = "ubuntu:20.04"
     command = [
         os.path.join(module_base_dir, "deploy.sh"),
         infra_configs["STACK_NAME_PREFIX"],
