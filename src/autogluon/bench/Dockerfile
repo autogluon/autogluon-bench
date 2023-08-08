@@ -1,5 +1,27 @@
 ARG AG_BENCH_BASE_IMAGE
 FROM $AG_BENCH_BASE_IMAGE
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install essential packages and Python 3.9
+RUN apt-get update && \
+    apt-get install -y software-properties-common build-essential && \
+    add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.9 python3.9-dev python3.9-distutils python3.9-venv && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
+
+# Install utilities and AWS CLI
+RUN apt-get install -y python3-pip unzip curl git pciutils && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    unzip -q awscliv2.zip && \
+    ./aws/install && \
+    rm awscliv2.zip && \
+    python3 -m pip install --upgrade pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /usr/local/aws
+
+# Application-specific steps
 ARG AG_BENCH_DEV_URL
 ARG AG_BENCH_VERSION
 ARG CDK_DEPLOY_REGION
@@ -11,16 +33,6 @@ ARG AMLB_FRAMEWORK
 ARG AMLB_USER_DIR
 
 WORKDIR /app/
-
-RUN apt-get update && apt-get install -y --no-install-recommends unzip curl && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /usr/local/aws \
-    && pip freeze | cut -d "@" -f1 | xargs pip uninstall -y \
-    && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
-    && unzip -q awscliv2.zip \
-    && ./aws/install \
-    && rm awscliv2.zip \
-    && python3 -m pip install --upgrade pip
 
 RUN if [ -n "$AG_BENCH_DEV_URL" ]; then \
         echo "Cloning: $AG_BENCH_DEV_URL" \
