@@ -66,7 +66,7 @@ def setup_mock(mocker, tmp_path, module="tabular"):
     mock_upload_to_s3 = mocker.patch("autogluon.bench.runbenchmark.upload_to_s3", return_value="test_s3_path")
     mock_invoke_lambda = mocker.patch("autogluon.bench.runbenchmark.invoke_lambda", return_value={})
 
-    mock_wait_for_jobs = mocker.patch("autogluon.bench.runbenchmark.wait_for_jobs_to_complete", return_value=[])
+    mock_wait_for_jobs = mocker.patch("autogluon.bench.runbenchmark.wait_for_jobs", return_value=[])
     mock_destroy_stack = mocker.patch("autogluon.bench.runbenchmark.destroy_stack")
 
     return {
@@ -170,7 +170,7 @@ def test_invoke_lambda(mocker):
 def test_run_aws_mode(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=None)
+    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=None, skip_setup=True)
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
@@ -184,7 +184,7 @@ def test_run_aws_mode(mocker, tmp_path):
 def test_run_aws_mode_remove_resources(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
 
-    run(setup["config_file"], remove_resources=True, wait=False, dev_branch=None)
+    run(setup["config_file"], remove_resources=True, wait=False, dev_branch=None, skip_setup=True)
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
@@ -205,7 +205,7 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
 def test_run_aws_mode_wait(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
 
-    run(setup["config_file"], remove_resources=False, wait=True, dev_branch=None)
+    run(setup["config_file"], remove_resources=False, wait=True, dev_branch=None, skip_setup=True)
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
@@ -220,7 +220,7 @@ def test_run_aws_mode_dev_branch(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
     dev_branch = "dev_branch_url"
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=dev_branch)
+    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=dev_branch, skip_setup=True)
 
     assert os.environ["AG_BENCH_DEV_URL"] == dev_branch
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
@@ -237,7 +237,13 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
     mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
     umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch="https://git_url#git_branch")
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch="https://git_url#git_branch",
+        skip_setup=True,
+    )
     assert os.environ["AG_BENCH_DEV_URL"] == "https://git_url#git_branch"
     assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular"
     assert os.environ["BENCHMARK_DIR"] == "ag_bench_runs/tabular/test_benchmark_test_time"
@@ -256,7 +262,13 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
     mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
     umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch="https://git_url#git_branch")
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch="https://git_url#git_branch",
+        skip_setup=True,
+    )
     assert (
         setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataloader_file"]
         == "dataloaders/dataset.py"
@@ -285,7 +297,7 @@ def test_run_local_mode(mocker, tmp_path):
     mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
     mock_run_benchmark = mocker.patch("autogluon.bench.runbenchmark.run_benchmark")
 
-    run(str(config_file), remove_resources=False, wait=False, dev_branch=None)
+    run(str(config_file), remove_resources=False, wait=False, dev_branch=None, skip_setup=False)
 
     mock_open.assert_called_with(str(config_file), "r")
     mock_run_benchmark.assert_called_with(

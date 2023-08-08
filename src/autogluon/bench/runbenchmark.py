@@ -192,8 +192,12 @@ def get_job_status(
     return status_dict
 
 
-def wait_for_jobs_to_complete(
-    config_file: Optional[str] = None, job_ids: Optional[List[str]] = None, aws_region: Optional[str] = None
+def wait_for_jobs(
+    config_file: Optional[str] = None,
+    job_ids: Optional[List[str]] = None,
+    aws_region: Optional[str] = None,
+    quit_statuses: Optional[list] = ["SUCCEEDED", "FAILED"],
+    frequency: Optional[int] = 120,
 ):
     while True:
         all_jobs_completed = True
@@ -205,7 +209,7 @@ def wait_for_jobs_to_complete(
             for job_id, job_status in job_status.items():
                 if job_status == "FAILED":
                     failed_jobs.append(job_id)
-                elif job_status not in ["SUCCEEDED", "FAILED"]:
+                elif job_status not in quit_statuses:
                     all_jobs_completed = False
         except botocore.exceptions.ClientError as e:
             logger.error(f"An error occurred: {e}.")
@@ -214,7 +218,7 @@ def wait_for_jobs_to_complete(
         if all_jobs_completed:
             break
         else:
-            time.sleep(120)  # Poll job statuses every 60 seconds
+            time.sleep(frequency)  # Poll job statuses every 60 seconds
 
     return failed_jobs
 
@@ -283,8 +287,9 @@ def _mount_dir(orig_path: str, new_path: str):
 def run(
     config_file: str = typer.Argument(..., help="Path to custom config file."),
     remove_resources: bool = typer.Option(False, help="Remove resources after run."),
-    wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish."),
+    wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish, default to False."),
     dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
+    skip_setup: bool = typer.Option(False, help="Whether to skip setting up framework in local mode, default to False."),
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
     configs = {}
@@ -412,7 +417,7 @@ def run(
                         "to delete the stack after jobs have run to completion if you choose to quit now."
                     )
 
-                failed_jobs = wait_for_jobs_to_complete(config_file=aws_config_path)
+                failed_jobs = wait_for_jobs(config_file=aws_config_path)
                 if len(failed_jobs) > 0:
                     logger.warning("Some jobs have failed: %s.", failed_jobs)
                     if remove_resources:
@@ -439,10 +444,8 @@ def run(
     elif configs["mode"] == "local":
         split_id = _get_split_id(config_file)
         benchmark_dir_s3 = f"{module}/{benchmark_name}"
-        skip_setup = False
         if split_id is not None:
             benchmark_dir_s3 += f"/{benchmark_name}_{split_id}"
-            skip_setup = True
 
         if module == "tabular":
             amlb_user_dir = configs.get("amlb_user_dir")

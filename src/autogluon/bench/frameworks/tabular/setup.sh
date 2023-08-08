@@ -23,7 +23,7 @@ git clone --depth 1 --branch ${BRANCH} ${GIT_URI} $DIR/$repo_name
 
 python3 -m pip install --upgrade pip
 python3 -m pip install --upgrade setuptools wheel
-pip install -r $DIR/automlbenchmark/requirements.txt
+python3 -m pip install -r $DIR/automlbenchmark/requirements.txt
 
 # install amlb framework only
 echo "Installing framework $AMLB_FRAMEWORK"
