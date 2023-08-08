@@ -1,4 +1,4 @@
-from typing import List, Optional, Set
+from typing import Optional, Set, Union
 
 import boto3
 import numpy as np
@@ -216,7 +216,7 @@ class OutputContext:
             print(f"SUCCESS: {print_msg}")
             return combined_full
 
-    def get_model_failures(self) -> pd.DataFrame | None:
+    def get_model_failures(self) -> Union[pd.DataFrame, None]:
         """
         Load and return the model failures CSV as a pandas DataFrame if it exists, else return None.
 
