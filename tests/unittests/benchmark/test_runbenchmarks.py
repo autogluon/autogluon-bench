@@ -237,7 +237,13 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
     mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
     umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch="https://git_url#git_branch", skip_setup=True)
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch="https://git_url#git_branch",
+        skip_setup=True,
+    )
     assert os.environ["AG_BENCH_DEV_URL"] == "https://git_url#git_branch"
     assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular"
     assert os.environ["BENCHMARK_DIR"] == "ag_bench_runs/tabular/test_benchmark_test_time"
@@ -256,7 +262,13 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
     mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
     umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch="https://git_url#git_branch", skip_setup=True)
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch="https://git_url#git_branch",
+        skip_setup=True,
+    )
     assert (
         setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataloader_file"]
         == "dataloaders/dataset.py"

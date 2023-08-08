@@ -16,18 +16,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends unzip curl && r
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /usr/local/aws \
     && pip freeze | cut -d "@" -f1 | xargs pip uninstall -y \
-    && curl "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
     && unzip -q awscliv2.zip \
     && ./aws/install \
     && rm awscliv2.zip \
-    && pip install --upgrade pip
+    && python3 -m pip install --upgrade pip
 
 RUN if [ -n "$AG_BENCH_DEV_URL" ]; then \
         echo "Cloning: $AG_BENCH_DEV_URL" \
         && AG_BENCH_DEV_REPO=$(echo "$AG_BENCH_DEV_URL" | cut -d "#" -f 1) \
         && AG_BENCH_DEV_BRANCH=$(echo "$AG_BENCH_DEV_URL" | cut -d "#" -f 2) \
         && git clone --branch "$AG_BENCH_DEV_BRANCH" --single-branch "$AG_BENCH_DEV_REPO" /app/autogluon-bench \
-        && pip install -e /app/autogluon-bench; \
+        && python3 -m pip install -e /app/autogluon-bench; \
     else \
         output=$(pip install autogluon.bench==$AG_BENCH_VERSION 2>&1) || true; \
         if echo $output | grep -q "No matching distribution"; then \

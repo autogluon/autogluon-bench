@@ -289,7 +289,7 @@ def run(
     remove_resources: bool = typer.Option(False, help="Remove resources after run."),
     wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish, default to False."),
     dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
-    skip_setup: bool = typer.Option(False, help="Whether to skip setting up framework, default to False."),
+    skip_setup: bool = typer.Option(False, help="Whether to skip setting up framework in local mode, default to False."),
 ):
     """Main function that runs the benchmark based on the provided configuration options."""
     configs = {}
