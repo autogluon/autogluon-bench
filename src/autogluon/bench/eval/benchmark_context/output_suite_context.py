@@ -184,6 +184,23 @@ class OutputSuiteContext:
         leaderboards_df = pd.concat(leaderboards_list, ignore_index=True)
         return leaderboards_df
 
+    def load_model_failures(self) -> List[pd.DataFrame]:
+        return self._loop_func(
+            func=OutputContext.get_model_failures, input_list=self.output_contexts, allow_exception=True
+        )
+
+    def aggregate_model_failures(self) -> pd.DataFrame:
+        model_failures_list = self.load_model_failures()
+        none_count = 0
+        for e in model_failures_list:
+            if e is None:
+                none_count += 1
+        if none_count == len(model_failures_list):
+            return pd.DataFrame()
+        else:
+            model_failures_df = pd.concat(model_failures_list, ignore_index=True)
+            return model_failures_df
+
     def get_amlb_info(self) -> List[str]:
         return self._loop_func(func=OutputContext.get_amlb_info, input_list=self.output_contexts)
 
@@ -229,17 +246,14 @@ class OutputSuiteContext:
     def _aggregate_leaderboards_seq(output_contexts, columns_to_keep, with_infer_speed):
         print("starting sequential...")
         num_contexts = len(output_contexts)
-        if not ray.is_initialized():
-            ray.init()
         results = []
         for i, output_context in enumerate(output_contexts):
             results.append(
                 get_single_leaderboard_seq(output_context, columns_to_keep, with_infer_speed, i, num_contexts)
             )
-        result = ray.get(results)
         print("finished sequential...")
-        result = [r for r in result if r is not None]
-        return result
+        results = [r for r in results if r is not None]
+        return results
 
     def construct_zs_dict(self, results_lst=None, zeroshot_metadata_list=None):
         if results_lst is None:

@@ -48,6 +48,10 @@ class OutputContext:
         return self.path + "leaderboard.csv"
 
     @property
+    def path_model_failures(self):
+        return self.path + "model_failures.csv"
+
+    @property
     def path_infer_speed(self):
         return self.path + "infer_speed.csv"
 
@@ -92,6 +96,10 @@ class OutputContext:
 
     def load_leaderboard(self) -> pd.DataFrame:
         return load_pd.load(self.path_leaderboard)
+
+    def load_model_failures(self) -> pd.DataFrame:
+        """Load and return the raw model failures file"""
+        return load_pd.load(self.path_model_failures)
 
     def load_infer_speed(self) -> pd.DataFrame:
         return load_pd.load(self.path_infer_speed)
@@ -207,6 +215,24 @@ class OutputContext:
             # print(combined_full)
             print(f"SUCCESS: {print_msg}")
             return combined_full
+
+    def get_model_failures(self) -> pd.DataFrame | None:
+        """
+        Load and return the model failures CSV as a pandas DataFrame if it exists, else return None.
+
+        Will merge with the results to get additional information, akin to the leaderboard output.
+        """
+        results = self.load_results()
+        try:
+            model_failures_df = self.load_model_failures()
+        except Exception as e:
+            print(f"FAILURE:\n" f"\t{e.__class__.__name__}: {e}")
+            return None
+        else:
+            results = results.rename(columns={"framework": "framework_parent"})
+            model_failures_df["id"] = results["id"][0]
+            model_failures_full_df = pd.merge(model_failures_df, results, on="id", how="left")
+            return model_failures_full_df
 
     def _merge_leaderboard_with_infer_speed(self, leaderboard: pd.DataFrame) -> pd.DataFrame:
         infer_speed_df = self.load_infer_speed()
