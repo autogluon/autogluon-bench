@@ -192,7 +192,7 @@ A variety of metrics are available for the EC2 instances that are launched durin
 In addition to the standard metrics, we also provide a custom metric for `GPUUtilization`. This can be found in the `CloudWatch` section under `All metrics` -> `Custom namespaces` -> `EC2`. Please note that the `GPUUtilization` metric is also updated every five minutes.
 
 
-## Evaluating bechmark runs
+## Evaluating benchmark runs
 
 Tabular benchmark results can be evaluated using the tools in `src/autogluon/bench/eval/`. The evaluation logic will aggregate, clean, and produce evaluation results for runs stored in S3.
 In a future release, we intend to add evaluation support for multimodal benchmark results.
