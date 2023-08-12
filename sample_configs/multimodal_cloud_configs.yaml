@@ -5,12 +5,15 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
   PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
   METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
   # DATA_BUCKET: existing-s3-bucket  # optional, S3 bucket to download your private datasets
-  # MAX_MACHINE_NUM: 20   # optional
-  # BLOCK_DEVICE_VOLUME: 100   # optional
-  # RESERVED_MEMORY_SIZE: 15000  # optional
-  # INSTANCE: g4dn.2xlarge  # optional
+  # MAX_MACHINE_NUM: 20   # optional, default 20
+  # BLOCK_DEVICE_VOLUME: 100   # optional, default 100GB
+  # RESERVED_MEMORY_SIZE: 15000  # optional, default 15000MB
+  # INSTANCE: g4dn.2xlarge  # optional, default g4dn.2xlarge
+  # TIME_LIMIT: 3600  # optional, EC2 timeout, default 3600s
   # VPC_NAME: existing-vpc-name  # optional
 
+constraint: 1m2x
+custom_constraint_path: sample_configs/constraints/custom_constraints.yaml
 # Benchmark configurations
 module: multimodal  # required
 mode: aws  # required

@@ -114,6 +114,7 @@ class BatchJobStack(core.Stack):
         container_gpu = self.node.try_get_context("CONTAINER_GPU")
         container_vcpu = self.node.try_get_context("CONTAINER_VCPU")
         container_memory = self.node.try_get_context("CONTAINER_MEMORY")
+        time_limit = self.node.try_get_context("TIME_LIMIT")
         block_device_volume = self.node.try_get_context("BLOCK_DEVICE_VOLUME")
         lambda_function_name = self.node.try_get_context("LAMBDA_FUNCTION_NAME") + "-" + prefix
 
@@ -196,7 +197,7 @@ class BatchJobStack(core.Stack):
             "job-definition",
             container=container,
             retry_attempts=3,
-            timeout=core.Duration.minutes(1500),
+            timeout=core.Duration.minutes(time_limit),
         )
 
         # LaunchTemplate.launch_template_name returns Null https://github.com/aws/aws-cdk/issues/19405

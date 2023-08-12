@@ -43,6 +43,9 @@ def get_args():
     parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
     parser.add_argument("--metrics_dir", type=str, help="Directory to save benchmarking metrics.")
     parser.add_argument(
+        "--constraint", type=str, default=None, help="AWS resources constraint setting."
+    )
+    parser.add_argument(
         "--time_limit", type=int, default=None, help="Time limit for the AutoGluon benchmark (in seconds)."
     )
     parser.add_argument("--presets", type=str, default=None, help="Preset configurations to use in the benchmark.")
@@ -119,6 +122,7 @@ def run(
     framework: str,
     benchmark_dir: str,
     metrics_dir: str,
+    constraint: Optional[str] = None,
     time_limit: Optional[int] = None,
     presets: Optional[str] = None,
     hyperparameters: Optional[dict] = None,
@@ -215,7 +219,9 @@ def run(
     metrics = {
         "task": dataset_name,
         "framework": framework,
+        "constraint": constraint,
         "version": version,
+        "fold": 0,
         "type": predictor.problem_type,
         "utc_time": utc_time,
         "training_duration": training_duration,
@@ -237,6 +243,7 @@ if __name__ == "__main__":
         framework=args.framework,
         benchmark_dir=args.benchmark_dir,
         metrics_dir=args.metrics_dir,
+        constraint=args.constraint,
         time_limit=args.time_limit,
         presets=args.presets,
         hyperparameters=args.hyperparameters,

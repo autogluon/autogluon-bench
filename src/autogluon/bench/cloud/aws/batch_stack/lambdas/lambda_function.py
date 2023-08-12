@@ -268,7 +268,7 @@ def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_
 
 
 def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
-    common_keys = ["module", "mode", "benchmark_name", "root_dir", "METRICS_BUCKET"]
+    common_keys = ["module", "mode", "benchmark_name", "root_dir", "METRICS_BUCKET", "constraint"]
     specific_keys = ["git_uri#branch", "dataset_name", "presets", "hyperparameters", "time_limit"]
 
     job_configs = {}

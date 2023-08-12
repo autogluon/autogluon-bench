@@ -1,0 +1,7 @@
+test:
+  time_limit: 1800
+  instance: g4dn.2xlarge
+
+10m4x:
+  time_limit: 600
+  instance: g4dn.4xlarge

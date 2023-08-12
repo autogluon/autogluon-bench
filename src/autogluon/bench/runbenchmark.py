@@ -50,6 +50,7 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
             "run_kwargs": {
                 "dataset_name": configs["dataset_name"],
                 "framework": configs["git_uri#branch"].split("/")[-1],
+                "constraint": configs.get("constraint"),
                 "presets": configs.get("presets"),
                 "hyperparameters": configs.get("hyperparameters"),
                 "time_limit": configs.get("time_limit"),
@@ -283,6 +284,54 @@ def _mount_dir(orig_path: str, new_path: str):
     subprocess.run(["sudo", "mount", "--bind", orig_path, new_path])
 
 
+def update_custom_dataloader(configs: dict):
+    custom_dataloader_file = configs["module_configs"]["multimodal"]["custom_dataloader"][
+                        "dataloader_file"
+    ]
+    original_path = os.path.dirname(custom_dataloader_file)
+    custom_dataset_config = configs["module_configs"]["multimodal"]["custom_dataloader"][
+        "dataset_config_file"
+    ]
+    if original_path != os.path.dirname(custom_dataset_config):
+        raise ValueError(
+            "Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory."
+        )
+    dataloader_file_name = os.path.basename(custom_dataloader_file)
+    dataset_config_file_name = os.path.basename(custom_dataset_config)
+    current_path = os.path.dirname(os.path.abspath(__file__))
+    custom_dataloader_path = os.path.join(current_path, "custom_configs", "dataloaders")
+
+    configs["module_configs"]["multimodal"]["custom_dataloader"][
+        "dataloader_file"
+    ] = f"dataloaders/{dataloader_file_name}"
+    configs["module_configs"]["multimodal"]["custom_dataloader"][
+        "dataset_config_file"
+    ] = f"dataloaders/{dataset_config_file_name}"
+
+    return custom_dataloader_path
+
+
+def update_resource_constraint(configs: dict):
+    constraint = configs.get("constraint", "test")
+
+    current_path = os.path.dirname(os.path.abspath(__file__))
+    default_constraints_file = os.path.join(current_path, "resources", "multimodal_constraints.yaml")
+    with open(default_constraints_file, "r") as f:
+        default_constraints = yaml.safe_load(f)
+
+    if configs.get("custom_constraint_path") is not None:
+        custom_constraints_file = configs["custom_constraint_path"]
+        with open(custom_constraints_file, "r") as f:
+            custom_constraints = yaml.safe_load(f)
+            default_constraints.update(custom_constraints)
+    
+    constraint_configs = default_constraints[constraint]
+    if "instance" in constraint_configs.keys():
+        configs["cdk_context"]["INSTANCE"] = constraint_configs["instance"]
+    if "time_limit" in constraint_configs.keys():
+        configs["cdk_context"]["TIME_LIMIT"] = constraint_configs["time_limit"] + 3600  # buffer to account for instance start, dataset download and overhead
+
+
 @app.command()
 def run(
     config_file: str = typer.Argument(..., help="Path to custom config file."),
@@ -360,28 +409,10 @@ def run(
                     os.environ["AMLB_USER_DIR"] = "amlb_configs"
                     configs["module_configs"]["tabular"]["amlb_user_dir"] = ["amlb_configs"]
             elif module == "multimodal":
+                update_resource_constraint(configs=configs)
                 if configs["module_configs"]["multimodal"].get("custom_dataloader") is not None:
-                    custom_dataloader_file = configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataloader_file"
-                    ]
-                    original_path = os.path.dirname(custom_dataloader_file)
-                    custom_dataset_config = configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataset_config_file"
-                    ]
-                    if original_path != os.path.dirname(custom_dataset_config):
-                        raise ValueError(
-                            "Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory."
-                        )
-                    dataloader_file_name = os.path.basename(custom_dataloader_file)
-                    dataset_config_file_name = os.path.basename(custom_dataset_config)
-                    custom_dataloader_file = os.path.join(current_path, "custom_configs/dataloaders")
-                    paths.append(custom_dataloader_file)
-                    configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataloader_file"
-                    ] = f"dataloaders/{dataloader_file_name}"
-                    configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataset_config_file"
-                    ] = f"dataloaders/{dataset_config_file_name}"
+                    custom_dataloader_path = update_custom_dataloader(configs=configs)
+                    paths.append(custom_dataloader_path)
 
             for path in paths:
                 # mounting custom directory to a predefined directory in the package

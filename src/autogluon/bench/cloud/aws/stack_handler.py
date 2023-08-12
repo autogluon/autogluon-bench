@@ -83,6 +83,7 @@ def construct_context(custom_configs: dict) -> dict:
         - configs[
             "RESERVED_MEMORY_SIZE"
         ],  # memory in MB reserved for container, also used for shm_size, i.e. `shared_memory_size`
+        "TIME_LIMIT": configs["TIME_LIMIT"],  # timeout of instance, in seconds
         "BLOCK_DEVICE_VOLUME": configs["BLOCK_DEVICE_VOLUME"],  # device attached to instance, in GB
         "LAMBDA_FUNCTION_NAME": f"{prefix}-batch-job-function",
         "VPC_NAME": configs.get(

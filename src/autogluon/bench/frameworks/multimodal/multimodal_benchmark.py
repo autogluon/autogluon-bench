@@ -57,6 +57,7 @@ class MultiModalBenchmark(Benchmark):
         self,
         dataset_name: str,
         framework: str,
+        constraint: Optional[str] = None,
         presets: Optional[str] = None,
         hyperparameters: Optional[dict] = None,
         time_limit: Optional[int] = None,
@@ -102,6 +103,8 @@ class MultiModalBenchmark(Benchmark):
             "--metrics_dir",
             self.metrics_dir,
         ]
+        if constraint is not None:
+            command += ["--constraint", constraint]
         if presets is not None and len(presets) > 0:
             command += ["--presets", presets]
         if hyperparameters is not None:
