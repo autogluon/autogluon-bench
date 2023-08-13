@@ -6,16 +6,11 @@ root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 # METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
 
 # Multimodal specific
-git_uri#branch: https://github.com/autogluon/autogluon#master  # required
+framework: AutoGluon_stable
+# git_uri#branch: https://github.com/autogluon/autogluon#master  # required
 dataset_name: 
-  melbourne_airbnb  # required
-# custom_dataloader:
-#     dataloader_file: sample_configs/dataloaders/text_dataloader.py   # relative path to WORKDIR
-#     class_name: TextDataLoaer
-#     lang: en
-#     dataset_config_file: sample_configs/dataloaders/text_datasets.yaml 
-presets: medium_quality  # optional
-hyperparameters:  # optional
-  optimization.learning_rate: 0.0005
-  optimization.max_epochs: 5
-time_limit: 10  # optional
+  stanfordcars  # required
+custom_dataloader:
+    dataloader_file: sample_configs/dataloaders/vision_dataloader.py   # relative path to WORKDIR
+    class_name: VisionDataLoaer
+    dataset_config_file: sample_configs/dataloaders/vision_datasets.yaml 

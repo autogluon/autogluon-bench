@@ -46,10 +46,13 @@ def get_args():
         "--constraint", type=str, default=None, help="AWS resources constraint setting."
     )
     parser.add_argument(
-        "--time_limit", type=int, default=None, help="Time limit for the AutoGluon benchmark (in seconds)."
+        "--params", type=str, default=None, help="AWS resources constraint setting."
     )
-    parser.add_argument("--presets", type=str, default=None, help="Preset configurations to use in the benchmark.")
-    parser.add_argument("--hyperparameters", type=str, default=None, help="Hyperparameters to use in the benchmark.")
+    # parser.add_argument(
+    #     "--time_limit", type=int, default=None, help="Time limit for the AutoGluon benchmark (in seconds)."
+    # )
+    # parser.add_argument("--presets", type=str, default=None, help="Preset configurations to use in the benchmark.")
+    # parser.add_argument("--hyperparameters", type=str, default=None, help="Hyperparameters to use in the benchmark.")
     parser.add_argument(
         "--custom_dataloader", type=str, default=None, help="Custom dataloader to use in the benchmark."
     )
@@ -123,9 +126,10 @@ def run(
     benchmark_dir: str,
     metrics_dir: str,
     constraint: Optional[str] = None,
-    time_limit: Optional[int] = None,
-    presets: Optional[str] = None,
-    hyperparameters: Optional[dict] = None,
+    params: Optional[dict] = {},
+    # time_limit: Optional[int] = None,
+    # presets: Optional[str] = None,
+    # hyperparameters: Optional[dict] = None,
     custom_dataloader: Optional[dict] = None,
 ):
     """Runs the AutoGluon multimodal benchmark on a given dataset.
@@ -162,7 +166,7 @@ def run(
     predictor_args = {
         "label": label_column,
         "problem_type": train_data.problem_type,
-        "presets": presets,
+        "presets": params.pop("presets", None),
         "path": os.path.join(benchmark_dir, "models"),
     }
 
@@ -186,8 +190,7 @@ def run(
     fit_args = {
         "train_data": train_data.data,
         "tuning_data": val_data.data,
-        "hyperparameters": hyperparameters,
-        "time_limit": time_limit,
+        **params
     }
 
     utc_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
@@ -233,8 +236,8 @@ def run(
 
 if __name__ == "__main__":
     args = get_args()
-    if args.hyperparameters is not None:
-        args.hyperparameters = json.loads(args.hyperparameters)
+    if args.params is not None:
+        args.params = json.loads(args.params)
     if args.custom_dataloader is not None:
         args.custom_dataloader = json.loads(args.custom_dataloader)
 
@@ -244,8 +247,9 @@ if __name__ == "__main__":
         benchmark_dir=args.benchmark_dir,
         metrics_dir=args.metrics_dir,
         constraint=args.constraint,
-        time_limit=args.time_limit,
-        presets=args.presets,
-        hyperparameters=args.hyperparameters,
+        params=args.params,
+        # time_limit=args.time_limit,
+        # presets=args.presets,
+        # hyperparameters=args.hyperparameters,
         custom_dataloader=args.custom_dataloader,
     )

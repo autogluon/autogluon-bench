@@ -58,9 +58,10 @@ class MultiModalBenchmark(Benchmark):
         dataset_name: str,
         framework: str,
         constraint: Optional[str] = None,
-        presets: Optional[str] = None,
-        hyperparameters: Optional[dict] = None,
-        time_limit: Optional[int] = None,
+        params: Optional[dict] = None,
+        # presets: Optional[str] = None,
+        # hyperparameters: Optional[dict] = None,
+        # time_limit: Optional[int] = None,
         custom_dataloader: Optional[dict] = None,
     ):
         """
@@ -105,12 +106,14 @@ class MultiModalBenchmark(Benchmark):
         ]
         if constraint is not None:
             command += ["--constraint", constraint]
-        if presets is not None and len(presets) > 0:
-            command += ["--presets", presets]
-        if hyperparameters is not None:
-            command += ["--hyperparameters", json.dumps(hyperparameters)]
-        if time_limit is not None:
-            command += ["--time_limit", str(time_limit)]
+        if params is not None:
+            command += ["--params", json.dumps(params)]
+        # if presets is not None and len(presets) > 0:
+        #     command += ["--presets", presets]
+        # if hyperparameters is not None:
+        #     command += ["--hyperparameters", json.dumps(hyperparameters)]
+        # if time_limit is not None:
+        #     command += ["--time_limit", str(time_limit)]
         if custom_dataloader is not None:
             command += ["--custom_dataloader", json.dumps(custom_dataloader)]
         result = subprocess.run(command)

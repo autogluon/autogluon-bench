@@ -18,26 +18,23 @@ mode: aws  # required
 benchmark_name: ag_bench  # required
 root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
-module_configs:
-  # Tabular specific
-  # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
-  tabular:
-    git_uri#branch:  # required, can be any AMLB custom fork and branch, only one value allowed
-      - https://github.com/openml/automlbenchmark.git#master
-    framework:  # required, only one value allowed
-      - AutoGluon:stable
-    amlb_benchmark:  # required, each benchmark contains a list of datasets, can be subsetted by amlb_task below
-      - small
-    amlb_task:  # optional, value of each key is a subset of dataset names in each 'amlb_benchmark'
-      small:
-        - credit-g
-        - vehicle
-    amlb_constraint:  # optional, only one value allowed
-      - test
-    # fold_to_run:  # optional, capped by `folds` in amlb_constraint
-    #   small:
-    #     credit-g:
-    #       - 3
-    #       - 6
-    # amlb_user_dir:  # optional, local/s3 path where all the amlb customizations are stored, only one value allowed
-    #   - sample_configs/amlb_configs
+git_uri#branch:  # required, can be any AMLB custom fork and branch, only one value allowed
+  https://github.com/openml/automlbenchmark.git#master
+framework:  # required, only one value allowed
+  AutoGluon:stable
+amlb_constraint:  # optional, only one value allowed, default: test
+  test
+amlb_benchmark:  # required, a list of amlb benchmarks to run, ref: https://github.com/openml/automlbenchmark/tree/master/resources/benchmarks
+  - small
+amlb_task:  # optional, value of each key is a subset of dataset names in each 'amlb_benchmark', ref: https://github.com/openml/automlbenchmark/blob/master/resources/benchmarks/small.yaml
+  small:
+    - credit-g
+    - vehicle
+
+# fold_to_run:  # optional, capped by `folds` in amlb_constraint, ref: https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml
+#   small:
+#     credit-g:
+#       - 3
+#       - 6
+# amlb_user_dir:  # optional, local/s3 path where all the amlb customizations are stored, only one value allowed
+#   sample_configs/amlb_configs

@@ -249,7 +249,7 @@ def process_combination(configs, metrics_bucket, batch_job_queue, batch_job_defi
 
 def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
     job_configs = {}
-    config
+    config.pop("cdk_context")
     if config["module"] == "tabular":
         job_configs = generate_tabular_config_combinations(
             config, metrics_bucket, batch_job_queue, batch_job_definition
@@ -268,26 +268,30 @@ def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_
 
 
 def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
-    common_keys = ["module", "mode", "benchmark_name", "root_dir", "METRICS_BUCKET", "constraint"]
-    specific_keys = ["git_uri#branch", "dataset_name", "presets", "hyperparameters", "time_limit"]
+    common_keys = []
+    specific_keys = []
+    for key in config.keys():
+        if isinstance(config[key], list):
+            specific_keys.append(key)
+        else:
+            common_keys.append(key)
 
     job_configs = {}
     specific_value_combinations = list(
         itertools.product(
             *(
-                config["module_configs"]["multimodal"][key]
+                config[key]
                 for key in specific_keys
-                if key in config["module_configs"]["multimodal"]
+                if key in config.keys()
             )
         )
-    )
+    ) or [None]
 
     for combo in specific_value_combinations:
         new_config = {key: config[key] for key in common_keys}
-        new_config.update(dict(zip(specific_keys, combo)))
+        if combo is not None:
+            new_config.update(dict(zip(specific_keys, combo)))
 
-        if "custom_dataloader" in config["module_configs"]["multimodal"]:
-            new_config["custom_dataloader"] = config["module_configs"]["multimodal"]["custom_dataloader"]
         job_id, config_s3_path = process_combination(new_config, metrics_bucket, batch_job_queue, batch_job_definition)
         job_configs[job_id] = config_s3_path
 
@@ -295,30 +299,39 @@ def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_qu
 
 
 def generate_tabular_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
-    common_keys = ["module", "mode", "benchmark_name", "root_dir", "METRICS_BUCKET"]
     specific_keys = ["git_uri#branch", "framework", "amlb_constraint", "amlb_user_dir"]
+    exclude_keys = ["amlb_benchmark", "amlb_task", "fold_to_run"]
+    common_keys = []
+    specific_keys = []
+    for key in config.keys():
+        if key in exclude_keys:
+            continue
+        
+        if isinstance(config[key], list):
+            specific_keys.append(key)
+        else:
+            common_keys.append(key)
 
     job_configs = {}
-
-    # Generate combinations for the specific keys
     specific_value_combinations = list(
         itertools.product(
             *(
-                config["module_configs"]["tabular"][key]
+                config[key]
                 for key in specific_keys
-                if key in config["module_configs"]["tabular"]
+                if key in config.keys()
             )
         )
-    )
+    ) or [None]
 
     # Iterate through the combinations and the amlb benchmark task keys
     # Generates a config for each combination of specific key and keys in `fold_to_run`
     for combo in specific_value_combinations:
-        for benchmark, tasks in config["module_configs"]["tabular"]["fold_to_run"].items():
+        for benchmark, tasks in config["fold_to_run"].items():
             for task, fold_numbers in tasks.items():
                 for fold_num in fold_numbers:
                     new_config = {key: config[key] for key in common_keys}
-                    new_config.update(dict(zip(specific_keys, combo)))
+                    if combo is not None:
+                        new_config.update(dict(zip(specific_keys, combo)))
                     new_config["amlb_benchmark"] = benchmark
                     new_config["amlb_task"] = task
                     new_config["fold_to_run"] = fold_num
@@ -399,7 +412,6 @@ def handler(event, context):
     batch_job_queue = os.environ.get("BATCH_JOB_QUEUE")
     batch_job_definition = os.environ.get("BATCH_JOB_DEFINITION")
 
-    module_configs = configs["module_configs"][configs["module"]]
     configs["METRICS_BUCKET"] = metrics_bucket
     configs["mode"] = "local"
 
@@ -408,15 +420,14 @@ def handler(event, context):
         amlb_repo_path = download_automlbenchmark_resources()
         amlb_benchmark_search_dirs = []
         amlb_constraint_search_files = []
-        amlb_user_dir = module_configs.get("amlb_user_dir")
+        amlb_user_dir = configs.get("amlb_user_dir")
         if amlb_user_dir is not None:
-            _validate_single_value(module_configs, "amlb_user_dir")
-            if amlb_user_dir[0].startswith("s3://"):
+            if amlb_user_dir.startswith("s3://"):
                 amlb_user_dir_local = download_dir_from_s3(
-                    s3_path=amlb_user_dir[0], local_path=f"/tmp/amlb_custom_configs"
+                    s3_path=amlb_user_dir, local_path=f"/tmp/amlb_custom_configs"
                 )
             else:
-                amlb_user_dir_local = amlb_user_dir[0]
+                amlb_user_dir_local = amlb_user_dir
 
             # check if default amlb resources are required
             user_config_file = os.path.join(amlb_user_dir_local, "config.yaml")
@@ -450,15 +461,13 @@ def handler(event, context):
             amlb_benchmark_search_dirs.append(os.path.join(amlb_repo_path, "resources/benchmarks"))
             amlb_constraint_search_files.append(os.path.join(amlb_repo_path, "resources/constraints.yaml"))
 
-        if module_configs.get("amlb_constraint"):
-            _validate_single_value(configs=module_configs, key="amlb_constraint")
-        else:
-            module_configs["amlb_constraint"] = ["test"]
+        if configs.get("amlb_constraint") is None:
+            configs["amlb_constraint"] = "test"
         fold_constraint = get_max_fold(
-            amlb_constraint_search_files=amlb_constraint_search_files, constraint=module_configs["amlb_constraint"][0]
+            amlb_constraint_search_files=amlb_constraint_search_files, constraint=configs["amlb_constraint"]
         )
         process_benchmark_runs(
-            module_configs=module_configs,
+            module_configs=configs,
             amlb_benchmark_search_dirs=amlb_benchmark_search_dirs,
             default_max_folds=fold_constraint,
         )
