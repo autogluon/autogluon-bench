@@ -21,13 +21,13 @@ from autogluon.multimodal import __version__ as ag_version
 logger = logging.getLogger(__name__)
 
 
-def _flatten_dict(data, separator="_", prefix=""):
+def _flatten_dict(data):
     flattened = {}
     for key, value in data.items():
         if isinstance(value, dict):
-            flattened.update(_flatten_dict(value, separator, prefix + key + separator))
+            flattened.update(_flatten_dict(value))
         else:
-            flattened[prefix + key] = value
+            flattened[key] = value
     return flattened
 
 
@@ -220,18 +220,22 @@ def run(
         framework, version = framework, ag_version
 
     metrics = {
+        "id": "id/0",  # dummy id to make it compatible with openml results
         "task": dataset_name,
         "framework": framework,
         "constraint": constraint,
         "version": version,
         "fold": 0,
         "type": predictor.problem_type,
+        "result": scores[test_data.metric],
+        "metric": test_data.metric,
         "utc_time": utc_time,
         "training_duration": training_duration,
         "predict_duration": predict_duration,
         "scores": scores,
     }
-    save_metrics(os.path.join(metrics_dir, "scores"), metrics)
+    subdir = f"{framework}.{dataset_name}.{constraint}.local"
+    save_metrics(os.path.join(metrics_dir, subdir, "scores"), metrics)
 
 
 if __name__ == "__main__":
