@@ -1,13 +1,15 @@
 import io
 import os
 
+import yaml
+
 from autogluon.bench.runbenchmark import get_job_status, get_kwargs, invoke_lambda, run, run_benchmark
 
 
 def setup_mock(mocker, tmp_path, module="tabular"):
-    config_file = tmp_path / "config.yaml"
+    config_file = tmp_path / "run_configs.yaml"
     config_file.touch()
-    mock_open = mocker.patch("builtins.open", new_callable=mocker.mock_open)
+    # mock_open = mocker.patch("builtins.open", new_callable=mocker.mock_open)
     mocker.patch("re.search", return_value=False)
     cdk_context = {
         "METRICS_BUCKET": "test_bucket",
@@ -27,36 +29,41 @@ def setup_mock(mocker, tmp_path, module="tabular"):
 
     if module == "tabular":
         module_configs = {
-            module: {
-                "git_uri#branch": "https://github.com/openml/automlbenchmark.git#master",
-                "framework": "AutoGluon:stable",
-                "amlb_benchmark": "small",
-                "amlb_user_dir": "sample_configs/amlb_configs",
-            }
+            "git_uri#branch": "https://github.com/openml/automlbenchmark.git#master",
+            "framework": "AutoGluon:stable",
+            "amlb_benchmark": "small",
+            "amlb_user_dir": "sample_configs/amlb_configs",
         }
     elif module == "multimodal":
         module_configs = {
-            module: {
-                "git_uri#branch": "https://github.com/openml/automlbenchmark.git#master",
-                "dataset_name": "data",
-                "custom_dataloader": {
-                    "dataloader_file": "path_to/dataset.py",
-                    "class_name": "CustomDataset",
-                    "dataset_config_file": "path_to/datasets.yaml",
-                },
-            }
+            "dataset_name": "data",
+            "framework": "AutoGluon_stable",
+            "custom_dataloader": {
+                "dataloader_file": "path_to/dataset.py",
+                "class_name": "CustomDataset",
+                "dataset_config_file": "path_to/datasets.yaml",
+            },
         }
 
-    mock_yaml = mocker.patch("yaml.safe_load")
     yaml_value = {
         "mode": "aws",
         "module": module,
         "cdk_context": cdk_context,
         "job_configs": job_configs,
-        "module_configs": module_configs,
     }
     yaml_value.update(infra_configs)
-    mock_yaml.return_value = yaml_value
+    yaml_value.update(module_configs)
+
+    def mock_yaml_side_effect(file_obj):
+        if hasattr(file_obj, "name"):
+            if "run_configs" in file_obj.name:
+                return yaml_value
+            else:
+                return original_safe_load(file_obj)
+        return {}
+
+    original_safe_load = yaml.safe_load
+    mock_yaml = mocker.patch("yaml.safe_load", side_effect=mock_yaml_side_effect)
     mocker.patch("autogluon.bench.runbenchmark._get_benchmark_name", return_value="test_benchmark")
     mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
     mocker.patch("autogluon.bench.runbenchmark._dump_configs", return_value="test_dump")
@@ -68,6 +75,8 @@ def setup_mock(mocker, tmp_path, module="tabular"):
 
     mock_wait_for_jobs = mocker.patch("autogluon.bench.runbenchmark.wait_for_jobs", return_value=[])
     mock_destroy_stack = mocker.patch("autogluon.bench.runbenchmark.destroy_stack")
+    mock_mount = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
+    mock_umount = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
 
     return {
         "config_file": str(config_file),
@@ -77,6 +86,8 @@ def setup_mock(mocker, tmp_path, module="tabular"):
         "mock_invoke_lambda": mock_invoke_lambda,
         "mock_wait_for_jobs": mock_wait_for_jobs,
         "mock_destroy_stack": mock_destroy_stack,
+        "mock_mount": mock_mount,
+        "mock_umount": mock_umount,
         "cdk_context": cdk_context,
         "job_configs": job_configs,
         "custom_configs": yaml_value,
@@ -86,26 +97,22 @@ def setup_mock(mocker, tmp_path, module="tabular"):
 def test_get_kwargs_multimodal():
     module = "multimodal"
     configs = {
-        "git_uri#branch": "https://github.com/project#master",
+        "framework": "AutoGluon_stable",
         "dataset_name": "dataset",
-        "presets": "preset1",
-        "hyperparameters": {},
-        "time_limit": 3600,
     }
-    agbench_dev_url = "https://github.com/autogluon/autogluon-bench.git#master"
+    agbench_dev_url = "https://github.com/test/autogluon-bench.git#branch"
 
     expected_result = {
         "setup_kwargs": {
-            "git_uri": "https://github.com/project",
+            "git_uri": "https://github.com/autogluon/autogluon.git",
             "git_branch": "master",
-            "agbench_dev_url": "https://github.com/autogluon/autogluon-bench.git#master",
+            "agbench_dev_url": "https://github.com/test/autogluon-bench.git#branch",
         },
         "run_kwargs": {
             "dataset_name": "dataset",
-            "framework": "project#master",
-            "presets": "preset1",
-            "hyperparameters": {},
-            "time_limit": 3600,
+            "framework": "AutoGluon_stable",
+            "constraint": None,
+            "params": {"presets": "best_quality", "hyperparameters": {"optimization.max_epochs": 10}},
             "custom_dataloader": None,
         },
     }
@@ -234,8 +241,6 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
     temp_dir_mock = mocker.patch("tempfile.TemporaryDirectory")
     s3_mock = mocker.patch("autogluon.bench.utils.general_utils.download_dir_from_s3")
-    mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
-    umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
 
     run(
         setup["config_file"],
@@ -253,8 +258,8 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
     assert os.environ["AMLB_USER_DIR"] == "amlb_configs"
     temp_dir_mock.assert_not_called()
     s3_mock.assert_not_called()
-    assert umount_mock.call_count == 4
-    assert mount_mock.call_count == 2
+    assert setup["mock_umount"].call_count == 4
+    assert setup["mock_mount"].call_count == 2
 
 
 def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
@@ -269,14 +274,8 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
         dev_branch="https://git_url#git_branch",
         skip_setup=True,
     )
-    assert (
-        setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataloader_file"]
-        == "dataloaders/dataset.py"
-    )
-    assert (
-        setup["custom_configs"]["module_configs"]["multimodal"]["custom_dataloader"]["dataset_config_file"]
-        == "dataloaders/datasets.yaml"
-    )
+    assert setup["custom_configs"]["custom_dataloader"]["dataloader_file"] == "dataloaders/dataset.py"
+    assert setup["custom_configs"]["custom_dataloader"]["dataset_config_file"] == "dataloaders/datasets.yaml"
     assert umount_mock.call_count == 2
     assert mount_mock.call_count == 1
 
@@ -390,7 +389,9 @@ def test_get_job_status_with_job_ids(mocker, tmp_path):
     ]
 
     expected_status_dict = {"job_id_1": "SUCCEEDED", "job_id_2": "FAILED"}
-    actual_status_dict = get_job_status(job_ids=["job_id_1", "job_id_2"], cdk_deploy_region="test_region")
+    actual_status_dict = get_job_status(
+        job_ids=["job_id_1", "job_id_2"], cdk_deploy_region="test_region", config_file=None
+    )
 
     mock_boto_client.assert_called_once_with("batch", region_name="test_region")
     assert actual_status_dict == expected_status_dict
