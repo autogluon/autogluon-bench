@@ -42,12 +42,8 @@ def get_args():
     parser.add_argument("--framework", type=str, help="Framework (and) branch/version.")
     parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
     parser.add_argument("--metrics_dir", type=str, help="Directory to save benchmarking metrics.")
-    parser.add_argument(
-        "--constraint", type=str, default=None, help="AWS resources constraint setting."
-    )
-    parser.add_argument(
-        "--params", type=str, default=None, help="AWS resources constraint setting."
-    )
+    parser.add_argument("--constraint", type=str, default=None, help="AWS resources constraint setting.")
+    parser.add_argument("--params", type=str, default=None, help="AWS resources constraint setting.")
     # parser.add_argument(
     #     "--time_limit", type=int, default=None, help="Time limit for the AutoGluon benchmark (in seconds)."
     # )
@@ -187,11 +183,7 @@ def run(
         predictor_args["sample_data_path"] = train_data.data
     predictor = MultiModalPredictor(**predictor_args)
 
-    fit_args = {
-        "train_data": train_data.data,
-        "tuning_data": val_data.data,
-        **params
-    }
+    fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
 
     utc_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     start_time = time.time()

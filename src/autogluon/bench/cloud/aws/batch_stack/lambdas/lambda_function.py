@@ -278,13 +278,7 @@ def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_qu
 
     job_configs = {}
     specific_value_combinations = list(
-        itertools.product(
-            *(
-                config[key]
-                for key in specific_keys
-                if key in config.keys()
-            )
-        )
+        itertools.product(*(config[key] for key in specific_keys if key in config.keys()))
     ) or [None]
 
     for combo in specific_value_combinations:
@@ -306,7 +300,7 @@ def generate_tabular_config_combinations(config, metrics_bucket, batch_job_queue
     for key in config.keys():
         if key in exclude_keys:
             continue
-        
+
         if isinstance(config[key], list):
             specific_keys.append(key)
         else:
@@ -314,13 +308,7 @@ def generate_tabular_config_combinations(config, metrics_bucket, batch_job_queue
 
     job_configs = {}
     specific_value_combinations = list(
-        itertools.product(
-            *(
-                config[key]
-                for key in specific_keys
-                if key in config.keys()
-            )
-        )
+        itertools.product(*(config[key] for key in specific_keys if key in config.keys()))
     ) or [None]
 
     # Iterate through the combinations and the amlb benchmark task keys

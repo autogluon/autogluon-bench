@@ -39,7 +39,7 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
     Returns:
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
-    
+
     if module == "multimodal":
         framework_configs = get_framework_configs(configs=configs)
         return {
@@ -328,7 +328,9 @@ def update_resource_constraint(configs: dict):
     if "instance" in constraint_configs.keys():
         configs["cdk_context"]["INSTANCE"] = constraint_configs["instance"]
     if "time_limit" in constraint_configs.keys():
-        configs["cdk_context"]["TIME_LIMIT"] = constraint_configs["time_limit"] + 3600  # buffer to account for instance start, dataset download and overhead
+        configs["cdk_context"]["TIME_LIMIT"] = (
+            constraint_configs["time_limit"] + 3600
+        )  # buffer to account for instance start, dataset download and overhead
 
 
 def get_framework_configs(configs: dict):
@@ -381,12 +383,9 @@ def run(
             os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
             os.environ["BENCHMARK_DIR"] = benchmark_dir
 
-
             if module == "tabular":
                 os.environ["AMLB_FRAMEWORK"] = configs["framework"]
-                os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(
-                    configs["git_uri#branch"]
-                )
+                os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(configs["git_uri#branch"])
 
                 if configs.get("amlb_constraint") is None:
                     configs["amlb_constraint"] = "test"
