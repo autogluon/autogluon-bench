@@ -131,8 +131,8 @@ def run(
                             multimodal_dataset_registry.list_keys()
 
         benchmark_dir (str): The path to the directory where benchmarking artifacts should be saved.
-        constraint (str): The resource constraint used by benchmarking during AWS mode.
-        params (str): The multimodal params.
+        constraint (str): The resource constraint used by benchmarking during AWS mode, default: None.
+        params (str): The multimodal params, default: {}.
         custom_dataloader (dict): A dictionary containing information about a custom dataloader to use. Defaults to None.
                                 To define a custom dataloader in the config file:
 
