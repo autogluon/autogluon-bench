@@ -44,11 +44,6 @@ def get_args():
     parser.add_argument("--metrics_dir", type=str, help="Directory to save benchmarking metrics.")
     parser.add_argument("--constraint", type=str, default=None, help="AWS resources constraint setting.")
     parser.add_argument("--params", type=str, default=None, help="AWS resources constraint setting.")
-    # parser.add_argument(
-    #     "--time_limit", type=int, default=None, help="Time limit for the AutoGluon benchmark (in seconds)."
-    # )
-    # parser.add_argument("--presets", type=str, default=None, help="Preset configurations to use in the benchmark.")
-    # parser.add_argument("--hyperparameters", type=str, default=None, help="Hyperparameters to use in the benchmark.")
     parser.add_argument(
         "--custom_dataloader", type=str, default=None, help="Custom dataloader to use in the benchmark."
     )
@@ -123,9 +118,6 @@ def run(
     metrics_dir: str,
     constraint: Optional[str] = None,
     params: Optional[dict] = {},
-    # time_limit: Optional[int] = None,
-    # presets: Optional[str] = None,
-    # hyperparameters: Optional[dict] = None,
     custom_dataloader: Optional[dict] = None,
 ):
     """Runs the AutoGluon multimodal benchmark on a given dataset.
@@ -139,9 +131,8 @@ def run(
                             multimodal_dataset_registry.list_keys()
 
         benchmark_dir (str): The path to the directory where benchmarking artifacts should be saved.
-        time_limit (int): The maximum amount of time (in seconds) to spend training the predictor (default: 10).
-        presets (str): The name of the AutoGluon preset to use (default: "None").
-        hyperparameters (dict): A JSON of hyperparameters to use for training (default: None).
+        constraint (str): The resource constraint used by benchmarking during AWS mode.
+        params (str): The multimodal params.
         custom_dataloader (dict): A dictionary containing information about a custom dataloader to use. Defaults to None.
                                 To define a custom dataloader in the config file:
 
@@ -212,7 +203,7 @@ def run(
         framework, version = framework, ag_version
 
     metrics = {
-        "id": "id/0",  # dummy id to make it compatible with openml results
+        "id": "id/0",  # dummy id to make it align with amlb benchmark output
         "task": dataset_name,
         "framework": framework,
         "constraint": constraint,
@@ -244,8 +235,5 @@ if __name__ == "__main__":
         metrics_dir=args.metrics_dir,
         constraint=args.constraint,
         params=args.params,
-        # time_limit=args.time_limit,
-        # presets=args.presets,
-        # hyperparameters=args.hyperparameters,
         custom_dataloader=args.custom_dataloader,
     )

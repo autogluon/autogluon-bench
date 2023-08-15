@@ -53,9 +53,6 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
                 "framework": configs["framework"],
                 "constraint": configs.get("constraint"),
                 "params": framework_configs.get("params"),
-                # "presets": configs.get("presets"),
-                # "hyperparameters": configs.get("hyperparameters"),
-                # "time_limit": configs.get("time_limit"),
                 "custom_dataloader": configs.get("custom_dataloader"),
             },
         }
@@ -325,12 +322,7 @@ def update_resource_constraint(configs: dict):
     constraint_name = configs.get("constraint", "test")
     constraints = get_resource(configs=configs, resource_name="multimodal_constraints")
     constraint_configs = constraints[constraint_name]
-    if "instance" in constraint_configs.keys():
-        configs["cdk_context"]["INSTANCE"] = constraint_configs["instance"]
-    if "time_limit" in constraint_configs.keys():
-        configs["cdk_context"]["TIME_LIMIT"] = (
-            constraint_configs["time_limit"] + 3600
-        )  # buffer to account for instance start, dataset download and overhead
+    configs["cdk_context"].update(constraint_configs)
 
 
 def get_framework_configs(configs: dict):

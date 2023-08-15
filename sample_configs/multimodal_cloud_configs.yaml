@@ -8,8 +8,6 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
   # MAX_MACHINE_NUM: 20   # optional, default 20
   # BLOCK_DEVICE_VOLUME: 100   # optional, default 100GB
   # RESERVED_MEMORY_SIZE: 15000  # optional, default 15000MB
-  # INSTANCE: g4dn.2xlarge  # optional, default g4dn.2xlarge
-  # TIME_LIMIT: 3600  # optional, EC2 timeout, default 3600s
   # VPC_NAME: existing-vpc-name  # optional
 
 module: multimodal  # required
@@ -17,8 +15,8 @@ mode: aws  # required
 benchmark_name: ag_bench  # required
 root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
-constraint: test
-framework: AutoGluon_stable  # required, only one value allowed
+constraint: test  # configurations will override cdk_context, options can be found at resources/multimodal_constraints.yaml, custom constraint is also supported, default: test
+framework: AutoGluon_stable  # framework options can be found at resources/multimodal_frameworks.yaml, custom framework is also supported.
 dataset_name:  # required
   - shopee
   - melbourne_airbnb

@@ -1,5 +1,5 @@
 AutoGluon_branch:
-  repo: https://github.com/autogluon/autogluon
+  repo: https://github.com/autogluon/autogluon.git
   version: stable_GA4_update
   params:  # MultimodalPredictor.fit(params)
     presets: medium_quality

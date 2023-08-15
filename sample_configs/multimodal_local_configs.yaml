@@ -11,7 +11,7 @@ dataset_name:  # required
   melbourne_airbnb  
 
 #### Customizations ####
-# custom_resource_dir: sample_configs/resources/
+# custom_resource_dir: sample_configs/resources/  # path to custom multimodal_frameworks.yaml and multimodal_constraints.yaml
 # custom_dataloader:
 #     dataloader_file: sample_configs/dataloaders/vision_dataloader.py   # relative path to WORKDIR
 #     class_name: VisionDataLoaer
