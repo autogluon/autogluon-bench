@@ -71,16 +71,24 @@ For more customizations, please follow the [example custom configuration folder]
 
 ### Multimodal Benchmark
 
-For multimodal benchmarking, set the module to multimodal. We currently support benchmarking multimodal on a custom branch. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular.
+For multimodal benchmarking, set the module to multimodal. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular. Please refer to the [sample multimodal local run configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml). 
 
-You can add more datasets to your benchmarking jobs. We support custom datasets with custom defined data loaders. Follow these steps:
+We also support customizations on benchmarking framework and datasets by providing `custom_resource_dir` and `custom_dataloader`.
+
+To define custom frameworks, you can follow the [examples](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/resources/multimodal_frameworks.yaml).
+1. Create a folder under working directory, e.g. `custom_resources/`
+2. Create a yaml file named `multimodal_frameworks.yaml`
+3. Add an entry to the file with `repo` as the GitHub URL, `version` as the branch or tag name, `params` to be used by `MultiModalPredictor`. 
+4. Add `custom_resource_dir: custom/resources/` in the run configuration file.
+
+To add more datasets to your benchmarking jobs. We support custom datasets with custom defined data loaders. Follow these steps:
   1. Create a folder under the working directory, e.g. `custom_dataloader/`
   2. Create a dataset yaml file, `custom_dataloader/datasets.yaml` which includes all required properties for your problem type, please refer to the [function](https://github.com/autogluon/autogluon-bench/blob/52eee491018f6281236416f4b1bece14b88610e8/src/autogluon/bench/frameworks/multimodal/exec.py#L100-L201).
   3. Create a dataset loader class, `custom_dataloader/dataloader.py`, which downloads and loads the dataset as a dataframe. Please set the required properties as mentioned above.
   4. Add `custom_dataloader` in the `agbench run` configuration, where `dataloader_file`, `class_name` and `dataset_config_file` are required. 
   5. Make sure you have the proper permission to download the dataset. If running in `AWS mode`, we support downloading from the S3 bucket specified as `DATA_BUCKET` in the `agbench run` configuration under the same AWS Batch deployment account.
 
-  Please refer to `sample_configs/dataloaders` for more examples.
+  Please refer to [here](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/dataloaders) for more examples.
 
 ## Run benchmarks on AWS
 
@@ -128,7 +136,7 @@ After having the configuration file ready, use the command below to initiate ben
 agbench run /path/to/cloud_config_file
 ```
 
-This command automatically sets up an AWS Batch environment using instance specifications defined in the `cloud_config_file`. It also creates a lambda function named with your chosen `LAMBDA_FUNCTION_NAME`. This lambda function is automatically invoked with the cloud config file you provided, submitting multiple AWS Batch jobs to the job queue (named with the `PREFIX` you provided).
+This command automatically sets up an AWS Batch environment using instance specifications defined in the [cloud config files](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs). It also creates a lambda function named with your chosen `LAMBDA_FUNCTION_NAME`. This lambda function is automatically invoked with the cloud config file you provided, submitting multiple AWS Batch jobs to the job queue (named with the `PREFIX` you provided).
 
 In order for the Lambda function to submit multiple jobs simultaneously, you need to specify a list of values for each module-specific key. Each combination of configurations is saved and uploaded to your specified `METRICS_BUCKET` in S3, stored under `S3://{METRICS_BUCKET}/configs/{BENCHMARK_NAME}_{timestamp}/{BENCHMARK_NAME}_split_{UID}.yaml`. Here, `UID` is a unique ID assigned to the split.
 
@@ -174,16 +182,29 @@ where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{be
 ### Configure the AWS infrastructure
 
 The default infrastructure configurations are located [here](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/cloud/aws/default_config.yaml).
+CDK_DEPLOY_ACCOUNT: dummy
+CDK_DEPLOY_REGION: dummy
+PREFIX: ag-bench
+MAX_MACHINE_NUM: 20
+BLOCK_DEVICE_VOLUME: 100
+TIME_LIMIT: 3600
+RESERVED_MEMORY_SIZE: 15000
+INSTANCE: g4dn.2xlarge
+LAMBDA_FUNCTION_NAME: ag-bench-job
 
 where:
 - `CDK_DEPLOY_ACCOUNT` and `CDK_DEPLOY_REGION` should be overridden with your AWS account ID and desired region to create the stack.
 - `PREFIX` is used as an identifier for the stack and resources created.
-- `RESERVED_MEMORY_SIZE` is used together with the instance memory size to calculate the container shm_size.
+- `MAX_MACHINE_NUM` is the maximum number of EC2 instances can be started for AWS Batch.
 - `BLOCK_DEVICE_VOLUME` is the size of storage device attached to instance.
-- `LAMBDA_FUNCTION_NAME` lambda function to submit jobs to AWS Batch.
+- `TIME_LIMIT` is the timeout of AWS Batch job, i.e. the maximum time the instance will run. There is a buffer of 3600s added on top of it to account for instance startup time and dataset download time.
+- `RESERVED_MEMORY_SIZE` is used together with the instance memory size to calculate the container shm_size.
+- `INSTANCE` is the EC2 instance type.
+- `LAMBDA_FUNCTION_NAME` is the lambda function prefix to submit jobs to AWS Batch.
 
 To override these configurations, use the `cdk_context` key in your custom config file. See our [sample cloud config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabular_cloud_configs.yaml) for reference.
 
+For `multimodal` module, these will also be overridden by a `constraint` defined [here](https://github.com/autogluon/autogluon-bench/tree/master/src/autogluon/bench/resources/multimodal_constraints.yaml) or a custom constraint specified in `multimodal_constraints.yaml` under `custom_resource_dir`. See [sample custom constraints file](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/resources/multimodal_constraints.yaml)
 
 ### Monitoring metrics for your instances on AWS
 

@@ -57,9 +57,8 @@ class MultiModalBenchmark(Benchmark):
         self,
         dataset_name: str,
         framework: str,
-        presets: Optional[str] = None,
-        hyperparameters: Optional[dict] = None,
-        time_limit: Optional[int] = None,
+        constraint: Optional[str] = None,
+        params: Optional[dict] = None,
         custom_dataloader: Optional[dict] = None,
     ):
         """
@@ -72,9 +71,8 @@ class MultiModalBenchmark(Benchmark):
                                 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
                                 multimodal_dataset_registry.list_keys()
             framework (str): The name of the framework to use for the benchmark.
-            presets (Optional[str], optional): Presets to use for the benchmark. Defaults to None.
-            hyperparameters (Optional[dict], optional): A dictionary of hyperparameters to use for the benchmark. Defaults to None.
-            time_limit (Optional[int], optional): The maximum time limit for the benchmark in seconds. Defaults to None.
+            constraint (str): The resource constraint used by benchmarking during AWS mode.
+            params (str): The multimodal params.
             custom_dataloader (Optional[dict], optional): A dictionary containing information about a custom dataloader to use. Defaults to None.
                                 To define a custom dataloader in the config file:
 
@@ -102,12 +100,10 @@ class MultiModalBenchmark(Benchmark):
             "--metrics_dir",
             self.metrics_dir,
         ]
-        if presets is not None and len(presets) > 0:
-            command += ["--presets", presets]
-        if hyperparameters is not None:
-            command += ["--hyperparameters", json.dumps(hyperparameters)]
-        if time_limit is not None:
-            command += ["--time_limit", str(time_limit)]
+        if constraint is not None:
+            command += ["--constraint", constraint]
+        if params is not None:
+            command += ["--params", json.dumps(params)]
         if custom_dataloader is not None:
             command += ["--custom_dataloader", json.dumps(custom_dataloader)]
         result = subprocess.run(command)

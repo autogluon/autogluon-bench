@@ -39,24 +39,25 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
     Returns:
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
-    git_uri, git_branch = _get_git_info(configs["git_uri#branch"])
+
     if module == "multimodal":
+        framework_configs = get_framework_configs(configs=configs)
         return {
             "setup_kwargs": {
-                "git_uri": git_uri,
-                "git_branch": git_branch,
+                "git_uri": framework_configs["repo"],
+                "git_branch": framework_configs.get("version", "stable"),
                 "agbench_dev_url": agbench_dev_url,
             },
             "run_kwargs": {
                 "dataset_name": configs["dataset_name"],
-                "framework": configs["git_uri#branch"].split("/")[-1],
-                "presets": configs.get("presets"),
-                "hyperparameters": configs.get("hyperparameters"),
-                "time_limit": configs.get("time_limit"),
+                "framework": configs["framework"],
+                "constraint": configs.get("constraint"),
+                "params": framework_configs.get("params"),
                 "custom_dataloader": configs.get("custom_dataloader"),
             },
         }
     elif module == "tabular":
+        git_uri, git_branch = _get_git_info(configs["git_uri#branch"])
         return {
             "setup_kwargs": {
                 "git_uri": git_uri,
@@ -283,6 +284,54 @@ def _mount_dir(orig_path: str, new_path: str):
     subprocess.run(["sudo", "mount", "--bind", orig_path, new_path])
 
 
+def update_custom_dataloader(configs: dict):
+    custom_dataloader_file = configs["custom_dataloader"]["dataloader_file"]
+    original_path = os.path.dirname(custom_dataloader_file)
+    custom_dataset_config = configs["custom_dataloader"]["dataset_config_file"]
+    if original_path != os.path.dirname(custom_dataset_config):
+        raise ValueError(
+            "Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory."
+        )
+    dataloader_file_name = os.path.basename(custom_dataloader_file)
+    dataset_config_file_name = os.path.basename(custom_dataset_config)
+    current_path = os.path.dirname(os.path.abspath(__file__))
+    custom_dataloader_path = os.path.join(current_path, "custom_configs", "dataloaders")
+
+    configs["custom_dataloader"]["dataloader_file"] = f"dataloaders/{dataloader_file_name}"
+    configs["custom_dataloader"]["dataset_config_file"] = f"dataloaders/{dataset_config_file_name}"
+
+    return original_path, custom_dataloader_path
+
+
+def get_resource(configs: dict, resource_name: str):
+    current_path = os.path.dirname(os.path.abspath(__file__))
+    default_resource_file = os.path.join(current_path, "resources", f"{resource_name}.yaml")
+    with open(default_resource_file, "r") as f:
+        default_resource = yaml.safe_load(f)
+
+    if configs.get("custom_resource_dir") is not None:
+        custom_resource_dir = configs["custom_resource_dir"]
+        if os.path.exists(os.path.join(custom_resource_dir, f"{resource_name}.yaml")):
+            with open(os.path.join(custom_resource_dir, f"{resource_name}.yaml"), "r") as f:
+                custom_resource = yaml.safe_load(f)
+                default_resource.update(custom_resource)
+    return default_resource
+
+
+def update_resource_constraint(configs: dict):
+    constraint_name = configs.get("constraint", "test")
+    constraints = get_resource(configs=configs, resource_name="multimodal_constraints")
+    constraint_configs = constraints[constraint_name]
+    configs["cdk_context"].update(constraint_configs)
+
+
+def get_framework_configs(configs: dict):
+    framework_name = configs.get("framework", "stable")
+    frameworks = get_resource(configs=configs, resource_name="multimodal_frameworks")
+    framework_configs = frameworks[framework_name]
+    return framework_configs
+
+
 @app.command()
 def run(
     config_file: str = typer.Argument(..., help="Path to custom config file."),
@@ -326,30 +375,21 @@ def run(
             os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
             os.environ["BENCHMARK_DIR"] = benchmark_dir
 
-            _validate_single_value(configs["module_configs"][module], "git_uri#branch")
-            os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(
-                configs["module_configs"][module]["git_uri#branch"][0]
-            )
-
             if module == "tabular":
-                _validate_single_value(configs["module_configs"]["tabular"], "framework")
-                os.environ["AMLB_FRAMEWORK"] = configs["module_configs"]["tabular"]["framework"][0]
+                os.environ["AMLB_FRAMEWORK"] = configs["framework"]
+                os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(configs["git_uri#branch"])
 
-                if configs["module_configs"]["tabular"].get("amlb_constraint"):
-                    _validate_single_value(configs["module_configs"]["tabular"], "amlb_constraint")
-                else:
-                    configs["module_configs"]["tabular"]["amlb_constraint"] = ["test"]
+                if configs.get("amlb_constraint") is None:
+                    configs["amlb_constraint"] = "test"
 
-                amlb_user_dir = configs["module_configs"]["tabular"].get("amlb_user_dir")
+                amlb_user_dir = configs.get("amlb_user_dir")
                 tmpdir = None
                 if amlb_user_dir is not None:
-                    _validate_single_value(configs["module_configs"]["tabular"], "amlb_user_dir")
-
-                    if amlb_user_dir[0].startswith("s3://"):
+                    if amlb_user_dir.startswith("s3://"):
                         tmpdir = tempfile.TemporaryDirectory()
-                        amlb_user_dir_local = download_dir_from_s3(s3_path=amlb_user_dir[0], local_path=tmpdir.name)
+                        amlb_user_dir_local = download_dir_from_s3(s3_path=amlb_user_dir, local_path=tmpdir.name)
                     else:
-                        amlb_user_dir_local = amlb_user_dir[0]
+                        amlb_user_dir_local = amlb_user_dir
 
                     custom_configs_path = os.path.join(current_path, "custom_configs/amlb_configs")
                     lambda_custom_configs_path = os.path.join(
@@ -357,37 +397,29 @@ def run(
                     )
                     original_path = amlb_user_dir_local
                     paths += [custom_configs_path, lambda_custom_configs_path]
+                    for path in paths:
+                        # mounting custom directory to a predefined directory in the package
+                        # to make it available for Docker build
+                        _umount_if_needed(path)
+                        _mount_dir(orig_path=original_path, new_path=path)
                     os.environ["AMLB_USER_DIR"] = "amlb_configs"
-                    configs["module_configs"]["tabular"]["amlb_user_dir"] = ["amlb_configs"]
+                    configs["amlb_user_dir"] = "amlb_configs"
             elif module == "multimodal":
-                if configs["module_configs"]["multimodal"].get("custom_dataloader") is not None:
-                    custom_dataloader_file = configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataloader_file"
-                    ]
-                    original_path = os.path.dirname(custom_dataloader_file)
-                    custom_dataset_config = configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataset_config_file"
-                    ]
-                    if original_path != os.path.dirname(custom_dataset_config):
-                        raise ValueError(
-                            "Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory."
-                        )
-                    dataloader_file_name = os.path.basename(custom_dataloader_file)
-                    dataset_config_file_name = os.path.basename(custom_dataset_config)
-                    custom_dataloader_file = os.path.join(current_path, "custom_configs/dataloaders")
-                    paths.append(custom_dataloader_file)
-                    configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataloader_file"
-                    ] = f"dataloaders/{dataloader_file_name}"
-                    configs["module_configs"]["multimodal"]["custom_dataloader"][
-                        "dataset_config_file"
-                    ] = f"dataloaders/{dataset_config_file_name}"
-
-            for path in paths:
-                # mounting custom directory to a predefined directory in the package
-                # to make it available for Docker build
-                _umount_if_needed(path)
-                _mount_dir(orig_path=original_path, new_path=path)
+                update_resource_constraint(configs=configs)
+                if configs.get("custom_dataloader") is not None:
+                    original_path, custom_dataloader_path = update_custom_dataloader(configs=configs)
+                    paths.append(custom_dataloader_path)
+                    _umount_if_needed(custom_dataloader_path)
+                    _mount_dir(orig_path=original_path, new_path=custom_dataloader_path)
+                framework_configs = get_framework_configs(configs=configs)
+                os.environ["GIT_URI"] = framework_configs["repo"]
+                os.environ["GIT_BRANCH"] = framework_configs.get("version", "stable")
+                if configs.get("custom_resource_dir") is not None:
+                    custom_resource_path = os.path.join(current_path, "custom_configs", "resources")
+                    paths.append(custom_resource_path)
+                    _umount_if_needed(custom_resource_path)
+                    _mount_dir(orig_path=configs["custom_resource_dir"], new_path=custom_resource_path)
+                    configs["custom_resource_dir"] = "resources"
 
             infra_configs = deploy_stack(custom_configs=configs)
 

@@ -5,39 +5,25 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
   PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
   METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
   # DATA_BUCKET: existing-s3-bucket  # optional, S3 bucket to download your private datasets
-  # MAX_MACHINE_NUM: 20   # optional
-  # BLOCK_DEVICE_VOLUME: 100   # optional
-  # RESERVED_MEMORY_SIZE: 15000  # optional
-  # INSTANCE: g4dn.2xlarge  # optional
+  # MAX_MACHINE_NUM: 20   # optional, default 20
+  # BLOCK_DEVICE_VOLUME: 100   # optional, default 100GB
+  # RESERVED_MEMORY_SIZE: 15000  # optional, default 15000MB
   # VPC_NAME: existing-vpc-name  # optional
 
-# Benchmark configurations
 module: multimodal  # required
 mode: aws  # required
 benchmark_name: ag_bench  # required
 root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
-module_configs:
-  # Multimodal specific
-  multimodal:
-    git_uri#branch: # required
-      - https://github.com/autogluon/autogluon#master
-    dataset_name:  # required
-      - shopee
-      # - stanford_online
-    # custom_dataloader:
-    #   dataloader_file: sample_configs/dataloaders/text_dataloader.py   # required, relative path to WORKDIR
-    #   class_name: TextDataLoaer  # required
-    #   lang: en
-    #   dataset_config_file: sample_configs/dataloaders/text_datasets.yaml  # required, dataset definition yaml
+constraint: test  # configurations will override cdk_context, options can be found at resources/multimodal_constraints.yaml, custom constraint is also supported, default: test
+framework: AutoGluon_stable  # framework options can be found at resources/multimodal_frameworks.yaml, custom framework is also supported.
+dataset_name:  # required
+  - shopee
+  - melbourne_airbnb
 
-    presets:  # optional
-      - medium_quality
-      # - high_quality
-    time_limit:  # optional
-      - 10
-    hyperparameters:  # optional
-      - optimization.max_epochs: 2
-        optimization.learning_rate: 0.005
-      # - optimization.max_epochs: 5
-      #   optimization.learning_rate: 0.0005
+#### Customizations ####
+# custom_resource_dir: sample_configs/resources/  # path to custom multimodal_constraints.yaml and multimodal_frameworks.yaml
+# custom_dataloader:
+#     dataloader_file: sample_configs/dataloaders/vision_dataloader.py   # relative path to WORKDIR
+#     class_name: VisionDataLoaer
+#     dataset_config_file: sample_configs/dataloaders/vision_datasets.yaml 

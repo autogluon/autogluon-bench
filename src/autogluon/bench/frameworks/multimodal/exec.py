@@ -21,13 +21,13 @@ from autogluon.multimodal import __version__ as ag_version
 logger = logging.getLogger(__name__)
 
 
-def _flatten_dict(data, separator="_", prefix=""):
+def _flatten_dict(data):
     flattened = {}
     for key, value in data.items():
         if isinstance(value, dict):
-            flattened.update(_flatten_dict(value, separator, prefix + key + separator))
+            flattened.update(_flatten_dict(value))
         else:
-            flattened[prefix + key] = value
+            flattened[key] = value
     return flattened
 
 
@@ -42,11 +42,8 @@ def get_args():
     parser.add_argument("--framework", type=str, help="Framework (and) branch/version.")
     parser.add_argument("--benchmark_dir", type=str, help="Directory to save benchmarking run.")
     parser.add_argument("--metrics_dir", type=str, help="Directory to save benchmarking metrics.")
-    parser.add_argument(
-        "--time_limit", type=int, default=None, help="Time limit for the AutoGluon benchmark (in seconds)."
-    )
-    parser.add_argument("--presets", type=str, default=None, help="Preset configurations to use in the benchmark.")
-    parser.add_argument("--hyperparameters", type=str, default=None, help="Hyperparameters to use in the benchmark.")
+    parser.add_argument("--constraint", type=str, default=None, help="AWS resources constraint setting.")
+    parser.add_argument("--params", type=str, default=None, help="AWS resources constraint setting.")
     parser.add_argument(
         "--custom_dataloader", type=str, default=None, help="Custom dataloader to use in the benchmark."
     )
@@ -119,9 +116,8 @@ def run(
     framework: str,
     benchmark_dir: str,
     metrics_dir: str,
-    time_limit: Optional[int] = None,
-    presets: Optional[str] = None,
-    hyperparameters: Optional[dict] = None,
+    constraint: Optional[str] = None,
+    params: Optional[dict] = {},
     custom_dataloader: Optional[dict] = None,
 ):
     """Runs the AutoGluon multimodal benchmark on a given dataset.
@@ -135,9 +131,8 @@ def run(
                             multimodal_dataset_registry.list_keys()
 
         benchmark_dir (str): The path to the directory where benchmarking artifacts should be saved.
-        time_limit (int): The maximum amount of time (in seconds) to spend training the predictor (default: 10).
-        presets (str): The name of the AutoGluon preset to use (default: "None").
-        hyperparameters (dict): A JSON of hyperparameters to use for training (default: None).
+        constraint (str): The resource constraint used by benchmarking during AWS mode, default: None.
+        params (str): The multimodal params, default: {}.
         custom_dataloader (dict): A dictionary containing information about a custom dataloader to use. Defaults to None.
                                 To define a custom dataloader in the config file:
 
@@ -158,7 +153,7 @@ def run(
     predictor_args = {
         "label": label_column,
         "problem_type": train_data.problem_type,
-        "presets": presets,
+        "presets": params.pop("presets", None),
         "path": os.path.join(benchmark_dir, "models"),
     }
 
@@ -179,12 +174,7 @@ def run(
         predictor_args["sample_data_path"] = train_data.data
     predictor = MultiModalPredictor(**predictor_args)
 
-    fit_args = {
-        "train_data": train_data.data,
-        "tuning_data": val_data.data,
-        "hyperparameters": hyperparameters,
-        "time_limit": time_limit,
-    }
+    fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
 
     utc_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     start_time = time.time()
@@ -213,22 +203,28 @@ def run(
         framework, version = framework, ag_version
 
     metrics = {
+        "id": "id/0",  # dummy id to make it align with amlb benchmark output
         "task": dataset_name,
         "framework": framework,
+        "constraint": constraint,
         "version": version,
+        "fold": 0,
         "type": predictor.problem_type,
+        "result": scores[test_data.metric],
+        "metric": test_data.metric,
         "utc_time": utc_time,
         "training_duration": training_duration,
         "predict_duration": predict_duration,
         "scores": scores,
     }
-    save_metrics(os.path.join(metrics_dir, "scores"), metrics)
+    subdir = f"{framework}.{dataset_name}.{constraint}.local"
+    save_metrics(os.path.join(metrics_dir, subdir, "scores"), metrics)
 
 
 if __name__ == "__main__":
     args = get_args()
-    if args.hyperparameters is not None:
-        args.hyperparameters = json.loads(args.hyperparameters)
+    if args.params is not None:
+        args.params = json.loads(args.params)
     if args.custom_dataloader is not None:
         args.custom_dataloader = json.loads(args.custom_dataloader)
 
@@ -237,8 +233,7 @@ if __name__ == "__main__":
         framework=args.framework,
         benchmark_dir=args.benchmark_dir,
         metrics_dir=args.metrics_dir,
-        time_limit=args.time_limit,
-        presets=args.presets,
-        hyperparameters=args.hyperparameters,
+        constraint=args.constraint,
+        params=args.params,
         custom_dataloader=args.custom_dataloader,
     )

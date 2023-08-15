@@ -1,0 +1,6 @@
+10m4x:
+  TIME_LIMIT: 500
+  INSTANCE: g4dn.4xlarge
+  # MAX_MACHINE_NUM: 20   # optional, default 20
+  # BLOCK_DEVICE_VOLUME: 100   # optional, default 100GB
+  # RESERVED_MEMORY_SIZE: 15000  # optional, default 15000MB

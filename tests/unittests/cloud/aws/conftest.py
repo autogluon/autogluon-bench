@@ -12,6 +12,7 @@ default_configs = {
     "INSTANCE": "g4dn.2xlarge",
     "MAX_MACHINE_NUM": 2,
     "RESERVED_MEMORY_SIZE": 10000,
+    "TIME_LIMIT": 3600,
     "BLOCK_DEVICE_VOLUME": 10,
     "VPC_NAME": "test-vpc",
 }
@@ -28,6 +29,7 @@ context_values = {
     "CONTAINER_GPU": 1,
     "CONTAINER_VCPU": 8,
     "CONTAINER_MEMORY": 10000,
+    "TIME_LIMIT": 3600,
     "BLOCK_DEVICE_VOLUME": 100,
     "LAMBDA_FUNCTION_NAME": "test-batch-job-function",
 }

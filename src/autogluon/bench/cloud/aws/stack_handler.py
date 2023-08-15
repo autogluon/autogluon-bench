@@ -65,6 +65,10 @@ def construct_context(custom_configs: dict) -> dict:
     gpu_count, vcpu_count, memory = get_instance_type_specs(
         instance_type=configs["INSTANCE"], region=configs["CDK_DEPLOY_REGION"]
     )
+    configs["TIME_LIMIT"] = (
+        configs["TIME_LIMIT"] + 3600
+    )  # buffer to account for instance start, dataset download and overhead
+
     context_to_parse = {
         "CDK_DEPLOY_ACCOUNT": configs["CDK_DEPLOY_ACCOUNT"],
         "CDK_DEPLOY_REGION": configs["CDK_DEPLOY_REGION"],
@@ -83,6 +87,7 @@ def construct_context(custom_configs: dict) -> dict:
         - configs[
             "RESERVED_MEMORY_SIZE"
         ],  # memory in MB reserved for container, also used for shm_size, i.e. `shared_memory_size`
+        "TIME_LIMIT": configs["TIME_LIMIT"],  # timeout of instance, in seconds
         "BLOCK_DEVICE_VOLUME": configs["BLOCK_DEVICE_VOLUME"],  # device attached to instance, in GB
         "LAMBDA_FUNCTION_NAME": f"{prefix}-batch-job-function",
         "VPC_NAME": configs.get(
