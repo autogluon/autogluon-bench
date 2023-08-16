@@ -16,7 +16,6 @@ def generate_cloud_config(
     ),
     metrics_bucket: str = typer.Option(..., help="Name of the metrics bucket (required)"),
     data_bucket: str = typer.Option(None, help="S3 bucket to download private datasets (optional)"),
-    vpc_name: str = typer.Option(None, help="Existing VPC name (optional, default: create a new VPC)"),
     max_machine_num: int = typer.Option(
         None, help="Maximum number of machines for AWS Batch (optional, default = 20)"
     ),
@@ -27,28 +26,32 @@ def generate_cloud_config(
         None, help="Reserved memory size for Docker container (optional, default = 15000)"
     ),
     instance: str = typer.Option(None, help="EC2 Instance type (optional, default = 'g4dn.2xlarge')"),
-    git_uri_branch: str = typer.Option(
-        "", help="AutoGluon MultiModal or AMLB git_uri#branch (in the format 'git_uri1#branch1,git_uri2#branch2,...')"
+    time_limit: str = typer.Option(
+        None,
+        help="AWS Batch job time out",
     ),
+    vpc_name: str = typer.Option(None, help="Existing VPC name (optional, default: create a new VPC)"),
+    git_uri_branch: str = typer.Option("", help="AMLB git_uri#branch"),
     dataset_names: str = typer.Option(
         "",
         help="AutoGluon MultiModal dataset names for '--module multimodal' (comma-separated, to get a list of dataset names, run `from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry\n multimodal_dataset_registry.list_keys()`)",
     ),
-    presets: str = typer.Option(
+    custom_resource_dir: str = typer.Option(
         None,
-        help="AutoGluon MultiModal presets for '--module multimodal' (comma-separated, can choose from ['medium_quality', 'high_quality', 'best_quality'])",
+        help="Path to custom resources definitions for '--module multimodal'",
     ),
-    time_limit: str = typer.Option(
+    custom_dataloader: str = typer.Option(
         None,
-        help="AutoGluon MultiModal time limits for '--module multimodal' (in the format 'time_limit1,time_limit2,...'",
-    ),
-    hyperparameters: str = typer.Option(
-        None,
-        help="AutoGluon MultiModal hyperparameters for '--module multimodal' (in the format '\"key1:value1,key2:value2;key1:value1,key2:value2;...\"'). Refer to https://auto.gluon.ai/stable/tutorials/multimodal/advanced_topics/customization.html for hyperparameter cutomization.",
+        help="Custom dataloader for '--module multimodal', in the format '\"dataloader_file:value1;class_name:value2;dataset_config_file:value3\"'",
     ),
     framework: str = typer.Option(
         "AutoGluon:stable",
-        help="AMLB Frameworks for '--module tabular', in the format 'Framework1:label,Framework2:label,...'",
+        help="Framework name",
+    ),
+    constraint: str = typer.Option("test", help="Resource constraint for '--module multimodal'"),
+    amlb_constraint: str = typer.Option(
+        "",
+        help="AMLB Constraints for '--module tabular', in the format 'test,1h4c,...'. Refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml for details.",
     ),
     amlb_benchmark: str = typer.Option(
         "",
@@ -58,9 +61,9 @@ def generate_cloud_config(
         None,
         help="AMLB Tasks for '--module tabular' (in the format '\"benchmark1:task1,task2;benchmark2:task3,task4,task5;...\"')",
     ),
-    amlb_constraint: str = typer.Option(
-        "",
-        help="AMLB Constraints for '--module tabular', in the format 'test,1h4c,...'. Refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml for details.",
+    amlb_fold_to_run: str = typer.Option(
+        None,
+        help="AMLB fold for '--module tabular' (in the format '\"benchmark1:task1:fold1/fold2,task2:fold3/fold4;benchmark2:task3:fold1/fold2;...\"')",
     ),
     amlb_user_dir: str = typer.Option(
         None,
@@ -72,6 +75,7 @@ def generate_cloud_config(
         "mode": "aws",
         "benchmark_name": benchmark_name,
         "root_dir": root_dir,
+        "framework": framework,
     }
     cdk_context = {
         "CDK_DEPLOY_ACCOUNT": cdk_deploy_account,
@@ -91,42 +95,38 @@ def generate_cloud_config(
         cdk_context["RESERVED_MEMORY_SIZE"] = reserved_memory_size
     if instance:
         cdk_context["INSTANCE"] = instance
+    if time_limit:
+        cdk_context["TIME_LIMIT"] = time_limit
 
     config["cdk_context"] = cdk_context
-    git_uri_branch = git_uri_branch.split(",") if git_uri_branch else None
 
     if module == "multimodal":
         dataset_names = dataset_names.split(",") if dataset_names else None
-        presets = presets.split(",") if presets else None
-        time_limit = [int(t.strip()) for t in time_limit.split(",")] if time_limit else None
-
-        hyperparameters_list = []
-        if hyperparameters:
-            hyperparameters_items = hyperparameters.split(";")
-            for item in hyperparameters_items:
-                item_dict = {}
-                key_value_pairs = item.split(",")
-                for kv in key_value_pairs:
-                    key, value = kv.split(":")
-                    item_dict[key.strip()] = float(value.strip())
-                hyperparameters_list.append(item_dict)
-
         module_configs = {
-            "git_uri#branch": git_uri_branch,
+            "constraint": constraint,
             "dataset_name": dataset_names,
         }
-        if presets:
-            module_configs["presets"] = presets
-        if time_limit:
-            module_configs["time_limit"] = time_limit
-        if hyperparameters_list:
-            module_configs["hyperparameters"] = hyperparameters_list
+        if custom_resource_dir:
+            module_configs["custom_resource_dir"] = custom_resource_dir
 
-        config["module_configs"] = {"multimodal": module_configs}
+        if custom_dataloader:
+            custom_dataloader_dict = {}
+            for item in custom_dataloader.split(";"):
+                k, v = item.split(":")
+                custom_dataloader_dict[k] = v
+            module_configs["custom_dataloader"] = custom_dataloader_dict
+
+        config.update(module_configs)
 
     elif module == "tabular":
-        framework = framework.split(",") if framework else None
-        amlb_benchmark = amlb_benchmark.split(",") if amlb_benchmark else None
+        module_configs = {
+            "git_uri#branch": git_uri_branch,
+            "amlb_constraint": amlb_constraint,
+        }
+
+        if amlb_benchmark:
+            amlb_benchmark = amlb_benchmark.split(",")
+            module_configs["amlb_benchmark"] = amlb_benchmark
 
         if amlb_task:
             amlb_task_dict = {}
@@ -135,23 +135,23 @@ def generate_cloud_config(
                     benchmark, tasks = item.split(":")
                     task_list = tasks.split(",")
                     amlb_task_dict[benchmark] = task_list
-            amlb_task = amlb_task_dict
-        amlb_constraint = amlb_constraint.split(",") if amlb_constraint else None
-        amlb_user_dir = amlb_user_dir.split(",") if amlb_user_dir else None
+            module_configs["amlb_task"] = amlb_task_dict
 
-        module_configs = {
-            "git_uri#branch": git_uri_branch,
-            "framework": framework,
-            "amlb_benchmark": amlb_benchmark,
-            "amlb_constraint": amlb_constraint,
-        }
+        if amlb_fold_to_run:
+            fold_to_run_dict = {}
+            for benchmark_item in amlb_fold_to_run.split(";"):
+                benchmark, task_item = benchmark_item.split(":", 1)
+                fold_to_run_dict[benchmark] = {}
+                for task_folds in task_item.split(","):
+                    task, folds = task_folds.split(":")
+                    folds = [int(v) for v in folds.split("/")]
+                    fold_to_run_dict[benchmark][task] = folds
+            module_configs["fold_to_run"] = fold_to_run_dict
 
-        if amlb_task:
-            module_configs["amlb_task"] = amlb_task
         if amlb_user_dir:
             module_configs["amlb_user_dir"] = amlb_user_dir
 
-        config["module_configs"] = {"tabular": module_configs}
+        config.update(module_configs)
     else:
         typer.echo("Invalid module. Please choose 'multimodal' or 'tabular'.")
         return
