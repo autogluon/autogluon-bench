@@ -117,12 +117,12 @@ You will need a cloud configuration file to run the benchmarks. You can edit the
 For multimodal:
 
 ```
-agbench generate-cloud-config --module multimodal --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --git-uri-branch <GIT_URI#BRANCH> --dataset-names DATASET_1,DATASET_2 --presets <PRESET_1>,<PRESET_2> --time-limit <TIME_LIMIT_1>,<TIME_LIMIT_2> --hyperparameters "key_1:value_1,key_2:value_2;key_1:value_3,key_2:value_4"
+agbench generate-cloud-config --module multimodal --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --data-bucket <DATA_BUCKET> --dataset-names DATASET_1,DATASET_2 --custom-resource-dir <CUSTOM_RESOURCE_DIR> --custom-dataloader "dataloader_file:value1;class_name:value2;dataset_config_file:value3"
 ```
 
 For tabular:
 ```
-agbench generate-cloud-config --module tabular --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --framework <FRAMEWORK>:<LABEL> --amlb-benchmark <BENCHMARK1>,<BENCHMARK2> --amlb-task "BENCHMARK1:DATASET1,DATASET2;BENCHMARK2:DATASET3" --amlb-constraint <CONSTRAINT>
+agbench generate-cloud-config --module tabular --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --git-uri-branch <AMLB_GIT_URI_BRANCH> --framework <AMLB_FRAMEWORK> --amlb-benchmark <BENCHMARK1>,<BENCHMARK2> --amlb-task "BENCHMARK1:DATASET1,DATASET2;BENCHMARK2:DATASET3" --amlb-constraint <CONSTRAINT> --amlb-fold-to-run "BENCHMARK1:DATASET1:fold1/fold2,DATASET2:fold1/fold2;BENCHMARK1:DATASET3:fold1/fold2" --amlb-user-dir <AMLB_USER_DIR>
 ```
 
 For more details, you can run
