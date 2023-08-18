@@ -15,11 +15,24 @@ aws_account_region = None
 
 
 def get_job_ids(config_file: str):
+    """
+    This function returns a list of job IDs of all jobs ran for a benchmark run
+    Parameters
+    ----------
+    config_file: str,
+        Path to config file containing job IDs
+    """
     job_ids = list(config_file.get("job_configs", {}).keys())
     return job_ids
 
 
 def get_instance_id(job_id):
+    """
+    This function returns the instance ID (ARN) of the EC2 instance that was used to run a job with given job ID.
+    Parameters
+    ----------
+    job_id: str
+    """
     batch_client = boto3.client("batch", region_name=f"{aws_account_region}")
     ecs_client = boto3.client("ecs", region_name=f"{aws_account_region}")
 
@@ -41,6 +54,23 @@ def get_instance_util(
     end_time: datetime,
     statistics: Optional[List[str]] = ["Average"],
 ) -> dict:
+    """
+    This function returns the instance ID of the EC2 instance that was used to run a job with given job ID.
+    Refer to https://docs.aws.amazon.com/cli/latest/reference/cloudwatch/get-metric-statistics.html for docs on how to interact with the CloudWatch API
+    Also refer to https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cloudwatch/client/get_metric_statistics.html for documentation on how to interact with the API through Python
+    Parameters
+    ----------
+    instance_id: str,
+        EC2 instance ARN
+    metric: str,
+        Name of metric to pass into the CloudWatch API. Example: CPUUtilization
+        Refer to https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html#ec2-cloudwatch-metrics
+    start_time: datetime,
+    end_time: datetime,
+    statistics: Optional[List[str]] = ["Average"],
+        The metric statistics, other than percentile. For percentile statistics, use `ExtendedStatistics` . When calling `get_metric_statistics` , you must specify either `Statistics` or `ExtendedStatistics` , but not both.
+        Examples: Average, Maximum, Minimum
+    """
     cloudwatch_client = boto3.client("cloudwatch", region_name=f"{aws_account_region}")
     return cloudwatch_client.get_metric_statistics(
         Namespace="AWS/EC2",
@@ -64,6 +94,24 @@ def format_metrics(
     mode: str,
     statistics: Optional[List[str]] = ["Average"],
 ):
+    """
+    This function returns a formatted version of the dictionary of metrics provided by the CloudWatch API so it can be easily added to a CSV file and passed into `autogluon-dashboard`.
+    Parameters
+    ----------
+    instance_metrics: dict,
+        Dictionary of instance metrics for a given EC2 instance provided by CloudWatch
+    framework: str,
+        Name of the framework
+    dataset: str,
+        Name of the dataset
+    fold: int,
+        Fold #
+    mode: str,
+        Mode -> Training or Prediction
+    statistics: Optional[List[str]] = ["Average"],
+        The metric statistics, other than percentile. For percentile statistics, use `ExtendedStatistics` . When calling `get_metric_statistics` , you must specify either `Statistics` or `ExtendedStatistics` , but not both.
+        Examples: Average, Maximum, Minimum
+    """
     output_dict = {}
     output_dict["framework"] = framework
     output_dict["dataset"] = dataset
@@ -91,6 +139,20 @@ def get_metrics(
     benchmark_name: str,
     sub_folder: str,
 ):
+    """
+    Parameters
+    ----------
+    job_id: str,
+    metrics: list,
+        List of metrics to pass into the CloudWatch API. Example: CPUUtilization
+        Refer to https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html#ec2-cloudwatch-metrics
+    s3_bucket: str,
+    module: str,
+    benchmark_name: str,
+    sub_folder: str,
+        Sub folder for results.csv file.
+        Passed in from `get_hardware_metrics` function
+    """
     result_path = f"{module}/{benchmark_name}/{sub_folder}"
     path_prefix = f"s3://{s3_bucket}/{result_path}"
     global metrics_list
@@ -125,6 +187,9 @@ def get_metrics(
 
 
 def results_to_csv():
+    """
+    Writes the formatted dictionary of metrics to a csv to pass into `autogluon-dashboard`.
+    """
     csv_headers = ["framework", "dataset", "mode", "fold", "metric", "statistic_type", "statistic_value", "unit"]
     file_dir = os.path.dirname(__file__)
     csv_location = os.path.join(file_dir, "hardware_metrics.csv")
@@ -136,12 +201,26 @@ def results_to_csv():
 
 def get_hardware_metrics(
     config_file: str = typer.Argument(help="Path to YAML config file containing job ids."),
-    s3_bucket: str = typer.Argument(help="Name of the S3 bucket to which the aggregated results will be outputted."),
+    s3_bucket: str = typer.Argument(help="Name of the S3 bucket to which the benchmark results were outputted."),
     module: str = typer.Argument(help="Can be one of ['tabular', 'multimodal']."),
     benchmark_name: str = typer.Argument(
         help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
     ),
 ):
+    """
+    External API function to interact with the script.
+    Parameters
+    ----------
+    config_file: str,
+        Path to config file containing job IDs
+    s3_bucket: str,
+        Name of the S3 bucket to which the benchmark results were outputted.
+    module: str,
+        Benchmark module: tabular or multimodal
+    benchmark_name: str,
+        Name of the benchmark
+        Example: ag_bench_20230817T123456
+    """
     if not config_file:
         raise ValueError("Invalid Config File")
     logger.info(f"Getting hardware metrics for jobs under config file: {config_file}")
