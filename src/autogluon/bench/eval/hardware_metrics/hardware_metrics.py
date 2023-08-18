@@ -91,7 +91,6 @@ def get_metrics(
     benchmark_name: str,
     sub_folder: str,
 ):
-
     result_path = f"{module}/{benchmark_name}/{sub_folder}"
     path_prefix = f"s3://{s3_bucket}/{result_path}"
     global metrics_list
