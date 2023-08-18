@@ -52,7 +52,7 @@ def get_instance_util(
         StartTime=start_time,
         EndTime=end_time,
         Period=120,
-        Unit='Percent',
+        Unit="Percent",
     )
 
 
@@ -78,7 +78,7 @@ def format_metrics(
             output_dict["fold"] = fold
             output_dict["metric"] = instance_metrics["Label"]
             output_dict["statistic_type"] = stat
-            output_dict["statistic_value"] =  instance_metrics["Datapoints"][i][f"{stat}"]
+            output_dict["statistic_value"] = instance_metrics["Datapoints"][i][f"{stat}"]
             output_dict["unit"] = instance_metrics["Datapoints"][i]["Unit"]
     return output_dict
 
@@ -108,10 +108,17 @@ def get_metrics(
                 results["predict_duration"][i],
                 results["fold"][i],
             )
-            utc_dt = datetime.strptime(utc,'%Y-%m-%dT%H:%M:%S')
-            training_util = get_instance_util(instance_id, f"{metric}", utc_dt-timedelta(minutes=train_time), utc_dt-timedelta(minutes=predict_time))
-            predict_util = get_instance_util(instance_id, f"{metric}",  utc_dt-timedelta(minutes=predict_time), utc_dt)
-            #print(training_util, predict_util)
+            utc_dt = datetime.strptime(utc, "%Y-%m-%dT%H:%M:%S")
+            training_util = get_instance_util(
+                instance_id,
+                f"{metric}",
+                utc_dt - timedelta(minutes=train_time),
+                utc_dt - timedelta(minutes=predict_time),
+            )
+            predict_util = get_instance_util(
+                instance_id, f"{metric}", utc_dt - timedelta(minutes=predict_time), utc_dt
+            )
+            # print(training_util, predict_util)
             if training_util["Datapoints"]:
                 metrics_list.append(format_metrics(training_util, framework, dataset, fold, "Training"))
             if predict_util["Datapoints"]:
