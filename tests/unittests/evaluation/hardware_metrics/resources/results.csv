@@ -1,0 +1,5 @@
+id,task,framework,constraint,fold,type,result,metric,mode,version,params,app_version,utc,duration,training_duration,predict_duration,models_count,seed,info,acc,auc,balacc,logloss,models_ensemble_count
+openml.org/t/31,credit-g,AutoGluon,test,0,binary,0.80381,auc,local,0.8.2,,2.1.6,2023-07-13T22:19:45,23.4,20.7,0.06,14,937966977,,0.72,0.80381,0.666667,0.503194,8
+openml.org/t/31,credit-g,AutoGluon,test,1,binary,0.760952,auc,local,0.8.2,,2.1.6,2023-07-13T22:20:06,20.9,17.7,0.3,14,937966978,,0.74,0.760952,0.604762,0.507339,9
+openml.org/t/53,vehicle,AutoGluon,test,0,multiclass,-0.385097,neg_logloss,local,0.8.2,,2.1.6,2023-07-13T22:20:33,24.4,22.4,0.02,14,937966977,,0.8,,0.800812,0.385097,4
+openml.org/t/53,vehicle,AutoGluon,test,1,multiclass,-0.390919,neg_logloss,local,0.8.2,,2.1.6,2023-07-13T22:20:56,23.1,21.1,0.02,14,937966978,,0.8,,0.80303,0.390919,3
