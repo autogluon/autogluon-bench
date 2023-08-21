@@ -30,6 +30,7 @@ def clean_amlb_results(
     ),
     file_prefix: str = typer.Option("results_automlbenchmark", help="File prefix of the input results files."),
     benchmark_name_in_input_path: bool = False,
+    benchmark_name_in_output_path: bool = True,
     constraints: Optional[List[str]] = typer.Option(
         None,
         help="List of AMLB constraints, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml",
@@ -51,6 +52,8 @@ def clean_amlb_results(
         results_dir_output=results_dir_output,
         file_prefix=file_prefix,
         run_name_in_input_path=benchmark_name_in_input_path,
+        run_name_in_output_path=benchmark_name_in_output_path,
+        save=True,
         constraints=constraints if constraints else None,
         out_path_prefix=out_path_prefix,
         out_path_suffix=out_path_suffix,
@@ -65,11 +68,13 @@ def clean_and_save_results(
     results_dir_output=None,
     file_prefix="results_automlbenchmark",
     run_name_in_input_path=True,
+    run_name_in_output_path=True,
+    save=True,
     constraints=None,
     out_path_prefix="openml_ag_",
     out_path_suffix="",
     framework_suffix_column="constraint",
-):
+) -> pd.DataFrame:
     if results_dir_input is None:
         results_dir_input = os.path.join(results_dir, "input/raw/")
     if results_dir_output is None:
@@ -95,9 +100,14 @@ def clean_and_save_results(
     else:
         results_raw[FRAMEWORK] = results_raw[FRAMEWORK] + "_" + run_name
 
-    save_path = os.path.join(results_dir_output, f"{out_path_prefix}{run_name}{out_path_suffix}.csv")
-    save_pd.save(path=save_path, df=results_raw)
-    logger.info(f"Cleaned results are saved in file: {save_path}")
+    if save:
+        if run_name_in_output_path:
+            save_path = os.path.join(results_dir_output, f"{out_path_prefix}{run_name}{out_path_suffix}.csv")
+        else:
+            save_path = os.path.join(results_dir_output, f"{out_path_prefix}{out_path_suffix}.csv")
+        save_pd.save(path=save_path, df=results_raw)
+        logger.info(f"Cleaned results are saved in file: {save_path}")
+    return results_raw
 
 
 if __name__ == "__main__":
