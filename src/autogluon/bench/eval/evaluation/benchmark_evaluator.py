@@ -129,7 +129,9 @@ class BenchmarkEvaluator:
         else:
             self._columns_to_keep = None
 
-    def _load_results(self, paths: list | pd.DataFrame, clean_data: bool = False, banned_datasets: list = None) -> pd.DataFrame:
+    def _load_results(
+        self, paths: list | pd.DataFrame, clean_data: bool = False, banned_datasets: list = None
+    ) -> pd.DataFrame:
         """paths can be either a list of file paths or a pandas DataFrame"""
         if isinstance(paths, list):
             results_raw = self.load_results_raw(paths=paths)
