@@ -102,6 +102,14 @@ def evaluate(
     if frameworks is None:
         frameworks = sorted(list(results_raw[FRAMEWORK].unique()))
     elif len(set(frameworks)) != len(frameworks):
+        d = dict()
+        for f in frameworks:
+            if f in d:
+                d[f] += 1
+            else:
+                d[f] = 1
+        d = {k: v for k, v in d.items() if v > 1}
+        print(f"Framework counts:\n{d}")
         raise AssertionError("Framework duplicate detected. Frameworks must be unique.")
     results_raw = results_raw[results_raw[FRAMEWORK].isin(set(frameworks))]
     print(f"Filtered to only valid frameworks: {len(frameworks)} frameworks")

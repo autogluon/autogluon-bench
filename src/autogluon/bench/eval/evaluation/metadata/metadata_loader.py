@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-_PATH_TO_DATA = str(Path(__file__).parent.parent.parent / "data" / "metadata")
+_PATH_TO_DATA = str(Path(__file__).parent.parent.parent.parent.parent.parent.parent / "data" / "metadata")
 
 
 def load_task_metadata(path="task_metadata.csv", path_relative_to_data=True, compute_aux_columns=True):

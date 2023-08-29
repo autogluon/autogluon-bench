@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 @app.command()
 def clean_amlb_results(
     benchmark_name: str = typer.Argument(
+        None,
         help="Benchmark name populated by benchmark run, in format <benchmark_name>_<timestamp>"
     ),
     results_dir: str = typer.Option("data/results/", help="Root directory of raw and prepared results."),
