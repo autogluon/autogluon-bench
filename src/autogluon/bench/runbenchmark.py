@@ -16,6 +16,7 @@ from autogluon.bench import __version__ as agbench_version
 from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
+from autogluon.bench.frameworks.timeseries.timeseries_benchmark import TimeSeriesBenchmark
 from autogluon.bench.utils.general_utils import (
     download_dir_from_s3,
     download_file_from_s3,
@@ -27,13 +28,14 @@ app = typer.Typer()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
 
 
 def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
     """Returns a dictionary of keyword arguments to be used for setting up and running the benchmark.
 
     Args:
-        module (str): The name of the module to benchmark (either "multimodal" or "tabular").
+        module (str): The name of the module to benchmark (either "multimodal", "tabular", or "timeseires").
         configs (dict): A dictionary of configuration options for the benchmark.
 
     Returns:
@@ -56,7 +58,7 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
                 "custom_dataloader": configs.get("custom_dataloader"),
             },
         }
-    elif module == "tabular":
+    elif module in AMLB_DEPENDENT_MODULES:
         git_uri, git_branch = _get_git_info(configs["git_uri#branch"])
         return {
             "setup_kwargs": {
@@ -102,6 +104,7 @@ def run_benchmark(
     module_to_benchmark = {
         "multimodal": MultiModalBenchmark,
         "tabular": TabularBenchmark,
+        "timeseries": TimeSeriesBenchmark,
     }
     module_name = configs["module"]
 
@@ -375,7 +378,7 @@ def run(
             os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
             os.environ["BENCHMARK_DIR"] = benchmark_dir
 
-            if module == "tabular":
+            if module in AMLB_DEPENDENT_MODULES:
                 os.environ["AMLB_FRAMEWORK"] = configs["framework"]
                 os.environ["GIT_URI"], os.environ["GIT_BRANCH"] = _get_git_info(configs["git_uri#branch"])
 
@@ -481,7 +484,7 @@ def run(
         if split_id is not None:
             benchmark_dir_s3 += f"/{benchmark_name}_{split_id}"
 
-        if module == "tabular":
+        if module in AMLB_DEPENDENT_MODULES:
             amlb_user_dir = configs.get("amlb_user_dir")
             if amlb_user_dir and amlb_user_dir.startswith("s3://"):
                 tmpdir = tempfile.TemporaryDirectory()
@@ -489,7 +492,7 @@ def run(
 
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
         if dev_branch is not None:
-            logger.info(f"Using dev branch at {dev_branch}...")
+            logger.info(f"Using Development Branch: {dev_branch} for set up...")
 
         run_benchmark(
             benchmark_name=benchmark_name,

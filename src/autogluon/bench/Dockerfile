@@ -52,7 +52,7 @@ RUN if [ -n "$AG_BENCH_DEV_URL" ]; then \
 COPY entrypoint.sh utils/hardware_utilization.sh $FRAMEWORK_PATH/setup.sh custom_configs/ /app/
 
 RUN chmod +x setup.sh entrypoint.sh hardware_utilization.sh \
-    && if echo "$FRAMEWORK_PATH" | grep -q "tabular"; then \
+    && if echo "$FRAMEWORK_PATH" | grep -q -E "tabular|timeseries"; then \
         if [ -n "$AMLB_USER_DIR" ]; then \
             bash setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR $AMLB_FRAMEWORK $AMLB_USER_DIR; \
         else \
