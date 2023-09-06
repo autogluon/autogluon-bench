@@ -8,7 +8,7 @@ app = typer.Typer()
 @app.command()
 def aggregate_amlb_results(
     s3_bucket: str = typer.Argument(help="Name of the S3 bucket to which the aggregated results will be outputted."),
-    module: str = typer.Argument(help="Can be one of ['tabular', 'multimodal']."),
+    module: str = typer.Argument(help="Can be one of ['tabular', 'timeseries', 'multimodal']."),
     benchmark_name: str = typer.Argument(
         help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
     ),
