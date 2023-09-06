@@ -27,7 +27,7 @@ def setup_mock(mocker, tmp_path, module="tabular"):
         "METRICS_BUCKET": "test_bucket",
     }
 
-    if module == "tabular":
+    if module in ["tabular", "timeseries"]:
         module_configs = {
             "git_uri#branch": "https://github.com/openml/automlbenchmark.git#master",
             "framework": "AutoGluon:stable",
@@ -395,3 +395,84 @@ def test_get_job_status_with_job_ids(mocker, tmp_path):
 
     mock_boto_client.assert_called_once_with("batch", region_name="test_region")
     assert actual_status_dict == expected_status_dict
+
+
+def test_get_kwargs_timeseries():
+    module = "timeseries"
+    configs = {
+        "git_uri#branch": "https://github.com/openml/automlbenchmark.git#stable",
+        "framework": "AutoGluon:stable",
+        "amlb_benchmark": "test_bench",
+        "amlb_task": "iris",
+        "amlb_constraint": "test_constraint",
+        "fold_to_run": 6,
+        "amlb_user_dir": "sample_configs/amlb_configs",
+    }
+    agbench_dev_url = None
+
+    expected_result = {
+        "setup_kwargs": {
+            "git_uri": "https://github.com/openml/automlbenchmark.git",
+            "git_branch": "stable",
+            "framework": "AutoGluon:stable",
+            "user_dir": "sample_configs/amlb_configs",
+        },
+        "run_kwargs": {
+            "framework": "AutoGluon:stable",
+            "benchmark": "test_bench",
+            "constraint": "test_constraint",
+            "task": "iris",
+            "fold": 6,
+            "user_dir": "sample_configs/amlb_configs",
+        },
+    }
+
+    assert get_kwargs(module, configs, agbench_dev_url) == expected_result
+
+
+def test_run_aws_timeseries_user_dir(mocker, tmp_path):
+    setup = setup_mock(mocker, tmp_path, module="timeseries")
+    temp_dir_mock = mocker.patch("tempfile.TemporaryDirectory")
+    s3_mock = mocker.patch("autogluon.bench.utils.general_utils.download_dir_from_s3")
+
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch="https://git_url#git_branch",
+        skip_setup=True,
+    )
+    assert os.environ["AG_BENCH_DEV_URL"] == "https://git_url#git_branch"
+    assert os.environ["FRAMEWORK_PATH"] == "frameworks/timeseries"
+    assert os.environ["BENCHMARK_DIR"] == "ag_bench_runs/timeseries/test_benchmark_test_time"
+    assert os.environ["GIT_URI"] == "https://github.com/openml/automlbenchmark.git"
+    assert os.environ["GIT_BRANCH"] == "master"
+    assert os.environ["AMLB_FRAMEWORK"] == "AutoGluon:stable"
+    assert os.environ["AMLB_USER_DIR"] == "amlb_configs"
+    temp_dir_mock.assert_not_called()
+    s3_mock.assert_not_called()
+    assert setup["mock_umount"].call_count == 4
+    assert setup["mock_mount"].call_count == 2
+
+
+def test_run_benchmark_timeseries(mocker):
+    benchmark_name = "test_benchmark"
+    benchmark_dir = "test_dir"
+    configs = {
+        "module": "timeseries",
+        "METRICS_BUCKET": "test_bucket",
+    }
+
+    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
+    setup_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.setup")
+    run_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.run")
+    upload_metrics_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.upload_metrics")
+    mocker.patch("autogluon.bench.runbenchmark._dump_configs")
+
+    run_benchmark(
+        benchmark_name=benchmark_name, benchmark_dir=benchmark_dir, configs=configs, benchmark_dir_s3="s3_dir"
+    )
+
+    setup_mock.assert_called_once_with()
+    run_mock.assert_called_once_with()
+    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir")
