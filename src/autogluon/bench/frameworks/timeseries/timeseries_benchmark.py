@@ -17,7 +17,7 @@ class TimeSeriesBenchmark(Benchmark):
         user_dir: str = None,
     ):
         """Sets up the virtual environment for timeseries benchmark."""
-        setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
+        setup_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "setup.sh")
         command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, framework]
         if user_dir is not None:
             command.append(user_dir)
@@ -51,7 +51,7 @@ class TimeSeriesBenchmark(Benchmark):
             None
         """
 
-        exec_script_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.sh"
+        exec_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "exec.sh")
         command = [
             exec_script_path,
             framework,
