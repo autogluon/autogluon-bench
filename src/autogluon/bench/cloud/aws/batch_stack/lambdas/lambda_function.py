@@ -15,6 +15,8 @@ s3 = client("s3")
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
+
 
 def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: str):
     """
@@ -250,8 +252,8 @@ def process_combination(configs, metrics_bucket, batch_job_queue, batch_job_defi
 def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
     job_configs = {}
     config.pop("cdk_context")
-    if config["module"] == "tabular":
-        job_configs = generate_tabular_config_combinations(
+    if config["module"] in AMLB_DEPENDENT_MODULES:
+        job_configs = generate_amlb_module_config_combinations(
             config, metrics_bucket, batch_job_queue, batch_job_definition
         )
     elif config["module"] == "multimodal":
@@ -259,7 +261,7 @@ def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_
             config, metrics_bucket, batch_job_queue, batch_job_definition
         )
     else:
-        raise ValueError("Invalid module. Choose either 'tabular' or 'multimodal'.")
+        raise ValueError("Invalid module. Choose either 'tabular', 'timeseries', or 'multimodal'.")
 
     response = {
         "job_configs": job_configs,
@@ -292,7 +294,7 @@ def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_qu
     return job_configs
 
 
-def generate_tabular_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
+def generate_amlb_module_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
     specific_keys = ["git_uri#branch", "framework", "amlb_constraint", "amlb_user_dir"]
     exclude_keys = ["amlb_benchmark", "amlb_task", "fold_to_run"]
     common_keys = []
@@ -328,14 +330,6 @@ def generate_tabular_config_combinations(config, metrics_bucket, batch_job_queue
                     )
                     job_configs[job_id] = config_s3_path
     return job_configs
-
-
-def _validate_single_value(configs: dict, key: str):
-    value = configs[key]
-    if isinstance(value, str):
-        configs[key] = [value]
-    elif isinstance(value, list) and len(value) != 1:
-        raise ValueError(f"Only single value (str, list[str]) is supported for {key}.")
 
 
 def handler(event, context):
@@ -403,7 +397,7 @@ def handler(event, context):
     configs["METRICS_BUCKET"] = metrics_bucket
     configs["mode"] = "local"
 
-    if configs["module"] == "tabular":
+    if configs["module"] in AMLB_DEPENDENT_MODULES:
         # download the almb repo resources/ to process the default resources
         amlb_repo_path = download_automlbenchmark_resources()
         amlb_benchmark_search_dirs = []

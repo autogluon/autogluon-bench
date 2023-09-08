@@ -2,14 +2,13 @@ import logging
 import os
 import subprocess
 import sys
-from typing import List
 
 from autogluon.bench.frameworks.benchmark import Benchmark
 
 logger = logging.getLogger(__name__)
 
 
-class TabularBenchmark(Benchmark):
+class TimeSeriesBenchmark(Benchmark):
     def setup(
         self,
         git_uri: str = "https://github.com/openml/automlbenchmark.git",
@@ -17,8 +16,8 @@ class TabularBenchmark(Benchmark):
         framework: str = "AutoGluon:stable",
         user_dir: str = None,
     ):
-        """Sets up the virtual environment for tabular benchmark."""
-        setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
+        """Sets up the virtual environment for timeseries benchmark."""
+        setup_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "setup.sh")
         command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, framework]
         if user_dir is not None:
             command.append(user_dir)
@@ -39,7 +38,7 @@ class TabularBenchmark(Benchmark):
         fold: int = None,
         user_dir: str = None,
     ):
-        """Runs the tabular benchmark.
+        """Runs the timeseries benchmark.
 
         Args:
             framework (str): The name of the framework to use. Examples: "AutoGluon:latest", "AutoGluon:stable".
@@ -52,7 +51,7 @@ class TabularBenchmark(Benchmark):
             None
         """
 
-        exec_script_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.sh"
+        exec_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "exec.sh")
         command = [
             exec_script_path,
             framework,

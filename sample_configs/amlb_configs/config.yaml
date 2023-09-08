@@ -6,6 +6,9 @@ frameworks:              # configuration namespace for the frameworks definition
   tags: ['stable', 'latest', '2020Q2', '2021Q3', '2023Q2', 'example']  # the list of supported tags when looking up frameworks:
                               # for example frmwk:latest will look for framework frmwk in a frameworks_latest.yaml file if present.
 benchmarks:                     # configuration namespace for the benchmarks definitions.
+  definition_dir:               
+    - '{root}/resources/benchmarks'
+    - '{user}/benchmarks'
   constraints_file:             # list of yaml files describing the benchmarks runtime constraints.
     - '{root}/resources/constraints.yaml'
     - '{user}/constraints.yaml'

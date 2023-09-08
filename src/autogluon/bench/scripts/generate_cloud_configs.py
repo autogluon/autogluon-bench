@@ -6,7 +6,7 @@ app = typer.Typer()
 
 @app.command()
 def generate_cloud_config(
-    module: str = typer.Option(..., help="The module to generate config for: 'multimodal' or 'tabular'"),
+    module: str = typer.Option(..., help="The module to generate config for: 'multimodal', 'tabular' or 'timeseries'"),
     root_dir: str = typer.Option("ag_bench_runs", help="Root directory (optional, default = 'ag_bench_runs')"),
     benchmark_name: str = typer.Option("ag_bench", help="Benchmark name (optional, default = 'ag_bench')"),
     cdk_deploy_account: str = typer.Option(..., help="CDK deploy account"),
@@ -51,19 +51,19 @@ def generate_cloud_config(
     constraint: str = typer.Option("test", help="Resource constraint for '--module multimodal'"),
     amlb_constraint: str = typer.Option(
         "",
-        help="AMLB Constraints for '--module tabular', in the format 'test,1h4c,...'. Refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml for details.",
+        help="AMLB Constraints for tabular or timeseries, in the format 'test,1h4c,...'. Refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml for details.",
     ),
     amlb_benchmark: str = typer.Option(
         "",
-        help="AMLB Benchmarks for '--module tabular', in the format 'test,small,...'. Refer to https://github.com/openml/automlbenchmark/tree/master/resources/benchmarks for options.",
+        help="AMLB Benchmarks for tabular or timeseries, in the format 'test,small,...'. Refer to https://github.com/openml/automlbenchmark/tree/master/resources/benchmarks for options.",
     ),
     amlb_task: str = typer.Option(
         None,
-        help="AMLB Tasks for '--module tabular' (in the format '\"benchmark1:task1,task2;benchmark2:task3,task4,task5;...\"')",
+        help="AMLB Tasks for tabular or timeseries (in the format '\"benchmark1:task1,task2;benchmark2:task3,task4,task5;...\"')",
     ),
     amlb_fold_to_run: str = typer.Option(
         None,
-        help="AMLB fold for '--module tabular' (in the format '\"benchmark1:task1:fold1/fold2,task2:fold3/fold4;benchmark2:task3:fold1/fold2;...\"')",
+        help="AMLB fold for tabular or timeseries (in the format '\"benchmark1:task1:fold1/fold2,task2:fold3/fold4;benchmark2:task3:fold1/fold2;...\"')",
     ),
     amlb_user_dir: str = typer.Option(
         None,
@@ -118,7 +118,7 @@ def generate_cloud_config(
 
         config.update(module_configs)
 
-    elif module == "tabular":
+    elif module in ["tabular", "timeseries"]:
         module_configs = {
             "git_uri#branch": git_uri_branch,
             "amlb_constraint": amlb_constraint,
@@ -153,7 +153,7 @@ def generate_cloud_config(
 
         config.update(module_configs)
     else:
-        typer.echo("Invalid module. Please choose 'multimodal' or 'tabular'.")
+        typer.echo("Invalid module. Please choose 'multimodal', 'tabular' or 'timeseries'.")
         return
 
     output_file = f"{module}_cloud_configs.yaml"

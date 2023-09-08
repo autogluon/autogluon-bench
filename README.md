@@ -53,11 +53,11 @@ Check out our [sample local configuration files](https://github.com/autogluon/au
 The results are stored in the following directory: `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}`.
 
 
-### Tabular Benchmark
+### Tabular and Timeseries Benchmark
 
-To perform tabular benchmarking, set the module to tabular. You must set both Benchmark Configurations and Tabular Specific configurations, and each should have a single value. Refer to the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml) for more details.
+To perform tabular or timeseries benchmarking, set the module to 'tabular' or 'timeseries'. You must set both Benchmark Configurations and Tabular/Timeseries Specific configurations, and each should have a single value. Refer to the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml) for more details.
 
-The tabular module leverages the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via the configuration file mentioned previously.
+The tabular/timeseires module leverages the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via the configuration file mentioned previously.
 
 Custom configuration is supported by providing a local directory to `amlb_user_dir` in the config, by which custom frameworks, constraints and datasets can be overriden. We have a minimum working [custom config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/amlb_configs) setup for benchmarking on a custom framework (a `AutoGluon` dev branch). In the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml), change the following field to:
 
@@ -71,7 +71,7 @@ For more customizations, please follow the [example custom configuration folder]
 
 ### Multimodal Benchmark
 
-For multimodal benchmarking, set the module to multimodal. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular. Please refer to the [sample multimodal local run configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml). 
+For multimodal benchmarking, set the module to multimodal. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular or timeseries. Please refer to the [sample multimodal local run configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml). 
 
 We also support customizations on benchmarking framework and datasets by providing `custom_resource_dir` and `custom_dataloader`.
 
@@ -120,9 +120,9 @@ For multimodal:
 agbench generate-cloud-config --module multimodal --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --data-bucket <DATA_BUCKET> --dataset-names DATASET_1,DATASET_2 --custom-resource-dir <CUSTOM_RESOURCE_DIR> --custom-dataloader "dataloader_file:value1;class_name:value2;dataset_config_file:value3"
 ```
 
-For tabular:
+For tabular or timeseries:
 ```
-agbench generate-cloud-config --module tabular --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --git-uri-branch <AMLB_GIT_URI_BRANCH> --framework <AMLB_FRAMEWORK> --amlb-benchmark <BENCHMARK1>,<BENCHMARK2> --amlb-task "BENCHMARK1:DATASET1,DATASET2;BENCHMARK2:DATASET3" --amlb-constraint <CONSTRAINT> --amlb-fold-to-run "BENCHMARK1:DATASET1:fold1/fold2,DATASET2:fold1/fold2;BENCHMARK1:DATASET3:fold1/fold2" --amlb-user-dir <AMLB_USER_DIR>
+agbench generate-cloud-config --module <MODULE> --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --git-uri-branch <AMLB_GIT_URI_BRANCH> --framework <AMLB_FRAMEWORK> --amlb-benchmark <BENCHMARK1>,<BENCHMARK2> --amlb-task "BENCHMARK1:DATASET1,DATASET2;BENCHMARK2:DATASET3" --amlb-constraint <CONSTRAINT> --amlb-fold-to-run "BENCHMARK1:DATASET1:fold1/fold2,DATASET2:fold1/fold2;BENCHMARK1:DATASET3:fold1/fold2" --amlb-user-dir <AMLB_USER_DIR>
 ```
 
 For more details, you can run
@@ -215,7 +215,7 @@ In addition to the standard metrics, we also provide a custom metric for `GPUUti
 
 ## Evaluating benchmark runs
 
-Tabular benchmark results can be evaluated using the tools in `src/autogluon/bench/eval/`. The evaluation logic will aggregate, clean, and produce evaluation results for runs stored in S3.
+Benchmark results can be evaluated using the tools in `src/autogluon/bench/eval/`. The evaluation logic will aggregate, clean, and produce evaluation results for runs stored in S3.
 In a future release, we intend to add evaluation support for multimodal benchmark results.
 
 
