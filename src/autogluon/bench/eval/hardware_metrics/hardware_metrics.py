@@ -9,9 +9,11 @@ import pandas as pd
 import typer
 import yaml
 
-metrics_list = []
 aws_account_id = None
 aws_account_region = None
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def get_job_ids(config_file: str):
@@ -33,8 +35,8 @@ def get_instance_id(job_id):
     ----------
     job_id: str
     """
-    batch_client = boto3.client("batch", region_name=f"{aws_account_region}")
-    ecs_client = boto3.client("ecs", region_name=f"{aws_account_region}")
+    batch_client = boto3.client("batch", region_name=aws_account_region)
+    ecs_client = boto3.client("ecs", region_name=aws_account_region)
 
     response = batch_client.describe_jobs(jobs=[f"{job_id}"])
     if response:
@@ -48,10 +50,12 @@ def get_instance_id(job_id):
 
 
 def get_instance_util(
+    namespace: str,
     instance_id: str,
     metric: str,
     start_time: datetime,
     end_time: datetime,
+    period: int = 300,
     statistics: Optional[List[str]] = ["Average"],
 ) -> dict:
     """
@@ -71,9 +75,9 @@ def get_instance_util(
         The metric statistics, other than percentile. For percentile statistics, use `ExtendedStatistics` . When calling `get_metric_statistics` , you must specify either `Statistics` or `ExtendedStatistics` , but not both.
         Examples: Average, Maximum, Minimum
     """
-    cloudwatch_client = boto3.client("cloudwatch", region_name=f"{aws_account_region}")
+    cloudwatch_client = boto3.client("cloudwatch", region_name=aws_account_region)
     return cloudwatch_client.get_metric_statistics(
-        Namespace="AWS/EC2",
+        Namespace=namespace,
         MetricName=metric,
         Dimensions=[
             {"Name": "InstanceId", "Value": instance_id},
@@ -81,7 +85,7 @@ def get_instance_util(
         Statistics=statistics,
         StartTime=start_time,
         EndTime=end_time,
-        Period=120,
+        Period=period,
         Unit="Percent",
     )
 
@@ -155,7 +159,7 @@ def get_metrics(
     """
     result_path = f"{module}/{benchmark_name}/{sub_folder}"
     path_prefix = f"s3://{s3_bucket}/{result_path}"
-    global metrics_list
+    metrics_list = []
     instance_id = get_instance_id(job_id)
     s3_path_to_csv = f"{path_prefix}/results.csv"
     results = pd.read_csv(s3_path_to_csv)
@@ -171,24 +175,30 @@ def get_metrics(
             )
             utc_dt = datetime.strptime(utc, "%Y-%m-%dT%H:%M:%S")
             training_util = get_instance_util(
+                "AWS/EC2",
                 instance_id,
                 f"{metric}",
                 utc_dt - timedelta(minutes=train_time),
                 utc_dt - timedelta(minutes=predict_time),
             )
             predict_util = get_instance_util(
-                instance_id, f"{metric}", utc_dt - timedelta(minutes=predict_time), utc_dt
+                "AWS/EC2", instance_id, f"{metric}", utc_dt - timedelta(minutes=predict_time), utc_dt
             )
             # print(training_util, predict_util)
             if training_util["Datapoints"]:
                 metrics_list.append(format_metrics(training_util, framework, dataset, fold, "Training"))
             if predict_util["Datapoints"]:
                 metrics_list.append(format_metrics(predict_util, framework, dataset, fold, "Prediction"))
+    return metrics_list
 
 
-def results_to_csv():
+def results_to_csv(metrics_list: list):
     """
     Writes the formatted dictionary of metrics to a csv to pass into `autogluon-dashboard`.
+    Parameters
+    ----------
+    metrics_list: list,
+        List of EC2 metrics to write to CSV
     """
     csv_headers = ["framework", "dataset", "mode", "fold", "metric", "statistic_type", "statistic_value", "unit"]
     file_dir = os.path.dirname(__file__)
@@ -228,20 +238,15 @@ def get_hardware_metrics(
         config = yaml.safe_load(f)
     job_ids = get_job_ids(config)
 
-    global metrics_list, aws_account_id, aws_account_region
+    global aws_account_id, aws_account_region
     aws_account_id = config.get("CDK_DEPLOY_ACCOUNT")
     aws_account_region = config.get("CDK_DEPLOY_REGION")
+    metrics_list = []
     for job_id in job_ids:
         sub_folder = config["job_configs"][f"{job_id}"].split("/")[5].replace("_split", "").replace(".yaml", "")
-        get_metrics(
-            job_id, ["CPUUtilization", "EBSWriteOps", "EBSReadOps"], s3_bucket, module, benchmark_name, sub_folder
+        metrics_list.append(
+            get_metrics(
+                job_id, ["CPUUtilization", "EBSWriteOps", "EBSReadOps"], s3_bucket, module, benchmark_name, sub_folder
+            )
         )
-    results_to_csv()
-
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-if __name__ == "__main__":
-    typer.run(get_hardware_metrics)
+    results_to_csv(metrics_list)
