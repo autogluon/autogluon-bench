@@ -100,7 +100,9 @@ class TestHardwareMetrics(unittest.TestCase):
         mock_instance_id.return_value = "12345"
         job_id = list(config.get("job_configs", {}).keys())[0]
         mock_instance_util.return_value = mock_cloudwatch_response
-        metrics_list = get_metrics(job_id, ["CPUUtilization"], "some bucket", "tabular", "some_benchmark", "test_folder")
+        metrics_list = get_metrics(
+            job_id, ["CPUUtilization"], "some bucket", "tabular", "some_benchmark", "test_folder"
+        )
         self.assertEqual(metrics_list, metrics)
 
     @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.get_metrics")
