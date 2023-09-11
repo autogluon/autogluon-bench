@@ -107,9 +107,11 @@ class TestHardwareMetrics(unittest.TestCase):
         self.assertEqual(metrics_list, metrics)
 
     @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.get_metrics")
-    def test_get_hardware_metrics(self, mock_metrics):
+    @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.results_to_csv")
+    def test_get_hardware_metrics(self, mock_csv, mock_metrics):
         get_hardware_metrics(config_file, "some bucket", "tabular", "some_benchmark")
         mock_metrics.return_value = "metrics"
+        mock_csv.return_value = "csv"
         job_ids = get_job_ids(config)
         calls = [
             call(
