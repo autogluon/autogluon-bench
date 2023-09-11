@@ -84,6 +84,7 @@ class TestHardwareMetrics(unittest.TestCase):
         cloudwatch_client.get_metric_statistics.return_value = mock_cloudwatch_response
         self.assertEqual(
             get_instance_util(
+                "namespace",
                 "1234",
                 "CPUUtilization",
                 datetime.datetime(2023, 7, 12, 17, 39),
