@@ -212,7 +212,7 @@ def run(
         "type": predictor.problem_type,
         "result": scores[test_data.metric],
         "metric": test_data.metric,
-        "utc_time": utc_time,
+        "utc": utc_time,
         "training_duration": training_duration,
         "predict_duration": predict_duration,
         "scores": scores,

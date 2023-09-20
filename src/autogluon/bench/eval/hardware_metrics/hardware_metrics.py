@@ -1,6 +1,7 @@
 import csv
 import logging
 import os
+import tempfile
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -9,11 +10,26 @@ import pandas as pd
 import typer
 import yaml
 
+from autogluon.bench.utils.general_utils import upload_to_s3
+
 aws_account_id = None
 aws_account_region = None
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def find_s3_file(s3_bucket: str, prefix: str, file: str):
+    s3 = boto3.client("s3")
+    paginator = s3.get_paginator("list_objects_v2")
+    page_iterator = paginator.paginate(Bucket=s3_bucket, Prefix=prefix)
+
+    for page in page_iterator:
+        if "Contents" in page:
+            for obj in page["Contents"]:
+                if obj["Key"].endswith("results.csv"):
+                    return f"s3://{s3_bucket}/{obj['Key']}"
+    return None
 
 
 def get_job_ids(config_file: str):
@@ -55,7 +71,8 @@ def get_instance_util(
     metric: str,
     start_time: datetime,
     end_time: datetime,
-    period: int = 300,
+    cloudwatch_client: boto3.client,
+    period: int = 360,
     statistics: Optional[List[str]] = ["Average"],
 ) -> dict:
     """
@@ -75,7 +92,6 @@ def get_instance_util(
         The metric statistics, other than percentile. For percentile statistics, use `ExtendedStatistics` . When calling `get_metric_statistics` , you must specify either `Statistics` or `ExtendedStatistics` , but not both.
         Examples: Average, Maximum, Minimum
     """
-    cloudwatch_client = boto3.client("cloudwatch", region_name=aws_account_region)
     return cloudwatch_client.get_metric_statistics(
         Namespace=namespace,
         MetricName=metric,
@@ -86,7 +102,6 @@ def get_instance_util(
         StartTime=start_time,
         EndTime=end_time,
         Period=period,
-        Unit="Percent",
     )
 
 
@@ -137,11 +152,12 @@ def format_metrics(
 
 def get_metrics(
     job_id: str,
-    metrics: list,
     s3_bucket: str,
     module: str,
     benchmark_name: str,
     sub_folder: str,
+    cloudwatch_client: boto3.client,
+    namespace: str = "EC2",  # CloudWatch "Custom" namespace, i.e. Custom/EC2
 ):
     """
     Parameters
@@ -156,14 +172,23 @@ def get_metrics(
     sub_folder: str,
         Sub folder for results.csv file.
         Passed in from `get_hardware_metrics` function
+    namespace: str,
+        CloudWatch Metrics Namespace, default: AWS/EC2
     """
-    result_path = f"{module}/{benchmark_name}/{sub_folder}"
-    path_prefix = f"s3://{s3_bucket}/{result_path}"
+    path_prefix = f"{module}/{benchmark_name}/{sub_folder}/"
+    s3_path_to_csv = find_s3_file(s3_bucket=s3_bucket, prefix=path_prefix, file="results.csv")
+    results = pd.read_csv(s3_path_to_csv)
     metrics_list = []
     instance_id = get_instance_id(job_id)
-    s3_path_to_csv = f"{path_prefix}/results.csv"
-    results = pd.read_csv(s3_path_to_csv)
-    for metric in metrics:
+    metrics_data = cloudwatch_client.list_metrics(
+        Dimensions=[
+            {"Name": "InstanceId", "Value": instance_id},
+        ],
+        Namespace=namespace,
+    )["Metrics"]
+    metrics_pool = [item["MetricName"] for item in metrics_data]
+
+    for metric in metrics_pool:
         for i in results.index:
             framework, dataset, utc, train_time, predict_time, fold = (
                 results["framework"][i],
@@ -174,17 +199,30 @@ def get_metrics(
                 results["fold"][i],
             )
             utc_dt = datetime.strptime(utc, "%Y-%m-%dT%H:%M:%S")
+            period = int((timedelta(seconds=train_time) + timedelta(seconds=predict_time)).total_seconds())
+            if period < 60:
+                period = 60
+            elif period % 60 != 0:
+                period = (period // 60) * 60  # Round down to the nearest multiple of 60
+
             training_util = get_instance_util(
-                "AWS/EC2",
-                instance_id,
-                f"{metric}",
-                utc_dt - timedelta(minutes=train_time),
-                utc_dt - timedelta(minutes=predict_time),
+                namespace=namespace,
+                instance_id=instance_id,
+                metric=metric,
+                start_time=utc_dt,
+                end_time=utc_dt + timedelta(seconds=train_time) + timedelta(seconds=predict_time),
+                period=period,
+                cloudwatch_client=cloudwatch_client,
             )
             predict_util = get_instance_util(
-                "AWS/EC2", instance_id, f"{metric}", utc_dt - timedelta(minutes=predict_time), utc_dt
+                namespace=namespace,
+                instance_id=instance_id,
+                metric=metric,
+                start_time=utc_dt - timedelta(minutes=predict_time),
+                end_time=utc_dt,
+                period=period,
+                cloudwatch_client=cloudwatch_client,
             )
-            # print(training_util, predict_util)
             if training_util["Datapoints"]:
                 metrics_list.append(format_metrics(training_util, framework, dataset, fold, "Training"))
             if predict_util["Datapoints"]:
@@ -192,27 +230,29 @@ def get_metrics(
     return metrics_list
 
 
-def results_to_csv(metrics_list: list):
+def save_results(metrics_list: list, path: str):
     """
     Writes the formatted dictionary of metrics to a csv to pass into `autogluon-dashboard`.
     Parameters
     ----------
     metrics_list: list,
-        List of EC2 metrics to write to CSV
+        List of hardware metrics to write to CSV
+    path: str:
+        Path to save file
     """
     csv_headers = ["framework", "dataset", "mode", "fold", "metric", "statistic_type", "statistic_value", "unit"]
-    file_dir = os.path.dirname(__file__)
-    csv_location = os.path.join(file_dir, "hardware_metrics.csv")
+    csv_location = os.path.join(path, "hardware_metrics.csv")
     with open(csv_location, "w", newline="") as csvFile:
         writer = csv.DictWriter(csvFile, fieldnames=csv_headers)
         writer.writeheader()
         writer.writerows(metrics_list)
+    return csv_location
 
 
 def get_hardware_metrics(
     config_file: str = typer.Argument(help="Path to YAML config file containing job ids."),
     s3_bucket: str = typer.Argument(help="Name of the S3 bucket to which the benchmark results were outputted."),
-    module: str = typer.Argument(help="Can be one of ['tabular', 'multimodal']."),
+    module: str = typer.Argument(help="Can be one of ['tabular', 'timeseries', 'multimodal']."),
     benchmark_name: str = typer.Argument(
         help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
     ),
@@ -241,12 +281,21 @@ def get_hardware_metrics(
     global aws_account_id, aws_account_region
     aws_account_id = config.get("CDK_DEPLOY_ACCOUNT")
     aws_account_region = config.get("CDK_DEPLOY_REGION")
+
+    cloudwatch_client = boto3.client("cloudwatch", region_name=aws_account_region)
+
     metrics_list = []
     for job_id in job_ids:
-        sub_folder = config["job_configs"][f"{job_id}"].split("/")[5].replace("_split", "").replace(".yaml", "")
-        metrics_list.append(
-            get_metrics(
-                job_id, ["CPUUtilization", "EBSWriteOps", "EBSReadOps"], s3_bucket, module, benchmark_name, sub_folder
-            )
+        sub_folder = config["job_configs"][f"{job_id}"].split("/")[-1].split(".")[0].replace("_split", "")
+        metrics_list += get_metrics(
+            job_id=job_id,
+            s3_bucket=s3_bucket,
+            module=module,
+            benchmark_name=benchmark_name,
+            sub_folder=sub_folder,
+            cloudwatch_client=cloudwatch_client,
         )
-    results_to_csv(metrics_list)
+    if metrics_list:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            local_path = save_results(metrics_list, temp_dir)
+            upload_to_s3(s3_bucket=s3_bucket, s3_dir=f"{module}/{benchmark_name}", local_path=local_path)
