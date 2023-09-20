@@ -1,0 +1,20 @@
+BATCH_STACK_NAME: ag-bench-batch-stack
+BLOCK_DEVICE_VOLUME: 100
+CDK_DEPLOY_ACCOUNT: 123456789
+CDK_DEPLOY_REGION: us-east-2
+COMPUTE_ENV_MAXV_CPUS: 10
+CONTAINER_GPU: 1
+CONTAINER_MEMORY: 100
+CONTAINER_VCPU: 8
+DATA_BUCKET: null
+INSTANCE_TYPES:
+- g4dn.2xlarge
+LAMBDA_FUNCTION_NAME: ag-bench-batch-job-function
+METRICS_BUCKET: benchmark-test
+STACK_NAME_PREFIX: ag-bench
+STACK_NAME_TAG: benchmark
+STATIC_RESOURCE_STACK_NAME: ag-bench-static-resource-stack
+VPC_NAME: null
+job_configs:
+  123456-abc-efg: s3://benchmark-test/configs/ag_bench_20230720T102030/ag_bench_20230720T102030_split_2d42d496266911ee8df28ee9311e6528.yaml
+  010101-xxx-zzz: s3://benchmark-test/configs/ag_bench_20230720T102030/ag_bench_20230720T102030_split_2d794800266911ee8df28ee9311e6528.yaml
