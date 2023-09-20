@@ -67,6 +67,7 @@ def setup_mock(mocker, tmp_path, module="tabular"):
     mocker.patch("autogluon.bench.runbenchmark._get_benchmark_name", return_value="test_benchmark")
     mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
     mocker.patch("autogluon.bench.runbenchmark._dump_configs", return_value="test_dump")
+    mocker.patch("autogluon.bench.runbenchmark._dump_configs", return_value="test_dump")
     mocker.patch("os.environ.__setitem__")
 
     mock_deploy_stack = mocker.patch("autogluon.bench.runbenchmark.deploy_stack", return_value=infra_configs)
@@ -74,6 +75,7 @@ def setup_mock(mocker, tmp_path, module="tabular"):
     mock_invoke_lambda = mocker.patch("autogluon.bench.runbenchmark.invoke_lambda", return_value={})
 
     mock_wait_for_jobs = mocker.patch("autogluon.bench.runbenchmark.wait_for_jobs", return_value=[])
+    mock_get_hardware_metrics = mocker.patch("autogluon.bench.runbenchmark.get_hardware_metrics")
     mock_destroy_stack = mocker.patch("autogluon.bench.runbenchmark.destroy_stack")
     mock_mount = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
     mock_umount = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
@@ -86,6 +88,7 @@ def setup_mock(mocker, tmp_path, module="tabular"):
         "mock_invoke_lambda": mock_invoke_lambda,
         "mock_wait_for_jobs": mock_wait_for_jobs,
         "mock_destroy_stack": mock_destroy_stack,
+        "mock_get_hardware_metrics": mock_get_hardware_metrics,
         "mock_mount": mock_mount,
         "mock_umount": mock_umount,
         "cdk_context": cdk_context,
@@ -177,7 +180,14 @@ def test_invoke_lambda(mocker):
 def test_run_aws_mode(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=None, skip_setup=True)
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch=None,
+        skip_setup=True,
+        save_hardware_metrics=False,
+    )
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
@@ -185,13 +195,21 @@ def test_run_aws_mode(mocker, tmp_path):
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
     setup["mock_wait_for_jobs"].assert_not_called()
+    setup["mock_get_hardware_metrics"].assert_not_called(),
     setup["mock_destroy_stack"].assert_not_called()
 
 
 def test_run_aws_mode_remove_resources(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
 
-    run(setup["config_file"], remove_resources=True, wait=False, dev_branch=None, skip_setup=True)
+    run(
+        setup["config_file"],
+        remove_resources=True,
+        wait=False,
+        dev_branch=None,
+        skip_setup=True,
+        save_hardware_metrics=False,
+    )
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
@@ -212,7 +230,14 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
 def test_run_aws_mode_wait(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
 
-    run(setup["config_file"], remove_resources=False, wait=True, dev_branch=None, skip_setup=True)
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=True,
+        dev_branch=None,
+        skip_setup=True,
+        save_hardware_metrics=False,
+    )
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
@@ -221,13 +246,21 @@ def test_run_aws_mode_wait(mocker, tmp_path):
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
     setup["mock_wait_for_jobs"].assert_called_once_with(config_file="test_dump")
+    setup["mock_get_hardware_metrics"].assert_not_called()
 
 
 def test_run_aws_mode_dev_branch(mocker, tmp_path):
     setup = setup_mock(mocker, tmp_path)
     dev_branch = "dev_branch_url"
 
-    run(setup["config_file"], remove_resources=False, wait=False, dev_branch=dev_branch, skip_setup=True)
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch=dev_branch,
+        skip_setup=True,
+        save_hardware_metrics=False,
+    )
 
     assert os.environ["AG_BENCH_DEV_URL"] == dev_branch
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
@@ -248,6 +281,7 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
         wait=False,
         dev_branch="https://git_url#git_branch",
         skip_setup=True,
+        save_hardware_metrics=False,
     )
     assert os.environ["AG_BENCH_DEV_URL"] == "https://git_url#git_branch"
     assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular"
@@ -273,6 +307,7 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
         wait=False,
         dev_branch="https://git_url#git_branch",
         skip_setup=True,
+        save_hardware_metrics=False,
     )
     assert setup["custom_configs"]["custom_dataloader"]["dataloader_file"] == "dataloaders/dataset.py"
     assert setup["custom_configs"]["custom_dataloader"]["dataset_config_file"] == "dataloaders/datasets.yaml"
@@ -296,7 +331,14 @@ def test_run_local_mode(mocker, tmp_path):
     mocker.patch("autogluon.bench.runbenchmark.formatted_time", return_value="test_time")
     mock_run_benchmark = mocker.patch("autogluon.bench.runbenchmark.run_benchmark")
 
-    run(str(config_file), remove_resources=False, wait=False, dev_branch=None, skip_setup=False)
+    run(
+        str(config_file),
+        remove_resources=False,
+        wait=False,
+        dev_branch=None,
+        skip_setup=False,
+        save_hardware_metrics=False,
+    )
 
     mock_open.assert_called_with(str(config_file), "r")
     mock_run_benchmark.assert_called_with(

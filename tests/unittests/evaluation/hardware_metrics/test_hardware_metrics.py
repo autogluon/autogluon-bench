@@ -1,7 +1,7 @@
 import datetime
 import os
 import unittest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pandas as pd
 import yaml
@@ -84,11 +84,12 @@ class TestHardwareMetrics(unittest.TestCase):
         cloudwatch_client.get_metric_statistics.return_value = mock_cloudwatch_response
         self.assertEqual(
             get_instance_util(
-                "namespace",
-                "1234",
-                "CPUUtilization",
-                datetime.datetime(2023, 7, 12, 17, 39),
-                datetime.datetime(2023, 7, 12, 16, 39),
+                namespace="namespace",
+                instance_id="1234",
+                metric="CPUUtilization",
+                start_time=datetime.datetime(2023, 7, 12, 17, 39),
+                end_time=datetime.datetime(2023, 7, 12, 16, 39),
+                cloudwatch_client=cloudwatch_client,
             ),
             cloudwatch_client.get_metric_statistics.return_value,
         )
@@ -96,43 +97,60 @@ class TestHardwareMetrics(unittest.TestCase):
     @patch("pandas.read_csv")
     @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.get_instance_id")
     @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.get_instance_util")
-    def test_get_metrics(self, mock_instance_util, mock_instance_id, mock_csv):
+    @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.find_s3_file")
+    def test_get_metrics(self, mock_s3_file, mock_instance_util, mock_instance_id, mock_csv):
         mock_csv.return_value = mock_results_df
         mock_instance_id.return_value = "12345"
         job_id = list(config.get("job_configs", {}).keys())[0]
         mock_instance_util.return_value = mock_cloudwatch_response
+        mock_list_metrics_return = {
+            "Metrics": [
+                {"MetricName": "CPUUtilization"},
+            ]
+        }
+        mock_cloudwatch_client = MagicMock()
+        mock_cloudwatch_client.list_metrics.return_value = mock_list_metrics_return
+
         metrics_list = get_metrics(
-            job_id, ["CPUUtilization"], "some bucket", "tabular", "some_benchmark", "test_folder"
+            job_id=job_id,
+            s3_bucket="some bucket",
+            module="tabular",
+            benchmark_name="some_benchmark",
+            sub_folder="test_folder",
+            cloudwatch_client=mock_cloudwatch_client,
         )
         self.assertEqual(metrics_list, metrics)
 
+    @patch("tempfile.TemporaryDirectory")
+    @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.save_results")
+    @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.upload_to_s3")
     @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.get_metrics")
-    @patch("autogluon.bench.eval.hardware_metrics.hardware_metrics.results_to_csv")
-    def test_get_hardware_metrics(self, mock_csv, mock_metrics):
+    @patch("boto3.client")
+    def test_get_hardware_metrics(self, mock_boto3, mock_metrics, mock_upload_to_s3, mock_save_results, mock_temp_dir):
+        mock_metrics.return_value = ["metrics"]
         get_hardware_metrics(config_file, "some bucket", "tabular", "some_benchmark")
-        mock_metrics.return_value = "metrics"
-        mock_csv.return_value = "csv"
         job_ids = get_job_ids(config)
         calls = [
             call(
-                job_ids[0],
-                ["CPUUtilization", "EBSWriteOps", "EBSReadOps"],
-                "some bucket",
-                "tabular",
-                "some_benchmark",
-                "ag_bench_20230720T102030_2d42d496266911ee8df28ee9311e6528",
+                job_id=job_ids[0],
+                s3_bucket="some bucket",
+                module="tabular",
+                benchmark_name="some_benchmark",
+                sub_folder="ag_bench_20230720T102030_2d42d496266911ee8df28ee9311e6528",
+                cloudwatch_client=ANY,
             ),
             call(
-                job_ids[1],
-                ["CPUUtilization", "EBSWriteOps", "EBSReadOps"],
-                "some bucket",
-                "tabular",
-                "some_benchmark",
-                "ag_bench_20230720T102030_2d794800266911ee8df28ee9311e6528",
+                job_id=job_ids[1],
+                s3_bucket="some bucket",
+                module="tabular",
+                benchmark_name="some_benchmark",
+                sub_folder="ag_bench_20230720T102030_2d794800266911ee8df28ee9311e6528",
+                cloudwatch_client=ANY,
             ),
         ]
         mock_metrics.assert_has_calls(calls, any_order=False)
-        assert mock_metrics.call_count == 2
+        mock_save_results.assert_called_once()
+        mock_upload_to_s3.assert_called_once()
 
     def test_invalid_config_file(self):
         with self.assertRaises(ValueError):
