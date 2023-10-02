@@ -1,7 +1,7 @@
-from collections import Counter
 import copy
 import logging
 import os
+from collections import Counter
 from typing import Tuple
 
 import pandas as pd
