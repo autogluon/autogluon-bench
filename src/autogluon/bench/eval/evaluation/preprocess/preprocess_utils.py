@@ -28,6 +28,13 @@ def fill_missing_results_with_default(framework_nan_fill: str, frameworks_to_fil
     Fill missing results with the result of `framework_nan_fill` framework.
     """
     assert framework_nan_fill is not None
+
+    frameworks_valid = list(results_raw["framework"].unique())
+    assert framework_nan_fill in frameworks_valid
+
+    if frameworks_to_fill is None:
+        frameworks_to_fill = [f for f in frameworks_valid if f != frameworks_valid]
+
     results_nan_fill = results_raw[results_raw["framework"] == framework_nan_fill]
     results_nan_fill = results_nan_fill[["dataset", "fold", "metric_score", "metric_error", "problem_type"]]
     results_nan_fill["time_train_s"] = 3600

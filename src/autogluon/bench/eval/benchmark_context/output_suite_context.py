@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 import os
 from typing import List, Optional, Set
@@ -172,7 +174,7 @@ class OutputSuiteContext:
 
         return out
 
-    def aggregate_results(self, results_list: Optional[List[pd.DataFrame]] = None) -> pd.DataFrame:
+    def aggregate_results(self, results_list: List[pd.DataFrame] | None = None) -> pd.DataFrame:
         if results_list is None:
             results_list = self.load_results()
         results_df = pd.concat(results_list, ignore_index=True)
@@ -201,8 +203,9 @@ class OutputSuiteContext:
         )
         return result
 
-    def aggregate_leaderboards(self) -> pd.DataFrame:
-        leaderboards_list = self.load_leaderboards()
+    def aggregate_leaderboards(self, leaderboards_list: List[pd.DataFrame] | None = None) -> pd.DataFrame:
+        if leaderboards_list is None:
+            leaderboards_list = self.load_leaderboards()
         leaderboards_df = pd.concat(leaderboards_list, ignore_index=True)
         return leaderboards_df
 
@@ -321,6 +324,11 @@ class OutputSuiteContext:
                 if k not in aggregated_pred_proba[task_name][fold]:
                     aggregated_pred_proba[task_name][fold][k] = {}
                 for m, pred_proba in zeroshot_metadata[k].items():
+                    if aggregated_ground_truth[task_name][fold]["problem_type"] == "binary":
+                        if isinstance(pred_proba, pd.DataFrame):
+                            assert len(pred_proba.columns) == 2
+                            pred_proba = pred_proba[1]
+                        assert isinstance(pred_proba, pd.Series)
                     aggregated_pred_proba[task_name][fold][k][m] = pred_proba
         return aggregated_pred_proba, aggregated_ground_truth
 
@@ -337,7 +345,6 @@ def _with_seq(func, input_list: list, kwargs=None, allow_exception=False, except
             try:
                 return func(*args, **kw)
             except:
-                print("yo")
                 return exception_default
 
     else:
@@ -367,7 +374,6 @@ def _with_ray(
             try:
                 return func(*args, **kw)
             except:
-                print("yo")
                 return exception_default
 
     else:

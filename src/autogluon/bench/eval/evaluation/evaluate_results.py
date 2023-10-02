@@ -105,9 +105,7 @@ def evaluate(
     elif len(set(frameworks)) != len(frameworks):
         d = Counter(frameworks)
         d = {k: v for k, v in d.items() if v > 1}
-        raise AssertionError("Framework duplicate detected. Frameworks must be unique.\n"
-                             "Framework counts:\n"
-                             f"{d}")
+        raise AssertionError("Framework duplicate detected. Frameworks must be unique.\n" "Framework counts:\n" f"{d}")
     results_raw = results_raw[results_raw[FRAMEWORK].isin(set(frameworks))]
     print(f"Filtered to only valid frameworks: {len(frameworks)} frameworks")
     if len(results_raw) == 0:
