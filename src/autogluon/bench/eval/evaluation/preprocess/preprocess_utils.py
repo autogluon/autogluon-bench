@@ -56,11 +56,7 @@ def fill_missing_results_with_default(framework_nan_fill: str, frameworks_to_fil
         results_nan_fill_f = results_nan_fill_f.reset_index()
         results_nan_fill_f["framework"] = f
         results_nan_fills.append(results_nan_fill_f)
-        print(f)
-        print(results_nan_fill_f)
-        print(a)
     results_nan_fills = pd.concat(results_nan_fills, axis=0)
-    print(results_nan_fills)
     results_raw = pd.concat([results_raw, results_nan_fills], axis=0)
     return results_raw
 
