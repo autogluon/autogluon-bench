@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import warnings
 from collections import defaultdict
@@ -22,8 +24,9 @@ class BenchmarkEvaluator:
         use_tid_as_dataset_name: bool = False,
         filter_errors: bool = False,
         framework_nan_fill: Optional[str] = None,
-        task_metadata: str = "task_metadata_289.csv",
+        task_metadata: str = "task_metadata.csv",
         filter_columns: bool = True,
+        convert_infer_time_to_per_row: bool = True,
         columns_to_keep: Optional[List[str]] = None,
         columns_to_keep_extra: Optional[List[str]] = None,
     ):
@@ -109,6 +112,7 @@ class BenchmarkEvaluator:
                 f"\n\tcolumn counts:\n\t\t{col_count_dict}"
             )
 
+        self.convert_infer_time_to_per_row = convert_infer_time_to_per_row
         self.results_dir = results_dir
         self.results_dir_input = (
             results_dir + "input/prepared/openml/" if results_dir_input is None else results_dir_input
@@ -127,9 +131,15 @@ class BenchmarkEvaluator:
         else:
             self._columns_to_keep = None
 
-    def _load_results(self, paths: list, clean_data: bool = False, banned_datasets: list = None) -> pd.DataFrame:
-        paths = [path if is_s3_url(path) else os.path.join(self.results_dir_input, path) for path in paths]
-        results_raw = pd.concat([pd.read_csv(path) for path in paths], ignore_index=True, sort=True)
+    def _load_results(
+        self, paths: list | pd.DataFrame, clean_data: bool = False, banned_datasets: list = None
+    ) -> pd.DataFrame:
+        """paths can be either a list of file paths or a pandas DataFrame"""
+        if isinstance(paths, list):
+            results_raw = self.load_results_raw(paths=paths)
+        else:
+            assert isinstance(paths, pd.DataFrame)
+            results_raw = paths
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
             results_raw[TIME_INFER_S][results_raw[TIME_INFER_S] == 0] = 0.001
@@ -145,6 +155,10 @@ class BenchmarkEvaluator:
         results_raw = results_raw.drop_duplicates(subset=[FRAMEWORK, DATASET, FOLD])
         self._check_results_valid(results_raw=results_raw)
         return results_raw
+
+    def load_results_raw(self, paths: list) -> pd.DataFrame:
+        paths = [path if is_s3_url(path) else self.results_dir_input + path for path in paths]
+        return pd.concat([pd.read_csv(path) for path in paths], ignore_index=True, sort=True)
 
     def _check_results_valid(self, results_raw: pd.DataFrame):
         if results_raw[METRIC_ERROR].min() < 0:
@@ -222,6 +236,10 @@ class BenchmarkEvaluator:
         return load_task_metadata(path=self._task_metadata_path)
 
     def _clean_data(self, results_raw):
+        assert self._task_metadata_path is not None, (
+            f"Cannot clean data if task_metadata is None! "
+            f"Either set `clean_data=False` or specify `task_metadata` during init."
+        )
         task_metadata = self._load_task_metadata()
         task_metadata[DATASET] = task_metadata["name"]
         # FIXME: TEMP
@@ -239,7 +257,8 @@ class BenchmarkEvaluator:
         )
 
         # FIXME: TEMP
-        results_raw[TIME_INFER_S] = results_raw[TIME_INFER_S] / results_raw["NumberOfInstances"] * 10
+        if self.convert_infer_time_to_per_row:
+            results_raw[TIME_INFER_S] = results_raw[TIME_INFER_S] / results_raw["NumberOfInstances"] * 10
         return results_raw
 
     def _update_infer_batch_size(self, results_raw: pd.DataFrame, infer_batch_size: int):

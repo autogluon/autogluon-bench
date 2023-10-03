@@ -106,7 +106,7 @@ def clean_and_save_results(
         else:
             save_path = os.path.join(results_dir_output, f"{out_path_prefix}{out_path_suffix}.csv")
         save_pd.save(path=save_path, df=results_raw)
-        logger.info(f"Cleaned results are saved in file: {save_path}")
+        logger.log(30, f"Cleaned results are saved in file: {save_path}")
     return results_raw
 
 

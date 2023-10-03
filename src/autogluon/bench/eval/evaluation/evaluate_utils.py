@@ -29,6 +29,8 @@ def compare_frameworks(
             banned_datasets=banned_datasets,
             folds_to_keep=folds_to_keep,
         )
+        if len(results) == 0:
+            raise AssertionError(f"No results exist after filtering errors!")
     else:
         results = results_raw.copy()
 
@@ -505,3 +507,4 @@ def compute_win_rate_per_dataset(
     out_df = out_df.sort_values(by=["winrate", "bestdiff", "folds", "tierate"], ascending=[False, False, False, True])
     print(f"winrate {f1} vs {f2}")
     print(out_df)
+    return out_df

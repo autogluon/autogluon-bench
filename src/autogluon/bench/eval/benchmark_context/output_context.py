@@ -104,12 +104,16 @@ class OutputContext:
     def load_infer_speed(self) -> pd.DataFrame:
         return load_pd.load(self.path_infer_speed)
 
-    def load_zeroshot_metadata(self, max_size_mb: float = None) -> dict:
+    def get_zeroshot_metadata_size_bytes(self) -> int:
         s3_bucket = self.get_s3_bucket()
         s3_prefix = self.get_s3_prefix(path=self.path_zeroshot_metadata)
         s3 = boto3.client("s3")
         response = s3.head_object(Bucket=s3_bucket, Key=s3_prefix)
         size = response["ContentLength"]
+        return size
+
+    def load_zeroshot_metadata(self, max_size_mb: float = None) -> dict:
+        size = self.get_zeroshot_metadata_size_bytes()
 
         size_og_mb = round(size / 1e6, 3)
 

@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+from collections import Counter
 from typing import Tuple
 
 import pandas as pd
@@ -102,7 +103,9 @@ def evaluate(
     if frameworks is None:
         frameworks = sorted(list(results_raw[FRAMEWORK].unique()))
     elif len(set(frameworks)) != len(frameworks):
-        raise AssertionError("Framework duplicate detected. Frameworks must be unique.")
+        d = Counter(frameworks)
+        d = {k: v for k, v in d.items() if v > 1}
+        raise AssertionError("Framework duplicate detected. Frameworks must be unique.\n" "Framework counts:\n" f"{d}")
     results_raw = results_raw[results_raw[FRAMEWORK].isin(set(frameworks))]
     print(f"Filtered to only valid frameworks: {len(frameworks)} frameworks")
     if len(results_raw) == 0:

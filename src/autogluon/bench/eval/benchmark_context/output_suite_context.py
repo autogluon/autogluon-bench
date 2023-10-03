@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import copy
+import os
 from typing import List, Optional, Set
 
 import pandas as pd
@@ -35,6 +38,7 @@ class OutputSuiteContext:
         include_infer_speed: bool = False,
         keep_params: bool = True,
         mode: str = "seq",
+        max_workers: int = 64,
     ):
         """
         Parameters
@@ -60,6 +64,10 @@ class OutputSuiteContext:
             If 'ray' is installed, this will be much faster as data loading will be parallelized.
             'seq' (sequential) should work on all systems, but will be slower than 'ray'.
             'seq' will work properly in a debugger, whereas 'ray' is difficult to debug.
+        max_workers : int, default = 64
+            If `mode` is set to 'ray', this restricts the maximum number of ray workers to this value.
+            No effect if the number of logical cores is less than this value.
+            Values greater than 64 can lead to strange errors likely due to S3 service throttling.
         """
         self._path = path
         self.contains = contains
@@ -73,6 +81,7 @@ class OutputSuiteContext:
             print(f"WARNING: No output contexts found via path={self._path}, contains={self.contains}")
         self.include_infer_speed = include_infer_speed
         self.mode = mode
+        self.max_workers = max_workers
         if columns_to_keep is None:
             columns_to_keep = DEFAULT_COLUMNS_TO_KEEP
         columns_to_keep = copy.deepcopy(columns_to_keep)
@@ -111,6 +120,7 @@ class OutputSuiteContext:
             kwargs=kwargs,
             allow_exception=allow_exception,
             exception_default=exception_default,
+            num_cpus=self.max_workers,
         )
 
     def load_results(self) -> List[pd.DataFrame]:
@@ -132,6 +142,13 @@ class OutputSuiteContext:
             allow_exception=allow_exception,
         )
 
+    def get_zeroshot_metadata_size_bytes(self, allow_exception=False) -> List[int]:
+        return self._loop_func(
+            func=OutputContext.get_zeroshot_metadata_size_bytes,
+            input_list=self.output_contexts,
+            allow_exception=allow_exception,
+        )
+
     def filter_failures(self):
         amlb_info_list = self.get_amlb_info()
         output_contexts_valid = []
@@ -141,16 +158,23 @@ class OutputSuiteContext:
         print(f"Filtered Failures: {len(output_contexts_valid)}/{len(self.output_contexts)} valid")
         self.output_contexts = output_contexts_valid
 
-    def filter(self, filter_lst: List[bool]):
+    def filter(self, filter_lst: List[bool], inplace=True):
         """
         Filter self.output_contexts by a boolean list. Only keep contexts where the boolean is True.
         """
-        assert len(filter_lst) == len(self.output_contexts)
-        self.output_contexts = [
-            output_context for output_context, is_valid in zip(self.output_contexts, filter_lst) if is_valid is True
+        if not inplace:
+            out = copy.deepcopy(self)
+        else:
+            out = self
+
+        assert len(filter_lst) == len(out.output_contexts)
+        out.output_contexts = [
+            output_context for output_context, is_valid in zip(out.output_contexts, filter_lst) if is_valid is True
         ]
 
-    def aggregate_results(self, results_list: Optional[List[pd.DataFrame]] = None) -> pd.DataFrame:
+        return out
+
+    def aggregate_results(self, results_list: List[pd.DataFrame] | None = None) -> pd.DataFrame:
         if results_list is None:
             results_list = self.load_results()
         results_df = pd.concat(results_list, ignore_index=True)
@@ -179,8 +203,9 @@ class OutputSuiteContext:
         )
         return result
 
-    def aggregate_leaderboards(self) -> pd.DataFrame:
-        leaderboards_list = self.load_leaderboards()
+    def aggregate_leaderboards(self, leaderboards_list: List[pd.DataFrame] | None = None) -> pd.DataFrame:
+        if leaderboards_list is None:
+            leaderboards_list = self.load_leaderboards()
         leaderboards_df = pd.concat(leaderboards_list, ignore_index=True)
         return leaderboards_df
 
@@ -299,6 +324,11 @@ class OutputSuiteContext:
                 if k not in aggregated_pred_proba[task_name][fold]:
                     aggregated_pred_proba[task_name][fold][k] = {}
                 for m, pred_proba in zeroshot_metadata[k].items():
+                    if aggregated_ground_truth[task_name][fold]["problem_type"] == "binary":
+                        if isinstance(pred_proba, pd.DataFrame):
+                            assert len(pred_proba.columns) == 2
+                            pred_proba = pred_proba[1]
+                        assert isinstance(pred_proba, pd.Series)
                     aggregated_pred_proba[task_name][fold][k][m] = pred_proba
         return aggregated_pred_proba, aggregated_ground_truth
 
@@ -315,7 +345,6 @@ def _with_seq(func, input_list: list, kwargs=None, allow_exception=False, except
             try:
                 return func(*args, **kw)
             except:
-                print("yo")
                 return exception_default
 
     else:
@@ -326,7 +355,14 @@ def _with_seq(func, input_list: list, kwargs=None, allow_exception=False, except
     return out_list
 
 
-def _with_ray(func, input_list: list, kwargs=None, allow_exception=False, exception_default=None) -> list:
+def _with_ray(
+    func,
+    input_list: list,
+    kwargs=None,
+    allow_exception=False,
+    exception_default=None,
+    num_cpus: int = None,
+) -> list:
     """
     For-loop through a function call with ray
     """
@@ -338,14 +374,18 @@ def _with_ray(func, input_list: list, kwargs=None, allow_exception=False, except
             try:
                 return func(*args, **kw)
             except:
-                print("yo")
                 return exception_default
 
     else:
         _func = func
 
     if not ray.is_initialized():
-        ray.init()
+        num_cpus_system = os.cpu_count()
+        if num_cpus is not None and num_cpus_system > num_cpus:
+            # Restrict to avoid strange errors, probably S3 throttling
+            ray.init(num_cpus=num_cpus)
+        else:
+            ray.init()
     remote_func = ray.remote(_func)
     results = []
     for i in input_list:

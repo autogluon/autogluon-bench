@@ -122,6 +122,7 @@ def evaluate(
     clean_data: bool = True,
     use_tid_as_dataset_name: bool = True,
     filter_errors: bool = False,
+    task_metadata: str = None,
 ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, pd.DataFrame]):
     """
     # TODO: Add description
@@ -221,13 +222,6 @@ def evaluate(
     if results_dir_output is None:
         results_dir_output = os.path.join(results_dir, f"output/openml/{output_suffix}/")
 
-    if folds_to_keep is None:
-        folds_to_keep = [i for i in range(10)]
-
-    frameworks_compare_vs_all = []
-    if len(frameworks_compare_vs_all) == 0:
-        frameworks_compare_vs_all = [frameworks_run[0]]
-
     benchmark_evaluator = BenchmarkEvaluator(
         results_dir_input=results_dir_input,
         results_dir_output=results_dir_output,
@@ -235,6 +229,7 @@ def evaluate(
         use_tid_as_dataset_name=use_tid_as_dataset_name,
         framework_nan_fill=framework_nan_fill,
         filter_errors=filter_errors,
+        task_metadata=task_metadata,
     )
 
     results_raw = benchmark_evaluator.load_data(
@@ -248,10 +243,22 @@ def evaluate(
         clean_data=clean_data,
     )
 
+    if frameworks_run is None:
+        frameworks_run = sorted(list(results_raw["framework"].unique()))
+
+    frameworks_compare_vs_all = []
+    if len(frameworks_compare_vs_all) == 0:
+        frameworks_compare_vs_all = [frameworks_run[0]]
+
+    print("[")
+    for i in range(len(frameworks_run)):
+        print(f'\t"{frameworks_run[i]}",')
+    print("]")
+
     folds_to_keep = sorted(results_raw["fold"].unique())
 
     if len(frameworks_run) > 1:
-        compute_win_rate_per_dataset(
+        win_rate_per_dataset_df = compute_win_rate_per_dataset(
             f1=frameworks_run[0], f2=frameworks_run[1], results_raw=results_raw, folds=folds_to_keep
         )
     if compute_z_score and len(frameworks_run) > 1 and len(folds_to_keep) > 1:
