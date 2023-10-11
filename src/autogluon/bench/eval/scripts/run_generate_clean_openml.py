@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 from typing import List, Optional
@@ -62,18 +64,18 @@ def clean_amlb_results(
 
 
 def clean_and_save_results(
-    run_name,
-    results_dir="data/results/",
-    results_dir_input=None,
-    results_dir_output=None,
-    file_prefix="results_automlbenchmark",
-    run_name_in_input_path=True,
-    run_name_in_output_path=True,
-    save=True,
-    constraints=None,
-    out_path_prefix="openml_ag_",
-    out_path_suffix="",
-    framework_suffix_column="constraint",
+    run_name: str,
+    results_dir: str = "data/results/",
+    results_dir_input: str | None = None,
+    results_dir_output: str | None = None,
+    file_prefix: str | List[str] = "results_automlbenchmark",
+    run_name_in_input_path: bool = True,
+    run_name_in_output_path: bool = True,
+    save: bool = True,
+    constraints: List[str] | None = None,
+    out_path_prefix: str = "openml_ag_",
+    out_path_suffix: str = "",
+    framework_suffix_column: str = "constraint",
 ) -> pd.DataFrame:
     if results_dir_input is None:
         results_dir_input = os.path.join(results_dir, "input/raw/")
@@ -81,17 +83,21 @@ def clean_and_save_results(
         results_dir_output = os.path.join(results_dir, "input/prepared/openml/")
     run_name_str = f"_{run_name}" if run_name_in_input_path else ""
 
+    if not isinstance(file_prefix, list):
+        file_prefix = [file_prefix]
+
     results_list = []
     if constraints is None:
         constraints = [None]
     for constraint in constraints:
         constraint_str = f"_{constraint}" if constraint is not None else ""
-        results = preprocess_openml.preprocess_openml_input(
-            path=os.path.join(results_dir_input, f"{file_prefix}{constraint_str}{run_name_str}.csv"),
-            framework_suffix=constraint_str,
-            framework_suffix_column=framework_suffix_column,
-        )
-        results_list.append(results)
+        for prefix in file_prefix:
+            results = preprocess_openml.preprocess_openml_input(
+                path=os.path.join(results_dir_input, f"{prefix}{constraint_str}{run_name_str}.csv"),
+                framework_suffix=constraint_str,
+                framework_suffix_column=framework_suffix_column,
+            )
+            results_list.append(results)
 
     results_raw = pd.concat(results_list, ignore_index=True, sort=True)
 
