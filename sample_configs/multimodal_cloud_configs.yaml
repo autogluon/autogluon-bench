@@ -21,9 +21,16 @@ dataset_name:  # required
   - shopee
   - melbourne_airbnb
 
-#### Customizations ####
+### Customizations ####
 # custom_resource_dir: sample_configs/resources/  # path to custom multimodal_constraints.yaml and multimodal_frameworks.yaml
 # custom_dataloader:
 #     dataloader_file: sample_configs/dataloaders/vision_dataloader.py   # relative path to WORKDIR
-#     class_name: VisionDataLoaer
+#     class_name: VisionDataLoader
 #     dataset_config_file: sample_configs/dataloaders/vision_datasets.yaml 
+
+# custom_metrics:
+#     metrics_path: sample_configs/custom_metrics/sample_metrics.py
+#     function_name: f1_score
+#     # Other optional parameters can be set, ref: https://auto.gluon.ai/stable/tutorials/tabular/advanced/tabular-custom-metric.html
+#     optimum: 1
+#     greater_is_better: true
