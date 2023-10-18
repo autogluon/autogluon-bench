@@ -57,6 +57,7 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
                 "constraint": configs.get("constraint"),
                 "params": framework_configs.get("params"),
                 "custom_dataloader": configs.get("custom_dataloader"),
+                "custom_metrics": configs.get("custom_metrics"),
             },
         }
     elif module in AMLB_DEPENDENT_MODULES:
@@ -307,6 +308,19 @@ def update_custom_dataloader(configs: dict):
     return original_path, custom_dataloader_path
 
 
+def update_custom_metrics(configs: dict):
+    custom_metrics_path = configs["custom_metrics"]["metrics_path"]
+    original_path = os.path.dirname(custom_metrics_path)
+
+    metrics_file_name = os.path.basename(custom_metrics_path)
+    current_path = os.path.dirname(os.path.abspath(__file__))
+    custom_metrics_path = os.path.join(current_path, "custom_configs", "metrics")
+
+    configs["custom_metrics"]["metrics_path"] = f"metrics/{metrics_file_name}"
+
+    return original_path, custom_metrics_path
+
+
 def get_resource(configs: dict, resource_name: str):
     current_path = os.path.dirname(os.path.abspath(__file__))
     default_resource_file = os.path.join(current_path, "resources", f"{resource_name}.yaml")
@@ -416,6 +430,13 @@ def run(
                     paths.append(custom_dataloader_path)
                     _umount_if_needed(custom_dataloader_path)
                     _mount_dir(orig_path=original_path, new_path=custom_dataloader_path)
+
+                if configs.get("custom_metrics") is not None:
+                    original_path, custom_metrics_path = update_custom_metrics(configs=configs)
+                    paths.append(custom_metrics_path)
+                    _umount_if_needed(custom_metrics_path)
+                    _mount_dir(orig_path=original_path, new_path=custom_metrics_path)
+
                 framework_configs = get_framework_configs(configs=configs)
                 os.environ["GIT_URI"] = framework_configs["repo"]
                 os.environ["GIT_BRANCH"] = framework_configs.get("version", "stable")
