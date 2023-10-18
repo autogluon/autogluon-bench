@@ -15,10 +15,12 @@ from autogluon.bench.datasets.constants import (
     _TEXT_SIMILARITY,
 )
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
+from autogluon.core.metrics import make_scorer
 from autogluon.multimodal import MultiModalPredictor
 from autogluon.multimodal import __version__ as ag_version
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 def _flatten_dict(data):
@@ -47,6 +49,7 @@ def get_args():
     parser.add_argument(
         "--custom_dataloader", type=str, default=None, help="Custom dataloader to use in the benchmark."
     )
+    parser.add_argument("--custom_metrics", type=str, default=None, help="Custom metrics to use in the benchmark.")
 
     args = parser.parse_args()
     return args
@@ -57,6 +60,7 @@ def load_dataset(dataset_name: str, custom_dataloader: dict = None):  # dataset 
 
     Args:
         dataset_name (str): The name of the dataset to load.
+        custom_dataloader (dict): A dictionary containing information about a custom dataloader to use. Defaults to None.
 
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame]: A tuple containing the training and test datasets.
@@ -81,6 +85,36 @@ def load_dataset(dataset_name: str, custom_dataloader: dict = None):  # dataset 
         raise ModuleNotFoundError(f"Dataset Loader for dataset {dataset_name} is not available.")
 
     return data.values()
+
+
+def load_custom_metrics(custom_metrics: dict):
+    """Loads a custom metrics and convert it to AutoGluon Scorer.
+
+    Args:
+        custom_metrics (dict): A dictionary containing information about a custom metrics to use. Defaults to None.
+
+    Returns:
+        scorer (Scorer)
+            scorer: An AutoGluon Scorer object to pass to MultimodalPredictor.
+    """
+
+    try:
+        custom_metrics_path = custom_metrics.pop("metrics_path")
+        func_name = custom_metrics.pop("function_name")
+        spec = importlib.util.spec_from_file_location(func_name, custom_metrics_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        score_func = getattr(module, func_name)
+
+        scorer = make_scorer(
+            name=func_name,
+            score_func=score_func,
+            **custom_metrics,  # https://auto.gluon.ai/stable/tutorials/tabular/advanced/tabular-custom-metric.html
+        )
+    except:
+        raise ModuleNotFoundError(f"Unable to load custom metrics function {func_name} from {custom_metrics_path}.")
+
+    return scorer
 
 
 def save_metrics(metrics_path: str, metrics: dict):
@@ -119,6 +153,7 @@ def run(
     constraint: Optional[str] = None,
     params: Optional[dict] = {},
     custom_dataloader: Optional[dict] = None,
+    custom_metrics: Optional[dict] = None,
 ):
     """Runs the AutoGluon multimodal benchmark on a given dataset.
 
@@ -141,6 +176,13 @@ def run(
                                     class_name: DataLoaderClass
                                     dataset_config_file: path_to/dataset_config.yaml
                                     **kwargs (of DataLoaderClass)
+        custom_metrics (dict): A dictionary containing information about a custom metrics to use. Defaults to None.
+                                To define a custom metrics in the config file:
+
+                                custom_metrics:
+                                    metrics_path: path_to/metrics.py   # relative path to WORKDIR
+                                    function_name: custom_metrics_function
+                                    **kwargs (of autogluon.core.metrics.make_scorer)
     Returns:
         None
     """
@@ -172,6 +214,12 @@ def run(
         predictor_args["match_label"] = train_data.match_label
     elif train_data.problem_type == _OBJECT_DETECTION:
         predictor_args["sample_data_path"] = train_data.data
+
+    metrics_func = None
+    if custom_metrics is not None:
+        metrics_func = load_custom_metrics(custom_metrics=custom_metrics)
+        predictor_args["eval_metric"] = metrics_func
+
     predictor = MultiModalPredictor(**predictor_args)
 
     fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
@@ -185,8 +233,9 @@ def run(
     evaluate_args = {
         "data": test_data.data,
         "label": label_column,
-        "metrics": test_data.metric,
+        "metrics": test_data.metric if metrics_func is None else metrics_func,
     }
+
     if test_data.problem_type == _IMAGE_TEXT_SIMILARITY:
         evaluate_args["query_data"] = test_data.data[test_data.text_columns[0]].unique().tolist()
         evaluate_args["response_data"] = test_data.data[test_data.image_columns[0]].unique().tolist()
@@ -202,6 +251,7 @@ def run(
     else:
         framework, version = framework, ag_version
 
+    metric_name = test_data.metric if metrics_func is None else metrics_func.name
     metrics = {
         "id": "id/0",  # dummy id to make it align with amlb benchmark output
         "task": dataset_name,
@@ -210,8 +260,8 @@ def run(
         "version": version,
         "fold": 0,
         "type": predictor.problem_type,
-        "result": scores[test_data.metric],
-        "metric": test_data.metric,
+        "result": scores[metric_name],
+        "metric": metric_name,
         "utc": utc_time,
         "training_duration": training_duration,
         "predict_duration": predict_duration,
@@ -227,6 +277,8 @@ if __name__ == "__main__":
         args.params = json.loads(args.params)
     if args.custom_dataloader is not None:
         args.custom_dataloader = json.loads(args.custom_dataloader)
+    if args.custom_metrics is not None:
+        args.custom_metrics = json.loads(args.custom_metrics)
 
     run(
         dataset_name=args.dataset_name,
@@ -236,4 +288,5 @@ if __name__ == "__main__":
         constraint=args.constraint,
         params=args.params,
         custom_dataloader=args.custom_dataloader,
+        custom_metrics=args.custom_metrics,
     )
