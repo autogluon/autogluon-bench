@@ -6,7 +6,9 @@ import yaml
 from autogluon.bench.runbenchmark import get_job_status, get_kwargs, invoke_lambda, run, run_benchmark
 
 
-def setup_mock(mocker, tmp_path, module="tabular"):
+def setup_mock(
+    mocker, tmp_path: str, module: str = "tabular", custom_dataloader: dict = None, custom_metrics: dict = None
+):
     config_file = tmp_path / "run_configs.yaml"
     config_file.touch()
     # mock_open = mocker.patch("builtins.open", new_callable=mocker.mock_open)
@@ -38,11 +40,8 @@ def setup_mock(mocker, tmp_path, module="tabular"):
         module_configs = {
             "dataset_name": "data",
             "framework": "AutoGluon_stable",
-            "custom_dataloader": {
-                "dataloader_file": "path_to/dataset.py",
-                "class_name": "CustomDataset",
-                "dataset_config_file": "path_to/datasets.yaml",
-            },
+            "custom_dataloader": custom_dataloader,
+            "custom_metrics": custom_metrics,
         }
 
     yaml_value = {
@@ -117,6 +116,7 @@ def test_get_kwargs_multimodal():
             "constraint": None,
             "params": {"presets": "best_quality", "hyperparameters": {"optimization.max_epochs": 10}},
             "custom_dataloader": None,
+            "custom_metrics": None,
         },
     }
 
@@ -297,7 +297,12 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
 
 
 def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
-    setup = setup_mock(mocker, tmp_path, module="multimodal")
+    custom_dataloader = {
+        "dataloader_file": "path_to/dataset.py",
+        "class_name": "CustomDataset",
+        "dataset_config_file": "path_to/datasets.yaml",
+    }
+    setup = setup_mock(mocker, tmp_path, module="multimodal", custom_dataloader=custom_dataloader)
     mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
     umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
 
@@ -311,6 +316,28 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
     )
     assert setup["custom_configs"]["custom_dataloader"]["dataloader_file"] == "dataloaders/dataset.py"
     assert setup["custom_configs"]["custom_dataloader"]["dataset_config_file"] == "dataloaders/datasets.yaml"
+    assert umount_mock.call_count == 2
+    assert mount_mock.call_count == 1
+
+
+def test_run_aws_multimodal_custom_metrics(mocker, tmp_path):
+    custom_metrics = {
+        "metrics_path": "path_to/metrics.py",
+        "func_name": "custom_score",
+    }
+    setup = setup_mock(mocker, tmp_path, module="multimodal", custom_metrics=custom_metrics)
+    mount_mock = mocker.patch("autogluon.bench.runbenchmark._mount_dir")
+    umount_mock = mocker.patch("autogluon.bench.runbenchmark._umount_if_needed")
+
+    run(
+        setup["config_file"],
+        remove_resources=False,
+        wait=False,
+        dev_branch="https://git_url#git_branch",
+        skip_setup=True,
+        save_hardware_metrics=False,
+    )
+    assert setup["custom_configs"]["custom_metrics"]["metrics_path"] == "metrics/metrics.py"
     assert umount_mock.call_count == 2
     assert mount_mock.call_count == 1
 

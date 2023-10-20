@@ -60,6 +60,7 @@ class MultiModalBenchmark(Benchmark):
         constraint: Optional[str] = None,
         params: Optional[dict] = None,
         custom_dataloader: Optional[dict] = None,
+        custom_metrics: Optional[dict] = None,
     ):
         """
         Runs the benchmark on a given dataset.
@@ -73,7 +74,7 @@ class MultiModalBenchmark(Benchmark):
             framework (str): The name of the framework to use for the benchmark.
             constraint (str): The resource constraint used by benchmarking during AWS mode.
             params (str): The multimodal params.
-            custom_dataloader (Optional[dict], optional): A dictionary containing information about a custom dataloader to use. Defaults to None.
+            custom_dataloader (Optional[dict], None): A dictionary containing information about a custom dataloader to use. Defaults to None.
                                 To define a custom dataloader in the config file:
 
                                 custom_dataloader:
@@ -81,6 +82,13 @@ class MultiModalBenchmark(Benchmark):
                                     class_name: DataLoaderClass
                                     dataset_config_file: path_to/dataset_config.yaml
                                     **kwargs (of DataLoaderClass)
+            custom_metrics (Optional[dict], None): A dictionary containing information about a custom metrics to use. Defaults to None.
+                                To define a custom metrics in the config file:
+
+                                custom_metrics:
+                                    metrics_path: path_to/metrics.py   # relative path to WORKDIR
+                                    function_name: custom_metrics_function
+                                    **kwargs (of )
 
         Returns:
             None
@@ -106,6 +114,8 @@ class MultiModalBenchmark(Benchmark):
             command += ["--params", json.dumps(params)]
         if custom_dataloader is not None:
             command += ["--custom_dataloader", json.dumps(custom_dataloader)]
+        if custom_metrics is not None:
+            command += ["--custom_metrics", json.dumps(custom_metrics)]
         result = subprocess.run(command)
         if result.returncode != 0:
             sys.exit(1)
