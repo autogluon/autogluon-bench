@@ -73,7 +73,7 @@ For more customizations, please follow the [example custom configuration folder]
 
 For multimodal benchmarking, set the module to multimodal. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular or timeseries. Please refer to the [sample multimodal local run configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml). 
 
-We also support customizations on benchmarking framework and datasets by providing `custom_resource_dir` and `custom_dataloader`.
+We also support customizations on benchmarking framework, datasets, and metrics by providing `custom_resource_dir`, `custom_dataloader`, `custom_metrics`.
 
 To define custom frameworks, you can follow the [examples](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/resources/multimodal_frameworks.yaml).
 1. Create a folder under working directory, e.g. `custom_resources/`
@@ -89,6 +89,14 @@ To add more datasets to your benchmarking jobs. We support custom datasets with 
   5. Make sure you have the proper permission to download the dataset. If running in `AWS mode`, we support downloading from the S3 bucket specified as `DATA_BUCKET` in the `agbench run` configuration under the same AWS Batch deployment account.
 
   Please refer to [here](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/dataloaders) for more examples.
+
+Adding custom metrics is similar as adding data loaders. Internally, we convert the custom metrics into an [AutoGluon Scorer](https://auto.gluon.ai/stable/tutorials/tabular/advanced/tabular-custom-metric.html) using the `autogluon.core.metrics.make_scorer` function. Follow these steps to set up:
+  1. Create a folder under the working directory, e.g. `custom_metrics/`
+  2. Create a metrics script, `custom_metrics/metrics.py` which has a function defined that returns a metrics score.
+  4. Add `custom_metrics` in the `agbench run` configuration, where `metrics_path`, `function_name` are required. Aditional arguments can be added for the [make_scorer](https://github.com/autogluon/autogluon/blob/a33cc0e084c82cb207c6b98b13b49c1a377f3f0d/core/src/autogluon/core/metrics/__init__.py#L333-L335) function.
+
+  Please refer to [here](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/custom_metrics) for more examples.
+
 
 ## Run benchmarks on AWS
 
