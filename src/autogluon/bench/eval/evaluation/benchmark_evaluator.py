@@ -157,8 +157,15 @@ class BenchmarkEvaluator:
         return results_raw
 
     def load_results_raw(self, paths: list) -> pd.DataFrame:
-        paths = [path if is_s3_url(path) else self.results_dir_input + path for path in paths]
-        return pd.concat([pd.read_csv(path) for path in paths], ignore_index=True, sort=True)
+        dataframes = []
+        for path in paths:
+            path = path if is_s3_url(path) else os.path.join(self.results_dir_input, path)
+            dataframe = pd.read_csv(path)
+            dataframes.append(dataframe)
+        # Discarding extra folds
+        min_num_rows = min(len(df) for df in dataframes)
+        trimmed_dataframes = [df[:min_num_rows] for df in dataframes]
+        return pd.concat(trimmed_dataframes, ignore_index=True, sort=True)
 
     def _check_results_valid(self, results_raw: pd.DataFrame):
         if results_raw[METRIC_ERROR].min() < 0:
