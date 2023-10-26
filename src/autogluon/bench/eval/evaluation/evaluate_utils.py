@@ -508,3 +508,30 @@ def compute_win_rate_per_dataset(
     print(f"winrate {f1} vs {f2}")
     print(out_df)
     return out_df
+
+
+def convert_to_dataset_fold(df: pd.DataFrame, column_name="dataset", column_type=str) -> pd.DataFrame:
+    """
+    Converts "{dataset}_{fold}" dataset column to (dataset, fold) columns.
+
+    Parameters
+    ----------
+    df: pandas DataFrame of benchmark results
+        The DataFrame must have a column named `dataset` in the form "{dataset}_{fold}".
+        Example: "adult_5"
+    column_name: str, default = "dataset"
+        The name of the column to create alongside "fold".
+    column_type: type, default = str
+        The dtype of the column to create alongside "fold".
+
+    Returns
+    -------
+    Pandas DataFrame of benchmark results with the dataset column split into (dataset, fold) columns
+
+    """
+    df = df.copy(deep=True)
+    df["fold"] = df["dataset"].apply(lambda x: x.rsplit("_", 1)[1]).astype(int)
+    df[column_name] = df["dataset"].apply(lambda x: x.rsplit("_", 1)[0]).astype(column_type)
+    df_columns = list(df.columns)
+    df_columns = [column_name, "fold"] + [c for c in df_columns if c not in [column_name, "dataset", "fold"]]
+    return df[df_columns]  # Reorder so dataset and fold are the first two columns.

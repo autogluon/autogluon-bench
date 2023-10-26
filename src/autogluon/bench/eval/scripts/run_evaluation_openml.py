@@ -13,6 +13,7 @@ from autogluon.bench.eval.evaluation.evaluate_utils import (
     compute_stderr_z_stat,
     compute_stderr_z_stat_bulk,
     compute_win_rate_per_dataset,
+    convert_to_dataset_fold,
     graph_vs,
 )
 
@@ -106,12 +107,12 @@ def evaluate_amlb_results(
 # TODO: Rename to a more description function, or convert to a class
 def evaluate(
     *,
-    frameworks_run: List[str],
-    paths: List[str],
+    paths: List[str] | pd.DataFrame,
+    frameworks_run: List[str] | None = None,
     results_dir: str = "data/results/",
     results_dir_input: str = None,
     results_dir_output: str = None,
-    output_suffix: str = "ag_full_v5/1h8c",
+    output_suffix: str | None = "ag_full_v5/1h8c",
     framework_nan_fill: str | None = None,
     problem_type: List[str] | str | None = None,
     folds_to_keep: List[int] | None = None,
@@ -285,6 +286,10 @@ def evaluate(
         frameworks_compare_vs_all=frameworks_compare_vs_all,
         output_dir=benchmark_evaluator.results_dir_output,
     )
+
+    if treat_folds_as_datasets:
+        results_ranked_by_dataset = convert_to_dataset_fold(results_ranked_by_dataset)
+        results_ranked_by_dataset_all = convert_to_dataset_fold(results_ranked_by_dataset_all)
 
     return (
         results_ranked,
