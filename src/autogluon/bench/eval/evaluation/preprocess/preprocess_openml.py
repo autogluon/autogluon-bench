@@ -60,7 +60,7 @@ def preprocess_openml_input(
     cleaned_input = preprocess_utils.clean_result(raw_input, folds_to_keep=folds_to_keep, remove_invalid=False)
 
     cleaned_input["tid"] = [
-        int(part) for x in cleaned_input["id"] for part in re.split(r'[/_]', x)[-1:] if part.isdigit()
+        int(part) for x in cleaned_input["id"] for part in re.split(r"[/_]", x)[-1:] if part.isdigit()
     ]
 
     """
