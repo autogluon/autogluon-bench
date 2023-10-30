@@ -2,6 +2,8 @@ ARG AG_BENCH_BASE_IMAGE
 FROM $AG_BENCH_BASE_IMAGE
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV RUNNING_IN_DOCKER=true
+ENV AGBENCH_BASE=src/autogluon/bench/
 
 # Install essential packages and Python 3.9
 RUN apt-get update && \
@@ -22,7 +24,6 @@ RUN apt-get install -y python3-pip unzip curl git pciutils && \
     rm -rf /var/lib/apt/lists/* /usr/local/aws
 
 # Application-specific steps
-ARG AG_BENCH_DEV_URL
 ARG AG_BENCH_VERSION
 ARG CDK_DEPLOY_REGION
 ARG FRAMEWORK_PATH
@@ -45,19 +46,16 @@ RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \
         pip install autogluon.bench==$AG_BENCH_VERSION; \
     fi
 
-RUN chmod +x setup.sh entrypoint.sh hardware_utilization.sh \
+COPY ${AGBENCH_BASE}custom_configs ${AGBENCH_BASE}entrypoint.sh /app/
+RUN chmod +x entrypoint.sh \
     && if echo "$FRAMEWORK_PATH" | grep -q -E "tabular|timeseries"; then \
         if [ -n "$AMLB_USER_DIR" ]; then \
-            bash setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR $AMLB_FRAMEWORK $AMLB_USER_DIR; \
+            bash ${AGBENCH_BASE}${FRAMEWORK_PATH}setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR $AMLB_FRAMEWORK $AMLB_USER_DIR; \
         else \
-            bash setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR $AMLB_FRAMEWORK; \
+            bash ${AGBENCH_BASE}${FRAMEWORK_PATH}setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR $AMLB_FRAMEWORK; \
         fi; \
     elif echo "$FRAMEWORK_PATH" | grep -q "multimodal"; then \
-        if [ -n "$AG_BENCH_DEV_URL" ]; then \
-            bash setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR --AGBENCH_DEV_URL=$AG_BENCH_DEV_URL; \
-        else \
-            bash setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR --AG_BENCH_VER=$AG_BENCH_VERSION; \
-        fi; \
+        bash ${AGBENCH_BASE}${FRAMEWORK_PATH}setup.sh $GIT_URI $GIT_BRANCH $BENCHMARK_DIR $AG_BENCH_VERSION; \
     fi \
     && echo "CDK_DEPLOY_REGION=$CDK_DEPLOY_REGION" >> /etc/environment
 

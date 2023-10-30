@@ -2,11 +2,11 @@
 
 set -eo pipefail
 
-framework=${1}
-benchmark=${2}
-constraint=${3}
-benchmark_dir=${4}  # from root of project
-metrics_dir=${5}
+framework=$1
+benchmark=$2
+constraint=$3
+venv_base_dir=$4 
+metrics_dir=$5
 shift 5
 
 while getopts "t:f:u:" opt; do
@@ -30,11 +30,11 @@ if [ -n "$fold" ]; then
 fi
 
 if [ -n "$user_dir" ]; then
-    cp -r $user_dir $benchmark_dir
+    cp -r $user_dir $venv_base_dir
     amlb_args+=" -u $user_dir"
 fi
 
-source $benchmark_dir/.venv/bin/activate
+source $venv_base_dir/.venv/bin/activate
 
 echo "Running AMLB benchmark with args $amlb_args"
-python3 $benchmark_dir/automlbenchmark/runbenchmark.py $amlb_args
+python3 $venv_base_dir/automlbenchmark/runbenchmark.py $amlb_args

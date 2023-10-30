@@ -88,7 +88,11 @@ class MultiModalBenchmark(Benchmark):
         Returns:
             None
         """
-        PY_EXC_PATH = self.benchmark_dir + "/.venv/bin/python"
+        if os.environ.get("RUNNING_IN_DOCKER", False):
+            venv_base_dir = "/home/"
+        else:
+            venv_base_dir = self.benchmark_dir
+        PY_EXC_PATH = os.path.join(venv_base_dir, ".venv/bin/python")
 
         exec_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.py"
         command = [

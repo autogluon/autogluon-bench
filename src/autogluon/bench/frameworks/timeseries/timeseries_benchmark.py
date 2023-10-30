@@ -50,6 +50,10 @@ class TimeSeriesBenchmark(Benchmark):
         Returns:
             None
         """
+        if os.environ.get("RUNNING_IN_DOCKER", False):
+            venv_base_dir = "/home/"
+        else:
+            venv_base_dir = self.benchmark_dir
 
         exec_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "exec.sh")
         command = [
@@ -57,7 +61,7 @@ class TimeSeriesBenchmark(Benchmark):
             framework,
             benchmark,
             constraint,
-            self.benchmark_dir,
+            venv_base_dir,
             self.metrics_dir,
         ]
 
