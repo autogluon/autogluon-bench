@@ -1,5 +1,5 @@
-import pandas as pd
 import re
+import pandas as pd
 
 from ..constants import *
 from . import preprocess_utils
