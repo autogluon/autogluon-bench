@@ -34,22 +34,16 @@ ARG AMLB_USER_DIR
 
 WORKDIR /app/
 
-RUN if [ -n "$AG_BENCH_DEV_URL" ]; then \
-        echo "Cloning: $AG_BENCH_DEV_URL" \
-        && AG_BENCH_DEV_REPO=$(echo "$AG_BENCH_DEV_URL" | cut -d "#" -f 1) \
-        && AG_BENCH_DEV_BRANCH=$(echo "$AG_BENCH_DEV_URL" | cut -d "#" -f 2) \
-        && git clone --branch "$AG_BENCH_DEV_BRANCH" --single-branch "$AG_BENCH_DEV_REPO" /app/autogluon-bench \
-        && python3 -m pip install -e /app/autogluon-bench; \
-    else \
-        output=$(pip install autogluon.bench==$AG_BENCH_VERSION 2>&1) || true; \
-        if echo $output | grep -q "No matching distribution"; then \
-            echo -e "ERROR: No matching distribution found for autogluon.bench==$AG_BENCH_VERSION\n\
-            To resolve the issue, try 'agbench run <config_file> --dev-branch <autogluon_bench_fork_uri>#<git_branch>'"; \
-            exit 1; \
-        fi; \
-    fi
+# Copying necessary files for autogluon-bench package
+COPY . /app/
 
-COPY entrypoint.sh utils/hardware_utilization.sh $FRAMEWORK_PATH/setup.sh custom_configs/ /app/
+# check if autogluon.bench version contains "dev" tag
+RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \ 
+        # install from local source
+        pip install /app/; \
+    else \
+        pip install autogluon.bench==$AG_BENCH_VERSION; \
+    fi
 
 RUN chmod +x setup.sh entrypoint.sh hardware_utilization.sh \
     && if echo "$FRAMEWORK_PATH" | grep -q -E "tabular|timeseries"; then \

@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
 
 
-def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
+def get_kwargs(module: str, configs: dict):
     """Returns a dictionary of keyword arguments to be used for setting up and running the benchmark.
 
     Args:
@@ -49,7 +49,6 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
             "setup_kwargs": {
                 "git_uri": framework_configs["repo"],
                 "git_branch": framework_configs.get("version", "stable"),
-                "agbench_dev_url": agbench_dev_url,
             },
             "run_kwargs": {
                 "dataset_name": configs["dataset_name"],
@@ -91,7 +90,6 @@ def run_benchmark(
     benchmark_dir: str,
     configs: dict,
     benchmark_dir_s3: str = None,
-    agbench_dev_url: str = None,
     skip_setup: str = False,
 ):
     """Runs a benchmark based on the provided configuration options.
@@ -116,7 +114,7 @@ def run_benchmark(
 
     benchmark = benchmark_class(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir)
 
-    module_kwargs = get_kwargs(module=module_name, configs=configs, agbench_dev_url=agbench_dev_url)
+    module_kwargs = get_kwargs(module=module_name, configs=configs)
     if not skip_setup:
         benchmark.setup(**module_kwargs["setup_kwargs"])
 
@@ -355,7 +353,6 @@ def run(
     config_file: str = typer.Argument(..., help="Path to custom config file."),
     remove_resources: bool = typer.Option(False, help="Remove resources after run."),
     wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish, default to False."),
-    dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
     skip_setup: bool = typer.Option(
         False, help="Whether to skip setting up framework in local mode, default to False."
     ),
@@ -384,15 +381,9 @@ def run(
         try:
             configs["benchmark_name"] = benchmark_name
             # setting environment variables for docker build ARG
-            if dev_branch is not None:
-                os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
-            else:
-                os.environ[
-                    "AG_BENCH_VERSION"
-                ] = agbench_version  # set the installed version for Dockerfile to align with
+            os.environ["AG_BENCH_VERSION"] = agbench_version
 
-            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
-            os.environ["BENCHMARK_DIR"] = benchmark_dir
+            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}/"
 
             if module in AMLB_DEPENDENT_MODULES:
                 os.environ["AMLB_FRAMEWORK"] = configs["framework"]
@@ -521,15 +512,12 @@ def run(
                 configs["amlb_user_dir"] = download_dir_from_s3(s3_path=amlb_user_dir, local_path=tmpdir.name)
 
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
-        if dev_branch is not None:
-            logger.info(f"Using Development Branch: {dev_branch} for set up...")
 
         run_benchmark(
             benchmark_name=benchmark_name,
             benchmark_dir=benchmark_dir,
             configs=configs,
             benchmark_dir_s3=benchmark_dir_s3,
-            agbench_dev_url=dev_branch,
             skip_setup=skip_setup,
         )
     else:
