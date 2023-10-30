@@ -252,6 +252,8 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
             marker = "^"
         elif pt == "regression":
             marker = "*"
+        elif pt == "timeseries":
+            marker = "P"
         else:
             raise AssertionError(f"Unknown problem type: {pt}")
 
