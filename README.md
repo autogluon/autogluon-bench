@@ -272,5 +272,5 @@ agbench clean-amlb-results --help
 Step 3: Run evaluation on multiple cleaned files from `Step 2`
 
 ```
-agbench evaluate-amlb-results --frameworks_run framework_1 --frameworks_run framework_2 --results-dir-input data/results/input/prepared/openml --paths file_name_1.csv --paths file_name_2.csv --no-clean-data
+agbench evaluate-amlb-results --frameworks-run framework_1 --frameworks-run framework_2 --results-dir-input data/results/input/prepared/openml/ --paths file_name_1.csv --paths file_name_2.csv --no-clean-data
 ```
