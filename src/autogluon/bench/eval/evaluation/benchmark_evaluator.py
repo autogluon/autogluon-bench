@@ -142,7 +142,7 @@ class BenchmarkEvaluator:
             results_raw = paths
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
-            results_raw[TIME_INFER_S][results_raw[TIME_INFER_S] == 0] = 0.001
+            results_raw.loc[results_raw[TIME_INFER_S] == 0, TIME_INFER_S] = 0.001
         if clean_data:
             # FIXME: This doesn't work on new tasks due to not comprehensive metadata
             results_raw = self._clean_data(results_raw=results_raw)
@@ -297,6 +297,8 @@ class BenchmarkEvaluator:
 
         if max_rows is not None:
             task_metadata = task_metadata[task_metadata["NumberOfInstances"] <= max_rows]
+        if min_rows is not None:
+            task_metadata = task_metadata[task_metadata["NumberOfInstances"] >= min_rows]
         if max_rows_missing_val is not None:
             task_metadata = task_metadata[task_metadata["NumberOfInstancesWithMissingValues"] <= max_rows_missing_val]
         if max_features_categorical is not None:
