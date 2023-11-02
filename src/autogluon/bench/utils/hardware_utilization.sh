@@ -4,7 +4,8 @@ source /etc/environment
 
 GPU_EXISTS=$(lspci | grep -i nvidia > /dev/null 2>&1 && echo "true" || echo "false")
 
-INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
+INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/instance-id)
 
 while true; do
   if [ "$GPU_EXISTS" = "true" ]; then
