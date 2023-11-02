@@ -216,7 +216,7 @@ def run(
         predictor_args["sample_data_path"] = train_data.data
 
     metrics_func = None
-    if custom_metrics is not None:
+    if custom_metrics is not None and custom_metrics["function_name"] == train_data.metric:
         metrics_func = load_custom_metrics(custom_metrics=custom_metrics)
         predictor_args["eval_metric"] = metrics_func
 
