@@ -12,6 +12,7 @@ import botocore
 import typer
 import yaml
 
+from autogluon.bench import __path__ as agbench_path
 from autogluon.bench import __version__ as agbench_version
 from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.eval.hardware_metrics.hardware_metrics import get_hardware_metrics
@@ -143,10 +144,15 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
     response = lambda_client.invoke(
         FunctionName=lambda_function_name, InvocationType="RequestResponse", Payload=json.dumps(payload)
     )
-    response = json.loads(response["Payload"].read().decode("utf-8"))
+    response_payload = json.loads(response["Payload"].read().decode("utf-8"))
+    
+    if 'FunctionError' in response:
+        error_payload = response_payload
+        raise Exception(f"Lambda function error: {error_payload}")
+
     logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])
 
-    return response
+    return response_payload
 
 
 @app.command()
@@ -179,7 +185,6 @@ def get_job_status(
             config = yaml.safe_load(f)
             job_ids = list(config.get("job_configs", {}).keys())
             cdk_deploy_region = config.get("CDK_DEPLOY_REGION", cdk_deploy_region)
-
     if job_ids is None or cdk_deploy_region is None:
         raise ValueError("Either job_ids or cdk_deploy_region must be provided or configured in the config_file.")
 
