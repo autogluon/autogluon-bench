@@ -32,7 +32,7 @@ def find_s3_file(s3_bucket: str, prefix: str, file: str):
     return None
 
 
-def get_job_ids(config_file: str):
+def get_job_ids(config: dict):
     """
     This function returns a list of job IDs of all jobs ran for a benchmark run
     Parameters
@@ -40,7 +40,7 @@ def get_job_ids(config_file: str):
     config_file: str,
         Path to config file containing job IDs
     """
-    job_ids = list(config_file.get("job_configs", {}).keys())
+    job_ids = list(config.get("job_configs", {}).keys())
     return job_ids
 
 
@@ -283,18 +283,33 @@ def get_hardware_metrics(
     aws_account_region = config.get("CDK_DEPLOY_REGION")
 
     cloudwatch_client = boto3.client("cloudwatch", region_name=aws_account_region)
+    batch_client = boto3.client("batch", region_name=aws_account_region)
 
     metrics_list = []
     for job_id in job_ids:
-        sub_folder = config["job_configs"][f"{job_id}"].split("/")[-1].split(".")[0].replace("_split", "")
-        metrics_list += get_metrics(
-            job_id=job_id,
-            s3_bucket=s3_bucket,
-            module=module,
-            benchmark_name=benchmark_name,
-            sub_folder=sub_folder,
-            cloudwatch_client=cloudwatch_client,
-        )
+        response = batch_client.describe_jobs(jobs=[job_id])
+        job_detail = response["jobs"][0]
+
+        # Check if the job is an array job
+        if "arrayProperties" in job_detail and "size" in job_detail["arrayProperties"]:
+            size = job_detail["arrayProperties"]["size"]
+            sub_ids = [f"{job_id}:{i}" for i in range(size)]
+        else:
+            sub_ids = [job_id]
+
+        for sub_id in sub_ids:
+            id = sub_id.split(":")[-1]
+            if id != "":
+                id = "_" + id
+            sub_folder = f"{benchmark_name}{id}"
+            metrics_list += get_metrics(
+                job_id=sub_id,
+                s3_bucket=s3_bucket,
+                module=module,
+                benchmark_name=benchmark_name,
+                sub_folder=sub_folder,
+                cloudwatch_client=cloudwatch_client,
+            )
     if metrics_list:
         with tempfile.TemporaryDirectory() as temp_dir:
             local_path = save_results(metrics_list, temp_dir)

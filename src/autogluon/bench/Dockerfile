@@ -36,6 +36,8 @@ WORKDIR /app/
 
 # Copying necessary files for autogluon-bench package
 COPY . /app/
+COPY ${AGBENCH_BASE}entrypoint.sh /app/
+COPY ${AGBENCH_BASE}custom_configs /app/custom_configs/
 
 # check if autogluon.bench version contains "dev" tag
 RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \ 
@@ -45,7 +47,6 @@ RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \
         pip install autogluon.bench==$AG_BENCH_VERSION; \
     fi
 
-COPY ${AGBENCH_BASE}custom_configs ${AGBENCH_BASE}entrypoint.sh /app/
 RUN chmod +x entrypoint.sh \
     && if echo "$FRAMEWORK_PATH" | grep -q -E "tabular|timeseries"; then \
         if [ -n "$AMLB_USER_DIR" ]; then \

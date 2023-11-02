@@ -2,7 +2,6 @@ import io
 import itertools
 import logging
 import os
-import uuid
 import zipfile
 
 import requests
@@ -18,7 +17,7 @@ logger.setLevel(logging.INFO)
 AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
 
 
-def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: str):
+def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: str, array_size: int):
     """
     Submits a Batch job with the given environment variables, job name, job queue and job definition.
 
@@ -27,17 +26,23 @@ def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: s
         job_name (str): Name of the job.
         job_queue (str): Name of the job queue.
         job_definition (str): Name of the job definition.
+        array_size (int): Number of jobs to submit.
 
     Returns:
         str: Job ID.
     """
     container_overrides = {"environment": env}
-    response = aws_batch.submit_job(
-        jobName=job_name,
-        jobQueue=job_queue,
-        jobDefinition=job_definition,
-        containerOverrides=container_overrides,
-    )
+    job_params = {
+        "jobName": job_name,
+        "jobQueue": job_queue,
+        "jobDefinition": job_definition,
+        "containerOverrides": container_overrides
+    }
+    if array_size > 1:
+        job_params["arrayProperties"] = {"size": array_size}
+
+    response = aws_batch.submit_job(**job_params)
+    
     logger.info("Job %s submitted to AWS Batch queue %s.", job_name, job_queue)
     logger.info(response)
     return response["jobId"]
@@ -88,7 +93,7 @@ def download_dir_from_s3(s3_path: str, local_path: str) -> str:
     return local_path
 
 
-def upload_config(bucket: str, benchmark_name: str, file: str):
+def upload_config(config_list: list, bucket: str, benchmark_name: str):
     """
     Uploads a file to the given S3 bucket.
 
@@ -99,28 +104,9 @@ def upload_config(bucket: str, benchmark_name: str, file: str):
     Returns:
         str: S3 path of the uploaded file.
     """
-    file_name = f'{file.split("/")[-1].split(".")[0]}.yaml'
-    s3_path = f"configs/{benchmark_name}/{file_name}"
-    s3.upload_file(file, bucket, s3_path)
-    return f"s3://{bucket}/{s3_path}"
-
-
-def save_configs(configs: dict, uid: str):
-    """
-    Saves the given dictionary of configs to a YAML file with the given UID as a part of the filename.
-
-    Args:
-        configs (Dict[str, Any]): Dictionary of configurations to be saved.
-        uid (str): UID to be added to the filename of the saved file.
-
-    Returns:
-        str: Local path of the saved file.
-    """
-    benchmark_name = configs["benchmark_name"]
-    config_file_path = os.path.join("/tmp", f"{benchmark_name}_split_{uid}.yaml")
-    with open(config_file_path, "w+") as f:
-        yaml.dump(configs, f, default_flow_style=False)
-    return config_file_path
+    s3_key = f"configs/{benchmark_name}/{benchmark_name}_job_configs.yaml"
+    s3.put_object(Body=yaml.dump(config_list), Bucket=bucket, Key=s3_key)
+    return f"s3://{bucket}/{s3_key}"
 
 
 def download_automlbenchmark_resources():
@@ -217,59 +203,37 @@ def process_benchmark_runs(module_configs: dict, amlb_benchmark_search_dirs: lis
                 module_configs["fold_to_run"][benchmark][task] = amlb_task_folds[benchmark][task]
 
 
-def process_combination(configs, metrics_bucket, batch_job_queue, batch_job_definition):
-    """
-    Processes a combination of configurations by generating and submitting Batch jobs.
+def get_cloudwatch_logs_url(region: str, job_id: str, log_group_name: str = "aws/batch/job"):
+    base_url = f"https://console.aws.amazon.com/cloudwatch/home?region={region}"
+    job_response = aws_batch.describe_job(jobs=[job_id])
+    log_stream_name = job_response["jobs"][0]["attempts"][0]["container"]["logStreamName"]
+    return f"{base_url}#logsV2:log-groups/log-group/{log_group_name.replace('/', '%2F')}/log-events/{log_stream_name.replace('/', '%2F')}"
 
-    Args:
-        combination (Tuple): tuple of configurations to process.
-        keys (List[str]): list of keys of the configurations.
-        metrics_bucket (str): name of the bucket to upload metrics to.
-        batch_job_queue (str): name of the Batch job queue to submit jobs to.
-        batch_job_definition (str): name of the Batch job definition to use for submitting jobs.
 
-    Returns:
-        str: job id of the submitted batch job.
-    """
-    logger.info(f"Generating config with: {configs}")
-    config_uid = uuid.uuid1().hex
-    config_local_path = save_configs(configs=configs, uid=config_uid)
-    config_s3_path = upload_config(
-        bucket=metrics_bucket, benchmark_name=configs["benchmark_name"], file=config_local_path
-    )
-    job_name = f"{configs['benchmark_name']}-{configs['module']}-{config_uid}"
+def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
+    job_configs = []
+    if config["module"] in AMLB_DEPENDENT_MODULES:
+        job_configs = generate_amlb_module_config_combinations(config)
+    elif config["module"] == "multimodal":
+        job_configs = generate_multimodal_config_combinations(config)
+    else:
+        raise ValueError("Invalid module. Choose either 'tabular', 'timeseries', or 'multimodal'.")
+
+    benchmark_name = config["benchmark_name"]
+    config_s3_path = upload_config(config_list=job_configs, bucket=metrics_bucket, benchmark_name=benchmark_name)
     env = [{"name": "config_file", "value": config_s3_path}]
-
-    job_id = submit_batch_job(
+    job_name = f"{benchmark_name}-array-job"
+    parent_job_id = submit_batch_job(
         env=env,
         job_name=job_name,
         job_queue=batch_job_queue,
         job_definition=batch_job_definition,
+        array_size=len(job_configs),
     )
-    return job_id, config_s3_path
+    return {parent_job_id: config_s3_path}
 
 
-def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
-    job_configs = {}
-    config.pop("cdk_context")
-    if config["module"] in AMLB_DEPENDENT_MODULES:
-        job_configs = generate_amlb_module_config_combinations(
-            config, metrics_bucket, batch_job_queue, batch_job_definition
-        )
-    elif config["module"] == "multimodal":
-        job_configs = generate_multimodal_config_combinations(
-            config, metrics_bucket, batch_job_queue, batch_job_definition
-        )
-    else:
-        raise ValueError("Invalid module. Choose either 'tabular', 'timeseries', or 'multimodal'.")
-
-    response = {
-        "job_configs": job_configs,
-    }
-    return response
-
-
-def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
+def generate_multimodal_config_combinations(config):
     common_keys = []
     specific_keys = []
     for key in config.keys():
@@ -278,23 +242,21 @@ def generate_multimodal_config_combinations(config, metrics_bucket, batch_job_qu
         else:
             common_keys.append(key)
 
-    job_configs = {}
     specific_value_combinations = list(
         itertools.product(*(config[key] for key in specific_keys if key in config.keys()))
     ) or [None]
 
+    all_configs = []
     for combo in specific_value_combinations:
         new_config = {key: config[key] for key in common_keys}
         if combo is not None:
             new_config.update(dict(zip(specific_keys, combo)))
+        all_configs.append(new_config)
 
-        job_id, config_s3_path = process_combination(new_config, metrics_bucket, batch_job_queue, batch_job_definition)
-        job_configs[job_id] = config_s3_path
-
-    return job_configs
+    return all_configs
 
 
-def generate_amlb_module_config_combinations(config, metrics_bucket, batch_job_queue, batch_job_definition):
+def generate_amlb_module_config_combinations(config):
     specific_keys = ["git_uri#branch", "framework", "amlb_constraint", "amlb_user_dir"]
     exclude_keys = ["amlb_benchmark", "amlb_task", "fold_to_run"]
     common_keys = []
@@ -308,13 +270,13 @@ def generate_amlb_module_config_combinations(config, metrics_bucket, batch_job_q
         else:
             common_keys.append(key)
 
-    job_configs = {}
     specific_value_combinations = list(
         itertools.product(*(config[key] for key in specific_keys if key in config.keys()))
     ) or [None]
 
     # Iterate through the combinations and the amlb benchmark task keys
     # Generates a config for each combination of specific key and keys in `fold_to_run`
+    all_configs = []
     for combo in specific_value_combinations:
         for benchmark, tasks in config["fold_to_run"].items():
             for task, fold_numbers in tasks.items():
@@ -325,11 +287,9 @@ def generate_amlb_module_config_combinations(config, metrics_bucket, batch_job_q
                     new_config["amlb_benchmark"] = benchmark
                     new_config["amlb_task"] = task
                     new_config["fold_to_run"] = fold_num
-                    job_id, config_s3_path = process_combination(
-                        new_config, metrics_bucket, batch_job_queue, batch_job_definition
-                    )
-                    job_configs[job_id] = config_s3_path
-    return job_configs
+                    all_configs.append(new_config)
+
+    return all_configs
 
 
 def handler(event, context):
@@ -337,50 +297,6 @@ def handler(event, context):
     Execution entrypoint for AWS Lambda.
     Triggers batch jobs with hyperparameter combinations.
     ENV variables are set by the AWS CDK infra code.
-
-    Sample of cloud_configs.yaml to be supplied by user
-
-    # Infra configurations
-    cdk_context:
-        CDK_DEPLOY_ACCOUNT: dummy
-        CDK_DEPLOY_REGION: dummy
-
-    # Benchmark configurations
-    module: multimodal
-    mode: aws
-    benchmark_name: test_yaml
-    metrics_bucket: autogluon-benchmark-metrics
-
-    # Module specific configurations
-    module_configs:
-        # Multimodal specific
-        multimodal:
-            git_uri#branch: https://github.com/autogluon/autogluon#master
-            dataset_name: melbourne_airbnb
-            presets: medium_quality
-            hyperparameters:
-            optimization.learning_rate: 0.0005
-            optimization.max_epochs: 5
-            time_limit: 10
-
-
-        # Tabular specific
-        # You can refer to AMLB (https://github.com/openml/automlbenchmark#quickstart) for more details
-        tabular:
-            framework:
-                - AutoGluon
-            label:
-                - stable
-            amlb_benchmark:
-                - test
-                - small
-            amlb_task:
-                test: null
-                small:
-                    - credit-g
-                    - vehicle
-            amlb_constraint:
-                - test
     """
     if "config_file" not in event or not event["config_file"].startswith("s3"):
         raise KeyError("S3 path of config file is required.")
