@@ -291,6 +291,7 @@ def _umount_if_needed(path: str = None):
 
 
 def _mount_dir(orig_path: str, new_path: str):
+    logging.info(f"Mounting from {orig_path} to {new_path}.")
     subprocess.run(["sudo", "mount", "--bind", orig_path, new_path])
 
 
@@ -307,8 +308,8 @@ def update_custom_dataloader(configs: dict):
     current_path = os.path.dirname(os.path.abspath(__file__))
     custom_dataloader_path = os.path.join(current_path, "custom_configs", "dataloaders")
 
-    configs["custom_dataloader"]["dataloader_file"] = f"dataloaders/{dataloader_file_name}"
-    configs["custom_dataloader"]["dataset_config_file"] = f"dataloaders/{dataset_config_file_name}"
+    configs["custom_dataloader"]["dataloader_file"] = f"custom_configs/dataloaders/{dataloader_file_name}"
+    configs["custom_dataloader"]["dataset_config_file"] = f"custom_configs/dataloaders/{dataset_config_file_name}"
 
     return original_path, custom_dataloader_path
 
@@ -321,24 +322,25 @@ def update_custom_metrics(configs: dict):
     current_path = os.path.dirname(os.path.abspath(__file__))
     custom_metrics_path = os.path.join(current_path, "custom_configs", "metrics")
 
-    configs["custom_metrics"]["metrics_path"] = f"metrics/{metrics_file_name}"
+    configs["custom_metrics"]["metrics_path"] = f"custom_configs/metrics/{metrics_file_name}"
 
     return original_path, custom_metrics_path
 
 
 def get_resource(configs: dict, resource_name: str):
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    default_resource_file = os.path.join(current_path, "resources", f"{resource_name}.yaml")
+    ag_path = agbench_path[0]
+    default_resource_file = os.path.join(ag_path, "resources", f"{resource_name}.yaml")
     with open(default_resource_file, "r") as f:
-        default_resource = yaml.safe_load(f)
+        resources = yaml.safe_load(f)
 
+    current_path = os.getcwd()
     if configs.get("custom_resource_dir") is not None:
         custom_resource_dir = configs["custom_resource_dir"]
-        if os.path.exists(os.path.join(custom_resource_dir, f"{resource_name}.yaml")):
-            with open(os.path.join(custom_resource_dir, f"{resource_name}.yaml"), "r") as f:
-                custom_resource = yaml.safe_load(f)
-                default_resource.update(custom_resource)
-    return default_resource
+        resource_file = os.path.join(current_path, custom_resource_dir, f"{resource_name}.yaml")
+        if os.path.exists(resource_file):
+            with open(resource_file, "r") as f:
+                resources = yaml.safe_load(f)
+    return resources
 
 
 def update_resource_constraint(configs: dict):
@@ -412,9 +414,10 @@ def run(
                     else:
                         amlb_user_dir_local = amlb_user_dir
 
-                    custom_configs_path = os.path.join(current_path, "custom_configs/amlb_configs")
+                    default_user_dir = "custom_configs/amlb_configs"
+                    custom_configs_path = os.path.join(current_path, default_user_dir)
                     lambda_custom_configs_path = os.path.join(
-                        current_path, "cloud/aws/batch_stack/lambdas/amlb_configs"
+                        current_path, "cloud/aws/batch_stack/lambdas", default_user_dir
                     )
                     original_path = amlb_user_dir_local
                     paths += [custom_configs_path, lambda_custom_configs_path]
@@ -423,10 +426,9 @@ def run(
                         # to make it available for Docker build
                         _umount_if_needed(path)
                         _mount_dir(orig_path=original_path, new_path=path)
-                    os.environ["AMLB_USER_DIR"] = "amlb_configs"
-                    configs["amlb_user_dir"] = "amlb_configs"
+                    os.environ["AMLB_USER_DIR"] = default_user_dir  # For Docker build
+                    configs["amlb_user_dir"] = default_user_dir  # For Lambda job config
             elif module == "multimodal":
-                update_resource_constraint(configs=configs)
                 if configs.get("custom_dataloader") is not None:
                     original_path, custom_dataloader_path = update_custom_dataloader(configs=configs)
                     paths.append(custom_dataloader_path)
@@ -439,15 +441,17 @@ def run(
                     _umount_if_needed(custom_metrics_path)
                     _mount_dir(orig_path=original_path, new_path=custom_metrics_path)
 
+                update_resource_constraint(configs=configs)
                 framework_configs = get_framework_configs(configs=configs)
-                os.environ["GIT_URI"] = framework_configs["repo"]
-                os.environ["GIT_BRANCH"] = framework_configs.get("version", "stable")
                 if configs.get("custom_resource_dir") is not None:
                     custom_resource_path = os.path.join(current_path, "custom_configs", "resources")
                     paths.append(custom_resource_path)
                     _umount_if_needed(custom_resource_path)
                     _mount_dir(orig_path=configs["custom_resource_dir"], new_path=custom_resource_path)
-                    configs["custom_resource_dir"] = "resources"
+                    configs["custom_resource_dir"] = "custom_configs/resources"
+
+                os.environ["GIT_URI"] = framework_configs["repo"]
+                os.environ["GIT_BRANCH"] = framework_configs.get("version", "stable")
 
             infra_configs = deploy_stack(custom_configs=configs)
 
