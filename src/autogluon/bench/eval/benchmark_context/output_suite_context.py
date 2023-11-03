@@ -232,7 +232,7 @@ class OutputSuiteContext:
     def get_logs(self) -> List[str]:
         return self._loop_func(func=OutputContext.get_logs, input_list=self.output_contexts)
 
-    def aggregate_logs(self):
+    def aggregate_logs(self) -> str:
         log_list = self.get_logs()
         return "\n\n".join(log_list)
 
