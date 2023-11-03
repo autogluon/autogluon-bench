@@ -113,6 +113,7 @@ def evaluate(
     results_dir_input: str = None,
     results_dir_output: str = None,
     output_suffix: str | None = "ag_full_v5/1h8c",
+    frameworks_rename: dict | None = None,
     framework_nan_fill: str | None = None,
     problem_type: List[str] | str | None = None,
     folds_to_keep: List[int] | None = None,
@@ -246,6 +247,10 @@ def evaluate(
 
     if frameworks_run is None:
         frameworks_run = sorted(list(results_raw["framework"].unique()))
+
+    if frameworks_rename is not None:
+        results_raw["framework"] = results_raw["framework"].map(frameworks_rename).fillna(results_raw["framework"])
+        frameworks_run = [frameworks_rename.get(f, f) for f in frameworks_run]
 
     frameworks_compare_vs_all = []
     if len(frameworks_compare_vs_all) == 0:
