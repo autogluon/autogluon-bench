@@ -29,6 +29,7 @@ class BenchmarkEvaluator:
         convert_infer_time_to_per_row: bool = True,
         columns_to_keep: Optional[List[str]] = None,
         columns_to_keep_extra: Optional[List[str]] = None,
+        round_error_decimals: int | None = 5,
     ):
         """
         # TODO: Describe purpose of class
@@ -85,6 +86,10 @@ class BenchmarkEvaluator:
             Will be concatenated with `columns_to_keep` if specified.
             This is used as a convenience argument to avoid having to respecify all
             standard columns when adding a new output column.
+        round_error_decimals : int | None, default = 5
+            The number of decimal places to round the metric error to.
+            For example, if round_error_decimals=5, then a metric error of 0.03485612 becomes 0.03486.
+            This is useful for detecting ties among frameworks by avoiding issues with floating point precision.
         """
         if columns_to_keep is None:
             columns_to_keep = [
@@ -130,6 +135,7 @@ class BenchmarkEvaluator:
             self._columns_to_keep = columns_to_keep
         else:
             self._columns_to_keep = None
+        self.round_error_decimals = round_error_decimals
 
     def _load_results(
         self, paths: list | pd.DataFrame, clean_data: bool = False, banned_datasets: list = None
@@ -226,7 +232,8 @@ class BenchmarkEvaluator:
                 diff = sorted(diff)
                 raise AssertionError(f"Difference in expected frameworks present: {diff}")
         # Round error
-        results_raw[METRIC_ERROR] = results_raw[METRIC_ERROR].round(decimals=4)
+        if self.round_error_decimals is not None:
+            results_raw[METRIC_ERROR] = results_raw[METRIC_ERROR].round(decimals=self.round_error_decimals)
 
         if self._columns_to_keep:
             results_raw = results_raw[self._columns_to_keep]

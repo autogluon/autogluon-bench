@@ -532,8 +532,8 @@ def convert_to_dataset_fold(df: pd.DataFrame, column_name="dataset", column_type
 
     """
     df = df.copy(deep=True)
-    df["fold"] = df["dataset"].apply(lambda x: x.rsplit("_", 1)[1]).astype(int)
-    df[column_name] = df["dataset"].apply(lambda x: x.rsplit("_", 1)[0]).astype(column_type)
-    df_columns = list(df.columns)
-    df_columns = [column_name, "fold"] + [c for c in df_columns if c not in [column_name, "dataset", "fold"]]
+    df[[column_name, "fold"]] = df["dataset"].str.rsplit("_", n=1, expand=True)
+    df["fold"] = df["fold"].astype(int)
+    df[column_name] = df[column_name].astype(column_type)
+    df_columns = [column_name, "fold"] + [c for c in df.columns if c not in [column_name, "dataset", "fold"]]
     return df[df_columns]  # Reorder so dataset and fold are the first two columns.
