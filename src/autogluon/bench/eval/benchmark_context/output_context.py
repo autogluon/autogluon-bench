@@ -242,8 +242,8 @@ class OutputContext:
 
     def get_logs(self) -> str:
         s3_bucket, s3_prefix = s3_path_to_bucket_prefix(s3_path=self.path_logs)
-        s3 = boto3.client('s3', use_ssl=False)
-        buffer = BytesIO(s3.get_object(Bucket=s3_bucket, Key=s3_prefix)['Body'].read())
+        s3 = boto3.client("s3", use_ssl=False)
+        buffer = BytesIO(s3.get_object(Bucket=s3_bucket, Key=s3_prefix)["Body"].read())
         z = zipfile.ZipFile(buffer)
         for filename in z.namelist():
             if ".full.log" not in filename:

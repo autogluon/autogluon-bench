@@ -111,7 +111,9 @@ class OutputSuiteContext:
     def num_contexts(self):
         return len(self.output_contexts)
 
-    def _loop_func(self, func, input_list: list, kwargs=None, allow_exception=False, exception_default=None, mode=None) -> list:
+    def _loop_func(
+        self, func, input_list: list, kwargs=None, allow_exception=False, exception_default=None, mode=None
+    ) -> list:
         if len(input_list) == 0:
             return []
         if mode is None:
@@ -339,7 +341,9 @@ class OutputSuiteContext:
         return aggregated_pred_proba, aggregated_ground_truth
 
 
-def _with_seq(func, input_list: list, kwargs=None, allow_exception=False, exception_default=None, num_cpus=None) -> list:
+def _with_seq(
+    func, input_list: list, kwargs=None, allow_exception=False, exception_default=None, num_cpus=None
+) -> list:
     """
     For-loop through a function call sequentially
     """
