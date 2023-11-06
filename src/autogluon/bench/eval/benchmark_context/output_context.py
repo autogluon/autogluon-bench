@@ -1,3 +1,5 @@
+import zipfile
+from io import BytesIO, TextIOWrapper
 from typing import Optional, Set, Union
 
 import boto3
@@ -237,6 +239,18 @@ class OutputContext:
             model_failures_df["id"] = results["id"][0]
             model_failures_full_df = pd.merge(model_failures_df, results, on="id", how="left")
             return model_failures_full_df
+
+    def get_logs(self) -> str:
+        s3_bucket, s3_prefix = s3_path_to_bucket_prefix(s3_path=self.path_logs)
+        s3 = boto3.client("s3", use_ssl=False)
+        buffer = BytesIO(s3.get_object(Bucket=s3_bucket, Key=s3_prefix)["Body"].read())
+        z = zipfile.ZipFile(buffer)
+        for filename in z.namelist():
+            if ".full.log" not in filename:
+                continue
+            raw_text = TextIOWrapper(z.open(filename)).read()
+            return raw_text
+        return ""
 
     def _merge_leaderboard_with_infer_speed(self, leaderboard: pd.DataFrame) -> pd.DataFrame:
         infer_speed_df = self.load_infer_speed()

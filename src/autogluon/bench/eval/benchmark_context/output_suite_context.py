@@ -6,6 +6,7 @@ from typing import List, Optional, Set
 
 import pandas as pd
 import ray
+from tqdm import tqdm
 
 from autogluon.bench.eval.benchmark_context.output_context import OutputContext
 from autogluon.bench.eval.benchmark_context.utils import get_s3_paths
@@ -110,10 +111,14 @@ class OutputSuiteContext:
     def num_contexts(self):
         return len(self.output_contexts)
 
-    def _loop_func(self, func, input_list: list, kwargs=None, allow_exception=False, exception_default=None) -> list:
+    def _loop_func(
+        self, func, input_list: list, kwargs=None, allow_exception=False, exception_default=None, mode=None
+    ) -> list:
         if len(input_list) == 0:
             return []
-        process_func = _with_ray if self.mode == "ray" else _with_seq
+        if mode is None:
+            mode = self.mode
+        process_func = _with_ray if mode == "ray" else _with_seq
         return process_func(
             func=func,
             input_list=input_list,
@@ -226,6 +231,13 @@ class OutputSuiteContext:
             model_failures_df = pd.concat(model_failures_list, ignore_index=True)
             return model_failures_df
 
+    def get_logs(self) -> List[str]:
+        return self._loop_func(func=OutputContext.get_logs, input_list=self.output_contexts)
+
+    def aggregate_logs(self) -> str:
+        log_list = self.get_logs()
+        return "\n\n".join(log_list)
+
     def get_amlb_info(self) -> List[str]:
         return self._loop_func(func=OutputContext.get_amlb_info, input_list=self.output_contexts)
 
@@ -253,7 +265,6 @@ class OutputSuiteContext:
 
     @staticmethod
     def _aggregate_leaderboards_ray(output_contexts, columns_to_keep, with_infer_speed):
-        print("starting ray...")
         num_contexts = len(output_contexts)
         if not ray.is_initialized():
             ray.init()
@@ -263,20 +274,17 @@ class OutputSuiteContext:
                 get_single_leaderboard_ray.remote(output_context, columns_to_keep, with_infer_speed, i, num_contexts)
             )
         result = ray.get(results)
-        print("finished ray...")
         result = [r for r in result if r is not None]
         return result
 
     @staticmethod
     def _aggregate_leaderboards_seq(output_contexts, columns_to_keep, with_infer_speed):
-        print("starting sequential...")
         num_contexts = len(output_contexts)
         results = []
         for i, output_context in enumerate(output_contexts):
             results.append(
                 get_single_leaderboard_seq(output_context, columns_to_keep, with_infer_speed, i, num_contexts)
             )
-        print("finished sequential...")
         results = [r for r in results if r is not None]
         return results
 
@@ -333,7 +341,9 @@ class OutputSuiteContext:
         return aggregated_pred_proba, aggregated_ground_truth
 
 
-def _with_seq(func, input_list: list, kwargs=None, allow_exception=False, exception_default=None) -> list:
+def _with_seq(
+    func, input_list: list, kwargs=None, allow_exception=False, exception_default=None, num_cpus=None
+) -> list:
     """
     For-loop through a function call sequentially
     """
@@ -362,6 +372,7 @@ def _with_ray(
     allow_exception=False,
     exception_default=None,
     num_cpus: int = None,
+    progress_bar: bool = True,
 ) -> list:
     """
     For-loop through a function call with ray
@@ -390,7 +401,10 @@ def _with_ray(
     results = []
     for i in input_list:
         results.append(remote_func.remote(i, **kwargs))
-    result = ray.get(results)
+    if progress_bar:
+        result = [ray.get(res) for res in tqdm(results)]
+    else:
+        result = ray.get(results)
     return result
 
 
