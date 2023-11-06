@@ -1,6 +1,6 @@
+import zipfile
 from io import BytesIO, TextIOWrapper
 from typing import Optional, Set, Union
-import zipfile
 
 import boto3
 import numpy as np

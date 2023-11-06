@@ -5,8 +5,8 @@ import os
 from typing import List, Optional, Set
 
 import pandas as pd
-from tqdm import tqdm
 import ray
+from tqdm import tqdm
 
 from autogluon.bench.eval.benchmark_context.output_context import OutputContext
 from autogluon.bench.eval.benchmark_context.utils import get_s3_paths
