@@ -8,11 +8,12 @@ import time
 from datetime import datetime
 from typing import Optional, Union
 
-from autogluon.bench.datasets.constants import (
-    _IMAGE_SIMILARITY,
-    _IMAGE_TEXT_SIMILARITY,
-    _OBJECT_DETECTION,
-    _TEXT_SIMILARITY,
+from autogluon.multimodal.constants import (
+    IMAGE_SIMILARITY,
+    IMAGE_TEXT_SIMILARITY,
+    OBJECT_DETECTION,
+    TEXT_SIMILARITY,
+    FEW_SHOT_CLASSIFICATION,
 )
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
 from autogluon.core.metrics import make_scorer
@@ -151,7 +152,7 @@ def run(
     benchmark_dir: str,
     metrics_dir: str,
     constraint: Optional[str] = None,
-    params: Optional[dict] = {},
+    params: Optional[dict] = None,
     custom_dataloader: Optional[dict] = None,
     custom_metrics: Optional[dict] = None,
 ):
@@ -191,34 +192,33 @@ def run(
         label_column = train_data.label_columns[0]
     except (AttributeError, IndexError):  # Object Detection does not have label columns
         label_column = None
-
+    if params is None:
+        params = {}
     predictor_args = {
         "label": label_column,
         "problem_type": train_data.problem_type,
         "presets": params.pop("presets", None),
         "path": os.path.join(benchmark_dir, "models"),
     }
-
-    if train_data.problem_type == _IMAGE_SIMILARITY:
+    if train_data.problem_type == IMAGE_SIMILARITY:
         predictor_args["query"] = train_data.image_columns[0]
         predictor_args["response"] = train_data.image_columns[1]
         predictor_args["match_label"] = train_data.match_label
-    elif train_data.problem_type == _IMAGE_TEXT_SIMILARITY:
+    elif train_data.problem_type == IMAGE_TEXT_SIMILARITY:
         predictor_args["query"] = train_data.text_columns[0]
         predictor_args["response"] = train_data.image_columns[0]
-        predictor_args["eval_metric"] = train_data.metric
         del predictor_args["label"]
-    elif train_data.problem_type == _TEXT_SIMILARITY:
+    elif train_data.problem_type == TEXT_SIMILARITY:
         predictor_args["query"] = train_data.text_columns[0]
         predictor_args["response"] = train_data.text_columns[1]
         predictor_args["match_label"] = train_data.match_label
-    elif train_data.problem_type == _OBJECT_DETECTION:
+    elif train_data.problem_type == OBJECT_DETECTION:
         predictor_args["sample_data_path"] = train_data.data
+    
 
     metrics_func = None
     if custom_metrics is not None and custom_metrics["function_name"] == train_data.metric:
         metrics_func = load_custom_metrics(custom_metrics=custom_metrics)
-        predictor_args["eval_metric"] = metrics_func
 
     predictor = MultiModalPredictor(**predictor_args)
 
@@ -236,7 +236,7 @@ def run(
         "metrics": test_data.metric if metrics_func is None else metrics_func,
     }
 
-    if test_data.problem_type == _IMAGE_TEXT_SIMILARITY:
+    if test_data.problem_type == IMAGE_TEXT_SIMILARITY:
         evaluate_args["query_data"] = test_data.data[test_data.text_columns[0]].unique().tolist()
         evaluate_args["response_data"] = test_data.data[test_data.image_columns[0]].unique().tolist()
         evaluate_args["cutoffs"] = [1, 5, 10]
