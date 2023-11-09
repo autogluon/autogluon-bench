@@ -34,7 +34,7 @@ def preprocess_openml_input(
 
     # TODO: This is a hack and won't work for all metrics, metric_error should ideally be calculated prior to preprocessing
     raw_input[METRIC_ERROR] = [
-        1 - score if metric in ["auc", "acc", "balacc", "map", "roc_auc", "r2"] else -score
+        1 - score if metric in ["auc", "acc", "accuracy", "balacc", "map", "roc_auc", "r2", "coverage"] else -score
         for score, metric in zip(raw_input[METRIC_SCORE], raw_input["metric"])
     ]
 
