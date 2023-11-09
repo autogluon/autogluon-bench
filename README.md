@@ -33,12 +33,6 @@ cd autogluon-bench
 pip install -e ".[tests]"
 ```
 
-For development, please be aware that `autogluon.bench` is installed as a dependency in certain places, such as the [Dockerfile](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/Dockerfile) and [Multimodal Setup](https://github.com/autogluon/autogluon-bench/blob/master/src/autogluon/bench/frameworks/multimodal/setup.sh). We made it possible to reflect the development changes by pushing the changes to a remote GitHub branch, and providing the URI when testing on benchmark runs:
-
-```
-agbench run sample_configs/multimodal_cloud_configs.yaml --dev-branch https://github.com/<username>/autogluon-bench.git#<dev_branch>
-```
-
 
 ## Run benchmarks locally
 
@@ -144,11 +138,11 @@ After having the configuration file ready, use the command below to initiate ben
 agbench run /path/to/cloud_config_file
 ```
 
-This command automatically sets up an AWS Batch environment using instance specifications defined in the [cloud config files](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs). It also creates a lambda function named with your chosen `LAMBDA_FUNCTION_NAME`. This lambda function is automatically invoked with the cloud config file you provided, submitting multiple AWS Batch jobs to the job queue (named with the `PREFIX` you provided).
+This command automatically sets up an AWS Batch environment using instance specifications defined in the [cloud config files](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs). It also creates a lambda function named with your chosen `LAMBDA_FUNCTION_NAME`. This lambda function is automatically invoked with the cloud config file you provided, submitting a single AWS Batch job or a parent job for [Array jobs](https://docs.aws.amazon.com/batch/latest/userguide/array_jobs.html) to the job queue (named with the `PREFIX` you provided).
 
-In order for the Lambda function to submit multiple jobs simultaneously, you need to specify a list of values for each module-specific key. Each combination of configurations is saved and uploaded to your specified `METRICS_BUCKET` in S3, stored under `S3://{METRICS_BUCKET}/configs/{BENCHMARK_NAME}_{timestamp}/{BENCHMARK_NAME}_split_{UID}.yaml`. Here, `UID` is a unique ID assigned to the split.
+In order for the Lambda function to submit multiple Array child jobs simultaneously, you need to specify a list of values for each module-specific key. Each combination of configurations is saved and uploaded to your specified `METRICS_BUCKET` in S3, stored under `S3://{METRICS_BUCKET}/configs/{module}/{BENCHMARK_NAME}_{timestamp}/{BENCHMARK_NAME}_split_{UID}.yaml`. Here, `UID` is a unique ID assigned to the split.
 
-The AWS infrastructure configurations and submitted job IDs are saved locally at `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`. You can use this file to check the job status at any time:
+The AWS infrastructure configurations and submitted job ID is saved locally at `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`. You can use this file to check the job status at any time:
 
 ```bash
 agbench get-job-status --config-file /path/to/aws_configs.yaml
@@ -272,5 +266,5 @@ agbench clean-amlb-results --help
 Step 3: Run evaluation on multiple cleaned files from `Step 2`
 
 ```
-agbench evaluate-amlb-results --frameworks-run framework_1 --frameworks-run framework_2 --results-dir-input data/results/input/prepared/openml/ --paths file_name_1.csv --paths file_name_2.csv --no-clean-data
+agbench evaluate-amlb-results --frameworks-run framework_1 --frameworks-run framework_2 --results-dir-input data/results/input/prepared/openml/ --paths file_name_1.csv --paths file_name_2.csv --output-suffix benchmark_name --no-clean-data
 ```
