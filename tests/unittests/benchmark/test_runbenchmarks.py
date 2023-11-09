@@ -284,7 +284,10 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
         save_hardware_metrics=False,
     )
     assert setup["custom_configs"]["custom_dataloader"]["dataloader_file"] == "custom_configs/dataloaders/dataset.py"
-    assert setup["custom_configs"]["custom_dataloader"]["dataset_config_file"] == "custom_configs/dataloaders/datasets.yaml"
+    assert (
+        setup["custom_configs"]["custom_dataloader"]["dataset_config_file"]
+        == "custom_configs/dataloaders/datasets.yaml"
+    )
     assert umount_mock.call_count == 2
     assert mount_mock.call_count == 1
 

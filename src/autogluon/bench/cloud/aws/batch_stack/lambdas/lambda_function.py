@@ -36,13 +36,13 @@ def submit_batch_job(env: list, job_name: str, job_queue: str, job_definition: s
         "jobName": job_name,
         "jobQueue": job_queue,
         "jobDefinition": job_definition,
-        "containerOverrides": container_overrides
+        "containerOverrides": container_overrides,
     }
     if array_size > 1:
         job_params["arrayProperties"] = {"size": array_size}
 
     response = aws_batch.submit_job(**job_params)
-    
+
     logger.info("Job %s submitted to AWS Batch queue %s.", job_name, job_queue)
     logger.info(response)
     return response["jobId"]

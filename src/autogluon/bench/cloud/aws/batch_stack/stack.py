@@ -22,6 +22,7 @@ Sample CDK code for creating the required infrastructure for running a AWS Batch
 AWS Batch as the compute enviroment in which a docker image runs the benchmarking script.
 """
 
+
 def find_project_root_or_fallback(start_dir: str, root_identifier: str = "pyproject.toml"):
     """Find the project root directory by searching for a specific identifier file.
     If not found, fall back to the starting directory.

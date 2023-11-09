@@ -8,17 +8,17 @@ import time
 from datetime import datetime
 from typing import Optional, Union
 
-from autogluon.multimodal.constants import (
-    IMAGE_SIMILARITY,
-    IMAGE_TEXT_SIMILARITY,
-    OBJECT_DETECTION,
-    TEXT_SIMILARITY,
-    FEW_SHOT_CLASSIFICATION,
-)
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
 from autogluon.core.metrics import make_scorer
 from autogluon.multimodal import MultiModalPredictor
 from autogluon.multimodal import __version__ as ag_version
+from autogluon.multimodal.constants import (
+    FEW_SHOT_CLASSIFICATION,
+    IMAGE_SIMILARITY,
+    IMAGE_TEXT_SIMILARITY,
+    OBJECT_DETECTION,
+    TEXT_SIMILARITY,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -214,7 +214,6 @@ def run(
         predictor_args["match_label"] = train_data.match_label
     elif train_data.problem_type == OBJECT_DETECTION:
         predictor_args["sample_data_path"] = train_data.data
-    
 
     metrics_func = None
     if custom_metrics is not None and custom_metrics["function_name"] == train_data.metric:

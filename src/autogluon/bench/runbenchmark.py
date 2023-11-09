@@ -145,8 +145,8 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
         FunctionName=lambda_function_name, InvocationType="RequestResponse", Payload=json.dumps(payload)
     )
     response_payload = json.loads(response["Payload"].read().decode("utf-8"))
-    
-    if 'FunctionError' in response:
+
+    if "FunctionError" in response:
         error_payload = response_payload
         raise Exception(f"Lambda function error: {error_payload}")
 
