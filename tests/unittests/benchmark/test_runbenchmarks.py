@@ -102,13 +102,11 @@ def test_get_kwargs_multimodal():
         "framework": "AutoGluon_stable",
         "dataset_name": "dataset",
     }
-    agbench_dev_url = "https://github.com/test/autogluon-bench.git#branch"
 
     expected_result = {
         "setup_kwargs": {
             "git_uri": "https://github.com/autogluon/autogluon.git",
             "git_branch": "master",
-            "agbench_dev_url": "https://github.com/test/autogluon-bench.git#branch",
         },
         "run_kwargs": {
             "dataset_name": "dataset",
@@ -120,7 +118,7 @@ def test_get_kwargs_multimodal():
         },
     }
 
-    assert get_kwargs(module, configs, agbench_dev_url) == expected_result
+    assert get_kwargs(module, configs) == expected_result
 
 
 def test_get_kwargs_tabular():
@@ -134,7 +132,6 @@ def test_get_kwargs_tabular():
         "fold_to_run": 6,
         "amlb_user_dir": "sample_configs/amlb_configs",
     }
-    agbench_dev_url = None
 
     expected_result = {
         "setup_kwargs": {
@@ -153,7 +150,7 @@ def test_get_kwargs_tabular():
         },
     }
 
-    assert get_kwargs(module, configs, agbench_dev_url) == expected_result
+    assert get_kwargs(module, configs) == expected_result
 
 
 def test_invoke_lambda(mocker):
@@ -184,14 +181,13 @@ def test_run_aws_mode(mocker, tmp_path):
         setup["config_file"],
         remove_resources=False,
         wait=False,
-        dev_branch=None,
         skip_setup=True,
         save_hardware_metrics=False,
     )
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
-        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
+        s3_bucket="test_bucket", s3_dir="configs/tabular/test_benchmark_test_time", local_path="test_dump"
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
     setup["mock_wait_for_jobs"].assert_not_called()
@@ -206,14 +202,13 @@ def test_run_aws_mode_remove_resources(mocker, tmp_path):
         setup["config_file"],
         remove_resources=True,
         wait=False,
-        dev_branch=None,
         skip_setup=True,
         save_hardware_metrics=False,
     )
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
-        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
+        s3_bucket="test_bucket", s3_dir="configs/tabular/test_benchmark_test_time", local_path="test_dump"
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
@@ -234,40 +229,18 @@ def test_run_aws_mode_wait(mocker, tmp_path):
         setup["config_file"],
         remove_resources=False,
         wait=True,
-        dev_branch=None,
         skip_setup=True,
         save_hardware_metrics=False,
     )
 
     setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
     setup["mock_upload_to_s3"].assert_called_once_with(
-        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
+        s3_bucket="test_bucket", s3_dir="configs/tabular/test_benchmark_test_time", local_path="test_dump"
     )
     setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
     setup["mock_wait_for_jobs"].assert_called_once_with(config_file="test_dump")
     setup["mock_get_hardware_metrics"].assert_not_called()
-
-
-def test_run_aws_mode_dev_branch(mocker, tmp_path):
-    setup = setup_mock(mocker, tmp_path)
-    dev_branch = "dev_branch_url"
-
-    run(
-        setup["config_file"],
-        remove_resources=False,
-        wait=False,
-        dev_branch=dev_branch,
-        skip_setup=True,
-        save_hardware_metrics=False,
-    )
-
-    assert os.environ["AG_BENCH_DEV_URL"] == dev_branch
-    setup["mock_deploy_stack"].assert_called_once_with(custom_configs=setup["custom_configs"])
-    setup["mock_upload_to_s3"].assert_called_once_with(
-        s3_bucket="test_bucket", s3_dir="configs/test_benchmark_test_time", local_path="test_dump"
-    )
-    setup["mock_invoke_lambda"].assert_called_once_with(configs=setup["infra_configs"], config_file="test_s3_path")
 
 
 def test_run_aws_tabular_user_dir(mocker, tmp_path):
@@ -279,17 +252,14 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
         setup["config_file"],
         remove_resources=False,
         wait=False,
-        dev_branch="https://git_url#git_branch",
         skip_setup=True,
         save_hardware_metrics=False,
     )
-    assert os.environ["AG_BENCH_DEV_URL"] == "https://git_url#git_branch"
-    assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular"
-    assert os.environ["BENCHMARK_DIR"] == "ag_bench_runs/tabular/test_benchmark_test_time"
+    assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular/"
     assert os.environ["GIT_URI"] == "https://github.com/openml/automlbenchmark.git"
     assert os.environ["GIT_BRANCH"] == "master"
     assert os.environ["AMLB_FRAMEWORK"] == "AutoGluon:stable"
-    assert os.environ["AMLB_USER_DIR"] == "amlb_configs"
+    assert os.environ["AMLB_USER_DIR"] == "custom_configs/amlb_configs"
     temp_dir_mock.assert_not_called()
     s3_mock.assert_not_called()
     assert setup["mock_umount"].call_count == 4
@@ -310,12 +280,11 @@ def test_run_aws_multimodal_custom_dataloader(mocker, tmp_path):
         setup["config_file"],
         remove_resources=False,
         wait=False,
-        dev_branch="https://git_url#git_branch",
         skip_setup=True,
         save_hardware_metrics=False,
     )
-    assert setup["custom_configs"]["custom_dataloader"]["dataloader_file"] == "dataloaders/dataset.py"
-    assert setup["custom_configs"]["custom_dataloader"]["dataset_config_file"] == "dataloaders/datasets.yaml"
+    assert setup["custom_configs"]["custom_dataloader"]["dataloader_file"] == "custom_configs/dataloaders/dataset.py"
+    assert setup["custom_configs"]["custom_dataloader"]["dataset_config_file"] == "custom_configs/dataloaders/datasets.yaml"
     assert umount_mock.call_count == 2
     assert mount_mock.call_count == 1
 
@@ -333,11 +302,10 @@ def test_run_aws_multimodal_custom_metrics(mocker, tmp_path):
         setup["config_file"],
         remove_resources=False,
         wait=False,
-        dev_branch="https://git_url#git_branch",
         skip_setup=True,
         save_hardware_metrics=False,
     )
-    assert setup["custom_configs"]["custom_metrics"]["metrics_path"] == "metrics/metrics.py"
+    assert setup["custom_configs"]["custom_metrics"]["metrics_path"] == "custom_configs/metrics/metrics.py"
     assert umount_mock.call_count == 2
     assert mount_mock.call_count == 1
 
@@ -362,7 +330,6 @@ def test_run_local_mode(mocker, tmp_path):
         str(config_file),
         remove_resources=False,
         wait=False,
-        dev_branch=None,
         skip_setup=False,
         save_hardware_metrics=False,
     )
@@ -372,8 +339,7 @@ def test_run_local_mode(mocker, tmp_path):
         benchmark_name="test_benchmark_test_time",
         benchmark_dir="ag_bench_runs/tabular/test_benchmark_test_time",
         configs=configs,
-        benchmark_dir_s3="tabular/test_benchmark_test_time",
-        agbench_dev_url=None,
+        benchmark_dir_s3="tabular/test_benchmark_test_time/test_benchmark_test_time_0",
         skip_setup=False,
     )
 
@@ -477,7 +443,6 @@ def test_get_kwargs_timeseries():
         "fold_to_run": 6,
         "amlb_user_dir": "sample_configs/amlb_configs",
     }
-    agbench_dev_url = None
 
     expected_result = {
         "setup_kwargs": {
@@ -496,7 +461,7 @@ def test_get_kwargs_timeseries():
         },
     }
 
-    assert get_kwargs(module, configs, agbench_dev_url) == expected_result
+    assert get_kwargs(module, configs) == expected_result
 
 
 def test_run_aws_timeseries_user_dir(mocker, tmp_path):
@@ -508,16 +473,13 @@ def test_run_aws_timeseries_user_dir(mocker, tmp_path):
         setup["config_file"],
         remove_resources=False,
         wait=False,
-        dev_branch="https://git_url#git_branch",
         skip_setup=True,
     )
-    assert os.environ["AG_BENCH_DEV_URL"] == "https://git_url#git_branch"
-    assert os.environ["FRAMEWORK_PATH"] == "frameworks/timeseries"
-    assert os.environ["BENCHMARK_DIR"] == "ag_bench_runs/timeseries/test_benchmark_test_time"
+    assert os.environ["FRAMEWORK_PATH"] == "frameworks/timeseries/"
     assert os.environ["GIT_URI"] == "https://github.com/openml/automlbenchmark.git"
     assert os.environ["GIT_BRANCH"] == "master"
     assert os.environ["AMLB_FRAMEWORK"] == "AutoGluon:stable"
-    assert os.environ["AMLB_USER_DIR"] == "amlb_configs"
+    assert os.environ["AMLB_USER_DIR"] == "custom_configs/amlb_configs"
     temp_dir_mock.assert_not_called()
     s3_mock.assert_not_called()
     assert setup["mock_umount"].call_count == 4
