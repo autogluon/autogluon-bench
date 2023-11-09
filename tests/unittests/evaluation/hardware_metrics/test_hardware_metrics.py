@@ -136,7 +136,7 @@ class TestHardwareMetrics(unittest.TestCase):
                 s3_bucket="some bucket",
                 module="tabular",
                 benchmark_name="some_benchmark",
-                sub_folder="ag_bench_20230720T102030_2d42d496266911ee8df28ee9311e6528",
+                sub_folder="some_benchmark_123456-abc-efg",
                 cloudwatch_client=ANY,
             ),
             call(
@@ -144,7 +144,7 @@ class TestHardwareMetrics(unittest.TestCase):
                 s3_bucket="some bucket",
                 module="tabular",
                 benchmark_name="some_benchmark",
-                sub_folder="ag_bench_20230720T102030_2d794800266911ee8df28ee9311e6528",
+                sub_folder="some_benchmark_010101-xxx-zzz",
                 cloudwatch_client=ANY,
             ),
         ]

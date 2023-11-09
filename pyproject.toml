@@ -108,3 +108,4 @@ xfail_strict = true
 
 [tool.setuptools_scm]
 write_to = "src/autogluon/bench/version.py"
+fallback_version = "0.0.1.dev0"

@@ -59,7 +59,6 @@ def test_batch_job_stack():
     os.environ["FRAMEWORK_PATH"] = "frameworks/tabular"
     os.environ["GIT_URI"] = "https://github.com/openml/automlbenchmark.git"
     os.environ["GIT_BRANCH"] = "master"
-    os.environ["BENCHMARK_DIR"] = "benchmark_name_20230725"
 
     with patch.object(
         StaticResourceStack,

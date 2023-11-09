@@ -52,13 +52,18 @@ class TabularBenchmark(Benchmark):
             None
         """
 
+        if os.environ.get("RUNNING_IN_DOCKER", False):
+            venv_base_dir = "/home/"
+        else:
+            venv_base_dir = self.benchmark_dir
+
         exec_script_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.sh"
         command = [
             exec_script_path,
             framework,
             benchmark,
             constraint,
-            self.benchmark_dir,
+            venv_base_dir,
             self.metrics_dir,
         ]
 

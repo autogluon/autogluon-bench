@@ -22,8 +22,25 @@ Sample CDK code for creating the required infrastructure for running a AWS Batch
 AWS Batch as the compute enviroment in which a docker image runs the benchmarking script.
 """
 
+
+def find_project_root_or_fallback(start_dir: str, root_identifier: str = "pyproject.toml"):
+    """Find the project root directory by searching for a specific identifier file.
+    If not found, fall back to the starting directory.
+    """
+    current_dir = start_dir
+
+    while current_dir != os.path.dirname(current_dir):
+        if os.path.exists(os.path.join(current_dir, root_identifier)):
+            return str(current_dir)
+        current_dir = os.path.dirname(current_dir)
+
+    return start_dir
+
+
 with importlib.resources.path("autogluon.bench", "Dockerfile") as file_path:
     docker_base_dir = os.path.dirname(file_path)
+    project_root = find_project_root_or_fallback(docker_base_dir)
+    docker_path = os.path.relpath(file_path, project_root)
 
 with importlib.resources.path("autogluon.bench.cloud.aws.batch_stack.lambdas", "lambda_function.py") as file_path:
     lambda_script_dir = os.path.dirname(file_path)
@@ -160,17 +177,16 @@ class BatchJobStack(core.Stack):
         docker_image_asset = ecr_assets.DockerImageAsset(
             self,
             f"{prefix}-ecr-docker-image-asset",
-            directory=docker_base_dir,
+            directory=project_root,
+            file=docker_path,
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
             build_args={
                 "AG_BENCH_BASE_IMAGE": os.environ["AG_BENCH_BASE_IMAGE"],
                 "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
-                "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
                 "CDK_DEPLOY_REGION": os.environ["CDK_DEPLOY_REGION"],
                 "FRAMEWORK_PATH": os.environ["FRAMEWORK_PATH"],
                 "GIT_URI": os.environ["GIT_URI"],
                 "GIT_BRANCH": os.environ["GIT_BRANCH"],
-                "BENCHMARK_DIR": os.environ["BENCHMARK_DIR"],
                 "AMLB_FRAMEWORK": os.getenv("AMLB_FRAMEWORK", ""),
                 "AMLB_USER_DIR": os.getenv("AMLB_USER_DIR", ""),
             },
@@ -186,10 +202,6 @@ class BatchJobStack(core.Stack):
             # Bug that this parameter is not rending in the CF stack under cdk.out
             # https://github.com/aws/aws-cdk/issues/13023
             linux_params=ecs.LinuxParameters(self, f"{prefix}-linux_params", shared_memory_size=container_memory),
-            environment={
-                "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
-                "AG_BENCH_DEV_URL": os.getenv("AG_BENCH_DEV_URL", ""),
-            },
         )
 
         job_definition = batch.JobDefinition(
@@ -213,8 +225,8 @@ class BatchJobStack(core.Stack):
                     volume=ec2.BlockDeviceVolume.ebs(block_device_volume),
                 )
             ],
-            http_tokens=ec2.LaunchTemplateHttpTokens.OPTIONAL,
-            http_endpoint=True,
+            http_tokens=ec2.LaunchTemplateHttpTokens.REQUIRED,
+            require_imdsv2=True,
         )
 
         cloudwatch_policy = iam.Policy(

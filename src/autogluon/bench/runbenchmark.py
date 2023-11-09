@@ -12,6 +12,7 @@ import botocore
 import typer
 import yaml
 
+from autogluon.bench import __path__ as agbench_path
 from autogluon.bench import __version__ as agbench_version
 from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.eval.hardware_metrics.hardware_metrics import get_hardware_metrics
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
 
 
-def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
+def get_kwargs(module: str, configs: dict):
     """Returns a dictionary of keyword arguments to be used for setting up and running the benchmark.
 
     Args:
@@ -49,7 +50,6 @@ def get_kwargs(module: str, configs: dict, agbench_dev_url: str):
             "setup_kwargs": {
                 "git_uri": framework_configs["repo"],
                 "git_branch": framework_configs.get("version", "stable"),
-                "agbench_dev_url": agbench_dev_url,
             },
             "run_kwargs": {
                 "dataset_name": configs["dataset_name"],
@@ -91,7 +91,6 @@ def run_benchmark(
     benchmark_dir: str,
     configs: dict,
     benchmark_dir_s3: str = None,
-    agbench_dev_url: str = None,
     skip_setup: str = False,
 ):
     """Runs a benchmark based on the provided configuration options.
@@ -116,7 +115,7 @@ def run_benchmark(
 
     benchmark = benchmark_class(benchmark_name=benchmark_name, benchmark_dir=benchmark_dir)
 
-    module_kwargs = get_kwargs(module=module_name, configs=configs, agbench_dev_url=agbench_dev_url)
+    module_kwargs = get_kwargs(module=module_name, configs=configs)
     if not skip_setup:
         benchmark.setup(**module_kwargs["setup_kwargs"])
 
@@ -145,10 +144,15 @@ def invoke_lambda(configs: dict, config_file: str) -> dict:
     response = lambda_client.invoke(
         FunctionName=lambda_function_name, InvocationType="RequestResponse", Payload=json.dumps(payload)
     )
-    response = json.loads(response["Payload"].read().decode("utf-8"))
+    response_payload = json.loads(response["Payload"].read().decode("utf-8"))
+
+    if "FunctionError" in response:
+        error_payload = response_payload
+        raise Exception(f"Lambda function error: {error_payload}")
+
     logger.info("AWS Batch jobs submitted by %s.", configs["LAMBDA_FUNCTION_NAME"])
 
-    return response
+    return response_payload
 
 
 @app.command()
@@ -181,7 +185,6 @@ def get_job_status(
             config = yaml.safe_load(f)
             job_ids = list(config.get("job_configs", {}).keys())
             cdk_deploy_region = config.get("CDK_DEPLOY_REGION", cdk_deploy_region)
-
     if job_ids is None or cdk_deploy_region is None:
         raise ValueError("Either job_ids or cdk_deploy_region must be provided or configured in the config_file.")
 
@@ -191,8 +194,13 @@ def get_job_status(
 
     for job_id in job_ids:
         response = batch_client.describe_jobs(jobs=[job_id])
-        job = response["jobs"][0]
-        status_dict[job_id] = job["status"]
+        job_detail = response["jobs"][0]
+
+        # Check if the job is an array job
+        if "arrayProperties" in job_detail and "size" in job_detail["arrayProperties"]:
+            status_dict[job_id] = job_detail["arrayProperties"]["statusSummary"]
+        else:
+            status_dict[job_id] = job_detail["status"]
 
     logger.info(status_dict)
     return status_dict
@@ -205,18 +213,35 @@ def wait_for_jobs(
     quit_statuses: Optional[list] = ["SUCCEEDED", "FAILED"],
     frequency: Optional[int] = 120,
 ):
+    if config_file is not None:
+        with open(config_file, "r") as f:
+            config = yaml.safe_load(f)
+            job_ids = list(config.get("job_configs", {}).keys())
+            aws_region = config.get("CDK_DEPLOY_REGION", aws_region)
+
+    batch_client = boto3.client("batch", region_name=aws_region)
     while True:
         all_jobs_completed = True
-        failed_jobs = []
+        failed_jobs = set()
 
         try:
-            job_status = get_job_status(job_ids=job_ids, cdk_deploy_region=aws_region, config_file=config_file)
+            job_status = get_job_status(job_ids=job_ids, cdk_deploy_region=aws_region, config_file=None)
 
-            for job_id, job_status in job_status.items():
-                if job_status == "FAILED":
-                    failed_jobs.append(job_id)
-                elif job_status not in quit_statuses:
-                    all_jobs_completed = False
+            for job_id, status in job_status.items():
+                if isinstance(status, str):
+                    if status == "FAILED":
+                        failed_jobs.append(job_id)
+                    elif status not in quit_statuses:
+                        all_jobs_completed = False
+                elif isinstance(status, dict):
+                    for status, num in status.items():
+                        if status == "FAILED" and num > 0:
+                            paginator = batch_client.get_paginator("list_jobs")
+                            for page in paginator.paginate(arrayJobId=job_id, jobStatus="FAILED"):
+                                for job in page["jobSummaryList"]:
+                                    failed_jobs.add(job["jobId"])
+                        if status not in quit_statuses and num > 0:
+                            all_jobs_completed = False
         except botocore.exceptions.ClientError as e:
             logger.error(f"An error occurred: {e}.")
             return
@@ -224,21 +249,9 @@ def wait_for_jobs(
         if all_jobs_completed:
             break
         else:
-            time.sleep(frequency)  # Poll job statuses every 60 seconds
+            time.sleep(frequency)  # Poll job statuses every 120 seconds
 
     return failed_jobs
-
-
-def _get_split_id(file_name: str):
-    if "split" in file_name:
-        file_name = os.path.basename(file_name)
-        match = re.search(r"([a-f0-9]{32})", file_name)
-        if match:
-            return match.group(1)
-        else:
-            return None
-
-    return None
 
 
 def _dump_configs(benchmark_dir: str, configs: dict, file_name: str):
@@ -260,14 +273,6 @@ def _get_git_info(git_uri_branch: str):
     return git_uri, git_branch
 
 
-def _validate_single_value(configs: dict, key: str):
-    value = configs[key]
-    if isinstance(value, str):
-        configs[key] = [value]
-    elif isinstance(value, list) and len(value) != 1:
-        raise ValueError(f"Only single value (str, list[str]) is supported for {key}.")
-
-
 def _is_mounted(path: str):
     with open("/proc/mounts", "r") as mounts:
         for line in mounts:
@@ -286,6 +291,7 @@ def _umount_if_needed(path: str = None):
 
 
 def _mount_dir(orig_path: str, new_path: str):
+    logging.info(f"Mounting from {orig_path} to {new_path}.")
     subprocess.run(["sudo", "mount", "--bind", orig_path, new_path])
 
 
@@ -302,8 +308,8 @@ def update_custom_dataloader(configs: dict):
     current_path = os.path.dirname(os.path.abspath(__file__))
     custom_dataloader_path = os.path.join(current_path, "custom_configs", "dataloaders")
 
-    configs["custom_dataloader"]["dataloader_file"] = f"dataloaders/{dataloader_file_name}"
-    configs["custom_dataloader"]["dataset_config_file"] = f"dataloaders/{dataset_config_file_name}"
+    configs["custom_dataloader"]["dataloader_file"] = f"custom_configs/dataloaders/{dataloader_file_name}"
+    configs["custom_dataloader"]["dataset_config_file"] = f"custom_configs/dataloaders/{dataset_config_file_name}"
 
     return original_path, custom_dataloader_path
 
@@ -316,24 +322,25 @@ def update_custom_metrics(configs: dict):
     current_path = os.path.dirname(os.path.abspath(__file__))
     custom_metrics_path = os.path.join(current_path, "custom_configs", "metrics")
 
-    configs["custom_metrics"]["metrics_path"] = f"metrics/{metrics_file_name}"
+    configs["custom_metrics"]["metrics_path"] = f"custom_configs/metrics/{metrics_file_name}"
 
     return original_path, custom_metrics_path
 
 
 def get_resource(configs: dict, resource_name: str):
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    default_resource_file = os.path.join(current_path, "resources", f"{resource_name}.yaml")
+    ag_path = agbench_path[0]
+    default_resource_file = os.path.join(ag_path, "resources", f"{resource_name}.yaml")
     with open(default_resource_file, "r") as f:
-        default_resource = yaml.safe_load(f)
+        resources = yaml.safe_load(f)
 
+    current_path = os.getcwd()
     if configs.get("custom_resource_dir") is not None:
         custom_resource_dir = configs["custom_resource_dir"]
-        if os.path.exists(os.path.join(custom_resource_dir, f"{resource_name}.yaml")):
-            with open(os.path.join(custom_resource_dir, f"{resource_name}.yaml"), "r") as f:
-                custom_resource = yaml.safe_load(f)
-                default_resource.update(custom_resource)
-    return default_resource
+        resource_file = os.path.join(current_path, custom_resource_dir, f"{resource_name}.yaml")
+        if os.path.exists(resource_file):
+            with open(resource_file, "r") as f:
+                resources = yaml.safe_load(f)
+    return resources
 
 
 def update_resource_constraint(configs: dict):
@@ -355,7 +362,6 @@ def run(
     config_file: str = typer.Argument(..., help="Path to custom config file."),
     remove_resources: bool = typer.Option(False, help="Remove resources after run."),
     wait: bool = typer.Option(False, help="Whether to block and wait for the benchmark to finish, default to False."),
-    dev_branch: Optional[str] = typer.Option(None, help="Path to a development AutoGluon-Bench branch."),
     skip_setup: bool = typer.Option(
         False, help="Whether to skip setting up framework in local mode, default to False."
     ),
@@ -367,6 +373,10 @@ def run(
         config_file = download_file_from_s3(s3_path=config_file)
     with open(config_file, "r") as f:
         configs = yaml.safe_load(f)
+        if isinstance(configs, list) and os.environ.get(
+            "AWS_BATCH_JOB_ARRAY_INDEX"
+        ):  # AWS array job sets ARRAY_INDEX environment variable for each child job
+            configs = configs[int(os.environ["AWS_BATCH_JOB_ARRAY_INDEX"])]
 
     benchmark_name = _get_benchmark_name(configs=configs)
     timestamp_pattern = r"\d{8}T\d{6}"  # Timestamp that matches YYYYMMDDTHHMMSS
@@ -384,15 +394,9 @@ def run(
         try:
             configs["benchmark_name"] = benchmark_name
             # setting environment variables for docker build ARG
-            if dev_branch is not None:
-                os.environ["AG_BENCH_DEV_URL"] = dev_branch  # pull dev branch from GitHub
-            else:
-                os.environ[
-                    "AG_BENCH_VERSION"
-                ] = agbench_version  # set the installed version for Dockerfile to align with
+            os.environ["AG_BENCH_VERSION"] = agbench_version
 
-            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
-            os.environ["BENCHMARK_DIR"] = benchmark_dir
+            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}/"
 
             if module in AMLB_DEPENDENT_MODULES:
                 os.environ["AMLB_FRAMEWORK"] = configs["framework"]
@@ -410,9 +414,10 @@ def run(
                     else:
                         amlb_user_dir_local = amlb_user_dir
 
-                    custom_configs_path = os.path.join(current_path, "custom_configs/amlb_configs")
+                    default_user_dir = "custom_configs/amlb_configs"
+                    custom_configs_path = os.path.join(current_path, default_user_dir)
                     lambda_custom_configs_path = os.path.join(
-                        current_path, "cloud/aws/batch_stack/lambdas/amlb_configs"
+                        current_path, "cloud/aws/batch_stack/lambdas", default_user_dir
                     )
                     original_path = amlb_user_dir_local
                     paths += [custom_configs_path, lambda_custom_configs_path]
@@ -421,10 +426,9 @@ def run(
                         # to make it available for Docker build
                         _umount_if_needed(path)
                         _mount_dir(orig_path=original_path, new_path=path)
-                    os.environ["AMLB_USER_DIR"] = "amlb_configs"
-                    configs["amlb_user_dir"] = "amlb_configs"
+                    os.environ["AMLB_USER_DIR"] = default_user_dir  # For Docker build
+                    configs["amlb_user_dir"] = default_user_dir  # For Lambda job config
             elif module == "multimodal":
-                update_resource_constraint(configs=configs)
                 if configs.get("custom_dataloader") is not None:
                     original_path, custom_dataloader_path = update_custom_dataloader(configs=configs)
                     paths.append(custom_dataloader_path)
@@ -437,15 +441,17 @@ def run(
                     _umount_if_needed(custom_metrics_path)
                     _mount_dir(orig_path=original_path, new_path=custom_metrics_path)
 
+                update_resource_constraint(configs=configs)
                 framework_configs = get_framework_configs(configs=configs)
-                os.environ["GIT_URI"] = framework_configs["repo"]
-                os.environ["GIT_BRANCH"] = framework_configs.get("version", "stable")
                 if configs.get("custom_resource_dir") is not None:
                     custom_resource_path = os.path.join(current_path, "custom_configs", "resources")
                     paths.append(custom_resource_path)
                     _umount_if_needed(custom_resource_path)
                     _mount_dir(orig_path=configs["custom_resource_dir"], new_path=custom_resource_path)
-                    configs["custom_resource_dir"] = "resources"
+                    configs["custom_resource_dir"] = "custom_configs/resources"
+
+                os.environ["GIT_URI"] = framework_configs["repo"]
+                os.environ["GIT_BRANCH"] = framework_configs.get("version", "stable")
 
             infra_configs = deploy_stack(custom_configs=configs)
 
@@ -454,11 +460,16 @@ def run(
             )
             config_s3_path = upload_to_s3(
                 s3_bucket=infra_configs["METRICS_BUCKET"],
-                s3_dir=f"configs/{benchmark_name}",
+                s3_dir=f"configs/{module}/{benchmark_name}",
                 local_path=cloud_config_path,
             )
-            lambda_response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
-            aws_configs = {**infra_configs, **lambda_response}
+
+            response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
+
+            job_configs = {
+                "job_configs": response,
+            }
+            aws_configs = {**infra_configs, **job_configs}
             logger.info(f"Saving infra configs and submitted job configs under {benchmark_dir}.")
             aws_config_path = _dump_configs(
                 benchmark_dir=benchmark_dir, configs=aws_configs, file_name="aws_configs.yaml"
@@ -476,7 +487,7 @@ def run(
                         f"`agbench destroy-stack --config-file {aws_config_path}` "
                         "to delete the stack after jobs have run to completion if you choose to quit now."
                     )
-
+                time.sleep(10)  # wait for Batch to load
                 failed_jobs = wait_for_jobs(config_file=aws_config_path)
                 if len(failed_jobs) > 0:
                     logger.warning("Some jobs have failed: %s.", failed_jobs)
@@ -509,7 +520,7 @@ def run(
                 _umount_if_needed(path)
 
     elif configs["mode"] == "local":
-        split_id = _get_split_id(config_file)
+        split_id = os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", 0)
         benchmark_dir_s3 = f"{module}/{benchmark_name}"
         if split_id is not None:
             benchmark_dir_s3 += f"/{benchmark_name}_{split_id}"
@@ -521,15 +532,12 @@ def run(
                 configs["amlb_user_dir"] = download_dir_from_s3(s3_path=amlb_user_dir, local_path=tmpdir.name)
 
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
-        if dev_branch is not None:
-            logger.info(f"Using Development Branch: {dev_branch} for set up...")
 
         run_benchmark(
             benchmark_name=benchmark_name,
             benchmark_dir=benchmark_dir,
             configs=configs,
             benchmark_dir_s3=benchmark_dir_s3,
-            agbench_dev_url=dev_branch,
             skip_setup=skip_setup,
         )
     else:
