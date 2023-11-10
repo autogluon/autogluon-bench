@@ -222,7 +222,8 @@ def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_
     benchmark_name = config["benchmark_name"]
     config_s3_path = upload_config(config_list=job_configs, bucket=metrics_bucket, benchmark_name=benchmark_name)
     env = [{"name": "config_file", "value": config_s3_path}]
-    job_name = f"{benchmark_name}-array-job"
+    job_type = "array" if len(job_configs) > 1 else "single"
+    job_name = f"{benchmark_name}-{config['module']}-{job_type}-job"
     parent_job_id = submit_batch_job(
         env=env,
         job_name=job_name,
