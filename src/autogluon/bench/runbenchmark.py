@@ -220,31 +220,27 @@ def wait_for_jobs(
             aws_region = config.get("CDK_DEPLOY_REGION", aws_region)
 
     batch_client = boto3.client("batch", region_name=aws_region)
+    failed_jobs = set()
+
     while True:
         all_jobs_completed = True
-        failed_jobs = set()
+        job_status = get_job_status(job_ids=job_ids, cdk_deploy_region=aws_region, config_file=None)
 
-        try:
-            job_status = get_job_status(job_ids=job_ids, cdk_deploy_region=aws_region, config_file=None)
-
-            for job_id, status in job_status.items():
-                if isinstance(status, str):
-                    if status == "FAILED":
-                        failed_jobs.append(job_id)
-                    elif status not in quit_statuses:
+        for job_id, status in job_status.items():
+            if isinstance(status, str):
+                if status == "FAILED":
+                    failed_jobs.add(job_id)
+                elif status not in quit_statuses:
+                    all_jobs_completed = False
+            elif isinstance(status, dict):
+                for status, num in status.items():
+                    if status == "FAILED" and num > 0:
+                        paginator = batch_client.get_paginator("list_jobs")
+                        for page in paginator.paginate(arrayJobId=job_id, jobStatus="FAILED"):
+                            for job in page["jobSummaryList"]:
+                                failed_jobs.add(job["jobId"])
+                    if status not in quit_statuses and num > 0:
                         all_jobs_completed = False
-                elif isinstance(status, dict):
-                    for status, num in status.items():
-                        if status == "FAILED" and num > 0:
-                            paginator = batch_client.get_paginator("list_jobs")
-                            for page in paginator.paginate(arrayJobId=job_id, jobStatus="FAILED"):
-                                for job in page["jobSummaryList"]:
-                                    failed_jobs.add(job["jobId"])
-                        if status not in quit_statuses and num > 0:
-                            all_jobs_completed = False
-        except botocore.exceptions.ClientError as e:
-            logger.error(f"An error occurred: {e}.")
-            return
 
         if all_jobs_completed:
             break
