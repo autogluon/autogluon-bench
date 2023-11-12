@@ -2,6 +2,7 @@ import importlib.resources
 import json
 import logging
 import os
+import platform
 import re
 import subprocess
 import tempfile
@@ -9,7 +10,6 @@ import time
 from typing import List, Optional
 
 import boto3
-import botocore
 import typer
 import yaml
 
@@ -284,6 +284,7 @@ def _is_mounted(path: str):
 def _umount_if_needed(path: str = None):
     if not path:
         return
+
     if _is_mounted(path):
         logging.info(f"{path} is a mount point, attempting to umount.")
         subprocess.run(["sudo", "umount", path])
@@ -387,6 +388,11 @@ def run(
 
     if configs["mode"] == "aws":
         paths = []
+
+        os_name = platform.system()
+        if os_name != "Linux":
+            raise NotImplementedError("Only Linux system is supported to run AWS mode at the moment.")
+
         try:
             configs["benchmark_name"] = benchmark_name
             # setting environment variables for docker build ARG
