@@ -371,10 +371,10 @@ def run(
         config_file = download_file_from_s3(s3_path=config_file)
     with open(config_file, "r") as f:
         configs = yaml.safe_load(f)
-        if isinstance(configs, list) and os.environ.get(
-            "AWS_BATCH_JOB_ARRAY_INDEX"
-        ):  # AWS array job sets ARRAY_INDEX environment variable for each child job
-            configs = configs[int(os.environ["AWS_BATCH_JOB_ARRAY_INDEX"])]
+        if isinstance(configs, list):
+            configs = configs[
+                int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", "0"))
+            ]  # AWS array job sets AWS_BATCH_JOB_ARRAY_INDEX for child jobs
 
     benchmark_name = _get_benchmark_name(configs=configs)
     timestamp_pattern = r"\d{8}T\d{6}"  # Timestamp that matches YYYYMMDDTHHMMSS
