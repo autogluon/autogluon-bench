@@ -37,10 +37,15 @@ def find_project_root_or_fallback(start_dir: str, root_identifier: str = "pyproj
     return start_dir
 
 
+# when pip installed, project_root is at $site_package_path/src/autogluon/bench agbench_base_dir should be ./
+# when installed from source, project_root is at ./, agbench_base_dir should be ./src/autogluon/bench
 with importlib.resources.path("autogluon.bench", "Dockerfile") as file_path:
     docker_base_dir = os.path.dirname(file_path)
     project_root = find_project_root_or_fallback(docker_base_dir)
     docker_path = os.path.relpath(file_path, project_root)
+    agbench_base_dir = os.path.dirname(docker_path)
+    if agbench_base_dir == "":
+        agbench_base_dir = "."
 
 with importlib.resources.path("autogluon.bench.cloud.aws.batch_stack.lambdas", "lambda_function.py") as file_path:
     lambda_script_dir = os.path.dirname(file_path)
@@ -174,6 +179,8 @@ class BatchJobStack(core.Stack):
         # Currently CDK can only push to the default repo aws-cdk/assets
         # https://github.com/aws/aws-cdk/issues/12597
         # TODO: use https://github.com/cdklabs/cdk-docker-image-deployment
+
+        logger.info(f"Building Dockerfile at {docker_path} with context at {project_root}")
         docker_image_asset = ecr_assets.DockerImageAsset(
             self,
             f"{prefix}-ecr-docker-image-asset",
@@ -182,6 +189,7 @@ class BatchJobStack(core.Stack):
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
             build_args={
                 "AG_BENCH_BASE_IMAGE": os.environ["AG_BENCH_BASE_IMAGE"],
+                "AG_BENCH_BASE_DIR": agbench_base_dir,
                 "AG_BENCH_VERSION": os.getenv("AG_BENCH_VERSION", "latest"),
                 "CDK_DEPLOY_REGION": os.environ["CDK_DEPLOY_REGION"],
                 "FRAMEWORK_PATH": os.environ["FRAMEWORK_PATH"],

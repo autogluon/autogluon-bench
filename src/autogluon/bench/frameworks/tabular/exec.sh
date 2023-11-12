@@ -30,7 +30,6 @@ if [ -n "$fold" ]; then
 fi
 
 if [ -n "$user_dir" ]; then
-    cp -r $user_dir $venv_base_dir
     amlb_args+=" -u $user_dir"
 fi
 

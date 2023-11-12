@@ -398,7 +398,7 @@ def run(
             # setting environment variables for docker build ARG
             os.environ["AG_BENCH_VERSION"] = agbench_version
 
-            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}/"
+            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
 
             if module in AMLB_DEPENDENT_MODULES:
                 os.environ["AMLB_FRAMEWORK"] = configs["framework"]

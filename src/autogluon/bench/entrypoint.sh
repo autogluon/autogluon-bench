@@ -1,6 +1,5 @@
 #!/bin/bash
 
 echo "Running hardware utilization monitoring in the background..."
-${AGBENCH_BASE}utils/hardware_utilization.sh &
-
+${AG_BENCH_BASE_DIR}/utils/hardware_utilization.sh &
 agbench run $config_file --skip-setup

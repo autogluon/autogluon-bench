@@ -3,7 +3,6 @@ FROM $AG_BENCH_BASE_IMAGE
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNING_IN_DOCKER=true
-ENV AGBENCH_BASE=src/autogluon/bench/
 
 # Install essential packages and Python 3.9
 RUN apt-get update && \
@@ -25,6 +24,7 @@ RUN apt-get install -y python3-pip unzip curl git pciutils && \
 
 # Application-specific steps
 ARG AG_BENCH_VERSION
+ARG AG_BENCH_BASE_DIR
 ARG CDK_DEPLOY_REGION
 ARG FRAMEWORK_PATH
 ARG GIT_URI
@@ -32,17 +32,20 @@ ARG GIT_BRANCH
 ARG AMLB_FRAMEWORK
 ARG AMLB_USER_DIR
 
-WORKDIR /app/
+ENV AG_BENCH_BASE_DIR=${AG_BENCH_BASE_DIR}
 
-# Copying necessary files for autogluon-bench package
-COPY . /app/
-COPY ${AGBENCH_BASE}entrypoint.sh /app/
-COPY ${AGBENCH_BASE}custom_configs /app/custom_configs/
+WORKDIR /app/
+ENV VENV_BASE_DIR=/app/venv
+
+# Copying files for installing autogluon.bench from source, user needs to at the root of autogluon.bench repo as we need pyproject.toml
+COPY . .
+COPY ${AG_BENCH_BASE_DIR}/entrypoint.sh .
+COPY ${AG_BENCH_BASE_DIR}/custom_configs custom_configs/
 
 # check if autogluon.bench version contains "dev" tag
 RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \ 
         # install from local source
-        pip install /app/; \
+        pip install .; \
     else \
         pip install autogluon.bench==$AG_BENCH_VERSION; \
     fi
@@ -50,12 +53,12 @@ RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \
 RUN chmod +x entrypoint.sh \
     && if echo "$FRAMEWORK_PATH" | grep -q -E "tabular|timeseries"; then \
         if [ -n "$AMLB_USER_DIR" ]; then \
-            bash ${AGBENCH_BASE}${FRAMEWORK_PATH}setup.sh $GIT_URI $GIT_BRANCH "/home" $AMLB_FRAMEWORK $AMLB_USER_DIR; \
+            bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AMLB_FRAMEWORK $AMLB_USER_DIR; \
         else \
-            bash ${AGBENCH_BASE}${FRAMEWORK_PATH}setup.sh $GIT_URI $GIT_BRANCH "/home" $AMLB_FRAMEWORK; \
+            bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AMLB_FRAMEWORK; \
         fi; \
     elif echo "$FRAMEWORK_PATH" | grep -q "multimodal"; then \
-        bash ${AGBENCH_BASE}${FRAMEWORK_PATH}setup.sh $GIT_URI $GIT_BRANCH "/home" $AG_BENCH_VERSION; \
+        bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AG_BENCH_VERSION; \
     fi \
     && echo "CDK_DEPLOY_REGION=$CDK_DEPLOY_REGION" >> /etc/environment
 

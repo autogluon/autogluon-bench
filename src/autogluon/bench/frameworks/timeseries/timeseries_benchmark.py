@@ -50,8 +50,8 @@ class TimeSeriesBenchmark(Benchmark):
         Returns:
             None
         """
-        if os.environ.get("RUNNING_IN_DOCKER", False):
-            venv_base_dir = "/home/"
+        if os.environ.get("RUNNING_IN_DOCKER", "false") == "true":
+            venv_base_dir = os.environ["VENV_BASE_DIR"]
         else:
             venv_base_dir = self.benchmark_dir
 
