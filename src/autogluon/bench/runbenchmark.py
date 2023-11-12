@@ -1,3 +1,4 @@
+import importlib.resources
 import json
 import logging
 import os
@@ -31,6 +32,9 @@ app = typer.Typer()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
+
+with importlib.resources.path("autogluon.bench", "Dockerfile") as docker_file:
+    project_path = os.path.join(os.path.dirname(docker_file))
 
 
 def get_kwargs(module: str, configs: dict):
@@ -293,16 +297,15 @@ def _mount_dir(orig_path: str, new_path: str):
 
 def update_custom_dataloader(configs: dict):
     custom_dataloader_file = configs["custom_dataloader"]["dataloader_file"]
-    original_path = os.path.dirname(custom_dataloader_file)
+    original_path = os.path.abspath(os.path.dirname(custom_dataloader_file))
     custom_dataset_config = configs["custom_dataloader"]["dataset_config_file"]
-    if original_path != os.path.dirname(custom_dataset_config):
+    if original_path != os.path.abspath(os.path.dirname(custom_dataset_config)):
         raise ValueError(
             "Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory."
         )
     dataloader_file_name = os.path.basename(custom_dataloader_file)
     dataset_config_file_name = os.path.basename(custom_dataset_config)
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    custom_dataloader_path = os.path.join(current_path, "custom_configs", "dataloaders")
+    custom_dataloader_path = os.path.join(project_path, "custom_configs", "dataloaders")
 
     configs["custom_dataloader"]["dataloader_file"] = f"custom_configs/dataloaders/{dataloader_file_name}"
     configs["custom_dataloader"]["dataset_config_file"] = f"custom_configs/dataloaders/{dataset_config_file_name}"
@@ -312,11 +315,10 @@ def update_custom_dataloader(configs: dict):
 
 def update_custom_metrics(configs: dict):
     custom_metrics_path = configs["custom_metrics"]["metrics_path"]
-    original_path = os.path.dirname(custom_metrics_path)
+    original_path = os.path.abspath(os.path.dirname(custom_metrics_path))
 
     metrics_file_name = os.path.basename(custom_metrics_path)
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    custom_metrics_path = os.path.join(current_path, "custom_configs", "metrics")
+    custom_metrics_path = os.path.join(project_path, "custom_configs", "metrics")
 
     configs["custom_metrics"]["metrics_path"] = f"custom_configs/metrics/{metrics_file_name}"
 
@@ -324,8 +326,7 @@ def update_custom_metrics(configs: dict):
 
 
 def get_resource(configs: dict, resource_name: str):
-    ag_path = agbench_path[0]
-    default_resource_file = os.path.join(ag_path, "resources", f"{resource_name}.yaml")
+    default_resource_file = os.path.join(project_path, "resources", f"{resource_name}.yaml")
     with open(default_resource_file, "r") as f:
         resources = yaml.safe_load(f)
 
@@ -385,7 +386,6 @@ def run(
     tmpdir = None
 
     if configs["mode"] == "aws":
-        current_path = os.path.dirname(os.path.abspath(__file__))
         paths = []
         try:
             configs["benchmark_name"] = benchmark_name
@@ -411,9 +411,9 @@ def run(
                         amlb_user_dir_local = amlb_user_dir
 
                     default_user_dir = "custom_configs/amlb_configs"
-                    custom_configs_path = os.path.join(current_path, default_user_dir)
+                    custom_configs_path = os.path.join(project_path, default_user_dir)
                     lambda_custom_configs_path = os.path.join(
-                        current_path, "cloud/aws/batch_stack/lambdas", default_user_dir
+                        project_path, "cloud/aws/batch_stack/lambdas", default_user_dir
                     )
                     original_path = amlb_user_dir_local
                     paths += [custom_configs_path, lambda_custom_configs_path]
@@ -440,7 +440,7 @@ def run(
                 update_resource_constraint(configs=configs)
                 framework_configs = get_framework_configs(configs=configs)
                 if configs.get("custom_resource_dir") is not None:
-                    custom_resource_path = os.path.join(current_path, "custom_configs", "resources")
+                    custom_resource_path = os.path.join(project_path, "custom_configs", "resources")
                     paths.append(custom_resource_path)
                     _umount_if_needed(custom_resource_path)
                     _mount_dir(orig_path=configs["custom_resource_dir"], new_path=custom_resource_path)
