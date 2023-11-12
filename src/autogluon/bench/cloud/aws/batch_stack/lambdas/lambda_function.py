@@ -197,10 +197,12 @@ def process_benchmark_runs(module_configs: dict, amlb_benchmark_search_dirs: lis
         module_configs["fold_to_run"].setdefault(benchmark, {})
         for task in module_configs["amlb_task"][benchmark]:
             if module_configs["fold_to_run"][benchmark].get(task):
-                tasks = module_configs["fold_to_run"][benchmark][task]
-                module_configs["fold_to_run"][benchmark][task] = [t for t in tasks if t < default_max_folds]
+                folds = module_configs["fold_to_run"][benchmark][task]
             else:
-                module_configs["fold_to_run"][benchmark][task] = amlb_task_folds[benchmark][task]
+                folds = amlb_task_folds[benchmark][task]
+            module_configs["fold_to_run"][benchmark][task] = [f for f in folds if f < default_max_folds]
+            if not module_configs["fold_to_run"][benchmark][task]:
+                del module_configs["fold_to_run"][benchmark][task]
 
 
 def get_cloudwatch_logs_url(region: str, job_id: str, log_group_name: str = "aws/batch/job"):
@@ -218,6 +220,9 @@ def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_
         job_configs = generate_multimodal_config_combinations(config)
     else:
         raise ValueError("Invalid module. Choose either 'tabular', 'timeseries', or 'multimodal'.")
+
+    if len(job_configs) == 0:
+        return {parent_job_id: "No job submitted"}
 
     benchmark_name = config["benchmark_name"]
     config_s3_path = upload_config(config_list=job_configs, bucket=metrics_bucket, benchmark_name=benchmark_name)
