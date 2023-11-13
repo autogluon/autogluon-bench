@@ -49,6 +49,10 @@ def generate_cloud_config(
         help="Framework name",
     ),
     constraint: str = typer.Option("test", help="Resource constraint for '--module multimodal'"),
+    fewshot: bool = typer.Option(False, help="Flag to enable/disable fewshot learning for '--module multimodal'"),
+    shot: int = typer.Option(0, help="Number of shots if fewshot learning is enabled '--module multimodal'"),
+    lang: str = typer.Option("en", help="Language for datasets '--module multimodal text datasets'"),
+    seed: int = typer.Option(0, help="Seed value '--module multimodal'"),
     amlb_constraint: str = typer.Option(
         "",
         help="AMLB Constraints for tabular or timeseries, in the format 'test,1h4c,...'. Refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml for details.",
@@ -68,6 +72,14 @@ def generate_cloud_config(
     amlb_user_dir: str = typer.Option(
         None,
         help="Custom config directory.",
+    ),
+    custom_metrics: bool = typer.Option(False, help="Flag to enable/disable custom_metrics for '--module multimodal'"),
+    metrics_path: str = typer.Option(None, help="Resource constraint for '--module multimodal custom metrics'"),
+    function_name: str = typer.Option(None, help="Resource constraint for '--module multimodal custom metrics'"),
+    optimum: int = typer.Option(0, help="Resource constraint for '--module multimodal custom metrics'"),
+    greater_is_better: bool = typer.Option(
+        False,
+        help="Flag to enable/disable resource constraint for '--module multimodal'",
     ),
 ):
     config = {
@@ -115,6 +127,18 @@ def generate_cloud_config(
                 k, v = item.split(":")
                 custom_dataloader_dict[k] = v
             module_configs["custom_dataloader"] = custom_dataloader_dict
+            if fewshot:
+                module_configs["custom_dataloader"]["fewshot"] = fewshot
+                module_configs["custom_dataloader"]["lang"] = lang
+                module_configs["custom_dataloader"]["shot"] = shot
+                module_configs["custom_dataloader"]["seed"] = seed
+
+        if custom_metrics:
+            module_configs["custom_metrics"] = {}
+            module_configs["custom_metrics"]["metrics_path"] = metrics_path
+            module_configs["custom_metrics"]["function_name"] = function_name
+            module_configs["custom_metrics"]["optimum"] = optimum
+            module_configs["custom_metrics"]["greater_is_better"] = greater_is_better
 
         config.update(module_configs)
 
