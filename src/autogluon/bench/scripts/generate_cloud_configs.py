@@ -77,7 +77,10 @@ def generate_cloud_config(
     metrics_path: str = typer.Option(None, help="Resource constraint for '--module multimodal custom metrics'"),
     function_name: str = typer.Option(None, help="Resource constraint for '--module multimodal custom metrics'"),
     optimum: int = typer.Option(0, help="Resource constraint for '--module multimodal custom metrics'"),
-    greater_is_better: bool = typer.Option(False, help="Flag to enable/disable resource constraint for '--module multimodal'")
+    greater_is_better: bool = typer.Option(
+        False,
+        help="Flag to enable/disable resource constraint for '--module multimodal'",
+    )
 ):
     config = {
         "module": module,
