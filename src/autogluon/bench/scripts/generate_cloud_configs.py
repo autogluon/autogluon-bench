@@ -51,7 +51,7 @@ def generate_cloud_config(
     constraint: str = typer.Option("test", help="Resource constraint for '--module multimodal'"),
     fewshot: bool = typer.Option(False, help="Flag to enable/disable fewshot learning for '--module multimodal'"),
     shot: int = typer.Option(0, help="Number of shots if fewshot learning is enabled '--module multimodal'"),
-    lang: str = typer.Option("", help="Language for datasets '--module multimodal text datasets'"),
+    lang: str = typer.Option("en", help="Language for datasets '--module multimodal text datasets'"),
     seed: int = typer.Option(0, help="Seed value '--module multimodal'"),
     amlb_constraint: str = typer.Option(
         "",
@@ -80,7 +80,7 @@ def generate_cloud_config(
     greater_is_better: bool = typer.Option(
         False,
         help="Flag to enable/disable resource constraint for '--module multimodal'",
-    )
+    ),
 ):
     config = {
         "module": module,
