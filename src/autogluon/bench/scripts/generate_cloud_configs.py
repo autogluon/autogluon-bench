@@ -182,10 +182,3 @@ def generate_cloud_config(
         yaml.dump(config, f)
 
     typer.echo(f"Config file '{output_file}' generated successfully.")
-
-
-# this is never executed - find a way to return this whenever an argument is not provided
-def enable_shot_if_fewshot_enabled(value, option):
-    if option.context.params.get("fewshot") and value == 0:
-        raise typer.BadParameter("The --shot option is only available when --fewshot is True")
-    return value
