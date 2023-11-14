@@ -45,9 +45,9 @@ COPY ${AG_BENCH_BASE_DIR}/custom_configs custom_configs/
 # check if autogluon.bench version contains "dev" tag
 RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \ 
         # install from local source
-        pip install .; \
+        python3 -m pip install .; \
     else \
-        pip install autogluon.bench==$AG_BENCH_VERSION; \
+        python3 -m pip install autogluon.bench==$AG_BENCH_VERSION; \
     fi
 
 RUN chmod +x entrypoint.sh \
