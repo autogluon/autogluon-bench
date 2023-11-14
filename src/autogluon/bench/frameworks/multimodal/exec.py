@@ -12,13 +12,7 @@ from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registr
 from autogluon.core.metrics import make_scorer
 from autogluon.multimodal import MultiModalPredictor
 from autogluon.multimodal import __version__ as ag_version
-from autogluon.multimodal.constants import (
-    FEW_SHOT_CLASSIFICATION,
-    IMAGE_SIMILARITY,
-    IMAGE_TEXT_SIMILARITY,
-    OBJECT_DETECTION,
-    TEXT_SIMILARITY,
-)
+from autogluon.multimodal.constants import IMAGE_SIMILARITY, IMAGE_TEXT_SIMILARITY, OBJECT_DETECTION, TEXT_SIMILARITY
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

@@ -40,7 +40,7 @@ class MultiModalBenchmark(Benchmark):
         Returns:
             None
         """
-        setup_script_path = os.path.abspath(os.path.dirname(__file__)) + "/setup.sh"
+        setup_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "setup.sh")
         command = [setup_script_path, git_uri, git_branch, self.benchmark_dir, agbench_version]
         result = subprocess.run(command)
         if result.returncode != 0:
@@ -88,13 +88,14 @@ class MultiModalBenchmark(Benchmark):
         Returns:
             None
         """
-        if os.environ.get("RUNNING_IN_DOCKER", False):
-            venv_base_dir = "/home/"
+        if os.environ.get("RUNNING_IN_DOCKER", "false") == "true":
+            venv_base_dir = os.environ["VENV_BASE_DIR"]
         else:
             venv_base_dir = self.benchmark_dir
         PY_EXC_PATH = os.path.join(venv_base_dir, ".venv/bin/python")
 
-        exec_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.py"
+        exec_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "exec.py")
+        logger.info(f"Executing {exec_path} under {PY_EXC_PATH}")
         command = [
             PY_EXC_PATH,
             exec_path,

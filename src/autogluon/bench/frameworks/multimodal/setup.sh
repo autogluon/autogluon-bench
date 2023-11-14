@@ -24,9 +24,9 @@ python3 -m pip install --upgrade setuptools wheel
 
 if echo "$AG_BENCH_VERSION" | grep -q "dev"; then
   # install from local source or docker
-  pip install .
+  python3 -m pip install .
 else
-  pip install autogluon.bench==$AG_BENCH_VERSION
+  python3 -m pip install autogluon.bench==$AG_BENCH_VERSION
 fi
 
 cd $venv_base_dir/$repo_name

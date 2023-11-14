@@ -255,7 +255,7 @@ def test_run_aws_tabular_user_dir(mocker, tmp_path):
         skip_setup=True,
         save_hardware_metrics=False,
     )
-    assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular/"
+    assert os.environ["FRAMEWORK_PATH"] == "frameworks/tabular"
     assert os.environ["GIT_URI"] == "https://github.com/openml/automlbenchmark.git"
     assert os.environ["GIT_BRANCH"] == "master"
     assert os.environ["AMLB_FRAMEWORK"] == "AutoGluon:stable"
@@ -478,7 +478,7 @@ def test_run_aws_timeseries_user_dir(mocker, tmp_path):
         wait=False,
         skip_setup=True,
     )
-    assert os.environ["FRAMEWORK_PATH"] == "frameworks/timeseries/"
+    assert os.environ["FRAMEWORK_PATH"] == "frameworks/timeseries"
     assert os.environ["GIT_URI"] == "https://github.com/openml/automlbenchmark.git"
     assert os.environ["GIT_BRANCH"] == "master"
     assert os.environ["AMLB_FRAMEWORK"] == "AutoGluon:stable"

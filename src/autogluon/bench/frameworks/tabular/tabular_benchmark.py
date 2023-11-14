@@ -2,7 +2,6 @@ import logging
 import os
 import subprocess
 import sys
-from typing import List
 
 from autogluon.bench.frameworks.benchmark import Benchmark
 
@@ -52,12 +51,12 @@ class TabularBenchmark(Benchmark):
             None
         """
 
-        if os.environ.get("RUNNING_IN_DOCKER", False):
-            venv_base_dir = "/home/"
+        if os.environ.get("RUNNING_IN_DOCKER", "false") == "true":
+            venv_base_dir = os.environ["VENV_BASE_DIR"]
         else:
             venv_base_dir = self.benchmark_dir
 
-        exec_script_path = os.path.abspath(os.path.dirname(__file__)) + "/exec.sh"
+        exec_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "exec.sh")
         command = [
             exec_script_path,
             framework,

@@ -1,6 +1,8 @@
+import importlib.resources
 import json
 import logging
 import os
+import platform
 import re
 import subprocess
 import tempfile
@@ -8,7 +10,6 @@ import time
 from typing import List, Optional
 
 import boto3
-import botocore
 import typer
 import yaml
 
@@ -31,6 +32,9 @@ app = typer.Typer()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
+
+with importlib.resources.path("autogluon.bench", "Dockerfile") as docker_file:
+    project_path = os.path.join(os.path.dirname(docker_file))
 
 
 def get_kwargs(module: str, configs: dict):
@@ -220,31 +224,27 @@ def wait_for_jobs(
             aws_region = config.get("CDK_DEPLOY_REGION", aws_region)
 
     batch_client = boto3.client("batch", region_name=aws_region)
+    failed_jobs = set()
+
     while True:
         all_jobs_completed = True
-        failed_jobs = set()
+        job_status = get_job_status(job_ids=job_ids, cdk_deploy_region=aws_region, config_file=None)
 
-        try:
-            job_status = get_job_status(job_ids=job_ids, cdk_deploy_region=aws_region, config_file=None)
-
-            for job_id, status in job_status.items():
-                if isinstance(status, str):
-                    if status == "FAILED":
-                        failed_jobs.append(job_id)
-                    elif status not in quit_statuses:
+        for job_id, status in job_status.items():
+            if isinstance(status, str):
+                if status == "FAILED":
+                    failed_jobs.add(job_id)
+                elif status not in quit_statuses:
+                    all_jobs_completed = False
+            elif isinstance(status, dict):
+                for status, num in status.items():
+                    if status == "FAILED" and num > 0:
+                        paginator = batch_client.get_paginator("list_jobs")
+                        for page in paginator.paginate(arrayJobId=job_id, jobStatus="FAILED"):
+                            for job in page["jobSummaryList"]:
+                                failed_jobs.add(job["jobId"])
+                    if status not in quit_statuses and num > 0:
                         all_jobs_completed = False
-                elif isinstance(status, dict):
-                    for status, num in status.items():
-                        if status == "FAILED" and num > 0:
-                            paginator = batch_client.get_paginator("list_jobs")
-                            for page in paginator.paginate(arrayJobId=job_id, jobStatus="FAILED"):
-                                for job in page["jobSummaryList"]:
-                                    failed_jobs.add(job["jobId"])
-                        if status not in quit_statuses and num > 0:
-                            all_jobs_completed = False
-        except botocore.exceptions.ClientError as e:
-            logger.error(f"An error occurred: {e}.")
-            return
 
         if all_jobs_completed:
             break
@@ -284,6 +284,7 @@ def _is_mounted(path: str):
 def _umount_if_needed(path: str = None):
     if not path:
         return
+
     if _is_mounted(path):
         logging.info(f"{path} is a mount point, attempting to umount.")
         subprocess.run(["sudo", "umount", path])
@@ -297,16 +298,15 @@ def _mount_dir(orig_path: str, new_path: str):
 
 def update_custom_dataloader(configs: dict):
     custom_dataloader_file = configs["custom_dataloader"]["dataloader_file"]
-    original_path = os.path.dirname(custom_dataloader_file)
+    original_path = os.path.abspath(os.path.dirname(custom_dataloader_file))
     custom_dataset_config = configs["custom_dataloader"]["dataset_config_file"]
-    if original_path != os.path.dirname(custom_dataset_config):
+    if original_path != os.path.abspath(os.path.dirname(custom_dataset_config)):
         raise ValueError(
             "Custom dataloader dataset definition <config_file> and dataloader definition <file_path> need to be placed under the same parent directory."
         )
     dataloader_file_name = os.path.basename(custom_dataloader_file)
     dataset_config_file_name = os.path.basename(custom_dataset_config)
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    custom_dataloader_path = os.path.join(current_path, "custom_configs", "dataloaders")
+    custom_dataloader_path = os.path.join(project_path, "custom_configs", "dataloaders")
 
     configs["custom_dataloader"]["dataloader_file"] = f"custom_configs/dataloaders/{dataloader_file_name}"
     configs["custom_dataloader"]["dataset_config_file"] = f"custom_configs/dataloaders/{dataset_config_file_name}"
@@ -316,11 +316,10 @@ def update_custom_dataloader(configs: dict):
 
 def update_custom_metrics(configs: dict):
     custom_metrics_path = configs["custom_metrics"]["metrics_path"]
-    original_path = os.path.dirname(custom_metrics_path)
+    original_path = os.path.abspath(os.path.dirname(custom_metrics_path))
 
     metrics_file_name = os.path.basename(custom_metrics_path)
-    current_path = os.path.dirname(os.path.abspath(__file__))
-    custom_metrics_path = os.path.join(current_path, "custom_configs", "metrics")
+    custom_metrics_path = os.path.join(project_path, "custom_configs", "metrics")
 
     configs["custom_metrics"]["metrics_path"] = f"custom_configs/metrics/{metrics_file_name}"
 
@@ -328,8 +327,7 @@ def update_custom_metrics(configs: dict):
 
 
 def get_resource(configs: dict, resource_name: str):
-    ag_path = agbench_path[0]
-    default_resource_file = os.path.join(ag_path, "resources", f"{resource_name}.yaml")
+    default_resource_file = os.path.join(project_path, "resources", f"{resource_name}.yaml")
     with open(default_resource_file, "r") as f:
         resources = yaml.safe_load(f)
 
@@ -373,10 +371,10 @@ def run(
         config_file = download_file_from_s3(s3_path=config_file)
     with open(config_file, "r") as f:
         configs = yaml.safe_load(f)
-        if isinstance(configs, list) and os.environ.get(
-            "AWS_BATCH_JOB_ARRAY_INDEX"
-        ):  # AWS array job sets ARRAY_INDEX environment variable for each child job
-            configs = configs[int(os.environ["AWS_BATCH_JOB_ARRAY_INDEX"])]
+        if isinstance(configs, list):
+            configs = configs[
+                int(os.environ.get("AWS_BATCH_JOB_ARRAY_INDEX", "0"))
+            ]  # AWS array job sets AWS_BATCH_JOB_ARRAY_INDEX for child jobs
 
     benchmark_name = _get_benchmark_name(configs=configs)
     timestamp_pattern = r"\d{8}T\d{6}"  # Timestamp that matches YYYYMMDDTHHMMSS
@@ -389,14 +387,18 @@ def run(
     tmpdir = None
 
     if configs["mode"] == "aws":
-        current_path = os.path.dirname(os.path.abspath(__file__))
         paths = []
+
+        os_name = platform.system()
+        if os_name != "Linux":
+            raise NotImplementedError("Only Linux system is supported to run AWS mode at the moment.")
+
         try:
             configs["benchmark_name"] = benchmark_name
             # setting environment variables for docker build ARG
             os.environ["AG_BENCH_VERSION"] = agbench_version
 
-            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}/"
+            os.environ["FRAMEWORK_PATH"] = f"frameworks/{module}"
 
             if module in AMLB_DEPENDENT_MODULES:
                 os.environ["AMLB_FRAMEWORK"] = configs["framework"]
@@ -415,9 +417,9 @@ def run(
                         amlb_user_dir_local = amlb_user_dir
 
                     default_user_dir = "custom_configs/amlb_configs"
-                    custom_configs_path = os.path.join(current_path, default_user_dir)
+                    custom_configs_path = os.path.join(project_path, default_user_dir)
                     lambda_custom_configs_path = os.path.join(
-                        current_path, "cloud/aws/batch_stack/lambdas", default_user_dir
+                        project_path, "cloud/aws/batch_stack/lambdas", default_user_dir
                     )
                     original_path = amlb_user_dir_local
                     paths += [custom_configs_path, lambda_custom_configs_path]
@@ -444,7 +446,7 @@ def run(
                 update_resource_constraint(configs=configs)
                 framework_configs = get_framework_configs(configs=configs)
                 if configs.get("custom_resource_dir") is not None:
-                    custom_resource_path = os.path.join(current_path, "custom_configs", "resources")
+                    custom_resource_path = os.path.join(project_path, "custom_configs", "resources")
                     paths.append(custom_resource_path)
                     _umount_if_needed(custom_resource_path)
                     _mount_dir(orig_path=configs["custom_resource_dir"], new_path=custom_resource_path)
