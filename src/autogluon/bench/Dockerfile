@@ -42,6 +42,11 @@ COPY . .
 COPY ${AG_BENCH_BASE_DIR}/entrypoint.sh .
 COPY ${AG_BENCH_BASE_DIR}/custom_configs custom_configs/
 
+ENV VENV_PATH="$VENV_BASE_DIR/.venv"
+RUN python3 -m venv $VENV_PATH
+ENV PATH="$VENV_PATH/bin:$PATH"
+RUN python3 -m pip install --upgrade pip
+
 # check if autogluon.bench version contains "dev" tag
 RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \ 
         # install from local source
