@@ -193,6 +193,7 @@ def run(
         "problem_type": train_data.problem_type,
         "presets": params.pop("presets", None),
         "path": os.path.join(benchmark_dir, "models"),
+        "eval_metric": val_data.metric
     }
     if train_data.problem_type == IMAGE_SIMILARITY:
         predictor_args["query"] = train_data.image_columns[0]
@@ -223,45 +224,51 @@ def run(
     end_time = time.time()
     training_duration = round(end_time - start_time, 1)
 
-    evaluate_args = {
-        "data": test_data.data,
-        "label": label_column,
-        "metrics": test_data.metric if metrics_func is None else metrics_func,
-    }
+    if isinstance(test_data.data, dict): # multiple test datasets
+        test_data_dict = test_data.data
 
-    if test_data.problem_type == IMAGE_TEXT_SIMILARITY:
-        evaluate_args["query_data"] = test_data.data[test_data.text_columns[0]].unique().tolist()
-        evaluate_args["response_data"] = test_data.data[test_data.image_columns[0]].unique().tolist()
-        evaluate_args["cutoffs"] = [1, 5, 10]
-
-    start_time = time.time()
-    scores = predictor.evaluate(**evaluate_args)
-    end_time = time.time()
-    predict_duration = round(end_time - start_time, 1)
-
-    if "#" in framework:
-        framework, version = framework.split("#")
     else:
-        framework, version = framework, ag_version
+        test_data_dict = {dataset_name: test_data}
 
-    metric_name = test_data.metric if metrics_func is None else metrics_func.name
-    metrics = {
-        "id": "id/0",  # dummy id to make it align with amlb benchmark output
-        "task": dataset_name,
-        "framework": framework,
-        "constraint": constraint,
-        "version": version,
-        "fold": 0,
-        "type": predictor.problem_type,
-        "result": scores[metric_name],
-        "metric": metric_name,
-        "utc": utc_time,
-        "training_duration": training_duration,
-        "predict_duration": predict_duration,
-        "scores": scores,
-    }
-    subdir = f"{framework}.{dataset_name}.{constraint}.local"
-    save_metrics(os.path.join(metrics_dir, subdir, "scores"), metrics)
+    for dataset_name, test_data in test_data_dict.items():
+        evaluate_args = {
+            "data": test_data.data,
+            "label": label_column,
+            "metrics": test_data.metric if metrics_func is None else metrics_func,
+        }
+
+        if test_data.problem_type == IMAGE_TEXT_SIMILARITY:
+            evaluate_args["query_data"] = test_data.data[test_data.text_columns[0]].unique().tolist()
+            evaluate_args["response_data"] = test_data.data[test_data.image_columns[0]].unique().tolist()
+            evaluate_args["cutoffs"] = [1, 5, 10]
+
+        start_time = time.time()
+        scores = predictor.evaluate(**evaluate_args)
+        end_time = time.time()
+        predict_duration = round(end_time - start_time, 1)
+
+        if "#" in framework:
+            framework, version = framework.split("#")
+        else:
+            framework, version = framework, ag_version
+
+        metric_name = test_data.metric if metrics_func is None else metrics_func.name
+        metrics = {
+            "id": "id/0",  # dummy id to make it align with amlb benchmark output
+            "task": dataset_name,
+            "framework": framework,
+            "constraint": constraint,
+            "version": version,
+            "fold": 0,
+            "type": predictor.problem_type,
+            "metric": metric_name,
+            "utc": utc_time,
+            "training_duration": training_duration,
+            "predict_duration": predict_duration,
+            "scores": scores,
+        }
+        subdir = f"{framework}.{dataset_name}.{constraint}.local"
+        save_metrics(os.path.join(metrics_dir, subdir, "scores"), metrics)
 
 
 if __name__ == "__main__":
