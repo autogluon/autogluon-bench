@@ -193,7 +193,7 @@ def run(
         "problem_type": train_data.problem_type,
         "presets": params.pop("presets", None),
         "path": os.path.join(benchmark_dir, "models"),
-        "eval_metric": val_data.metric
+        "eval_metric": val_data.metric,
     }
     if train_data.problem_type == IMAGE_SIMILARITY:
         predictor_args["query"] = train_data.image_columns[0]
@@ -224,7 +224,7 @@ def run(
     end_time = time.time()
     training_duration = round(end_time - start_time, 1)
 
-    if isinstance(test_data.data, dict): # multiple test datasets
+    if isinstance(test_data.data, dict):  # multiple test datasets
         test_data_dict = test_data.data
 
     else:
