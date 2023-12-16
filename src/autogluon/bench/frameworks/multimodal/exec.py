@@ -198,8 +198,6 @@ def run(
     if val_data is not None:
         predictor_args["eval_metric"] = val_data.metric
 
-    if val_data is not None:
-        predictor_args["eval_metric"] = val_data.metric
     if train_data.problem_type == IMAGE_SIMILARITY:
         predictor_args["query"] = train_data.image_columns[0]
         predictor_args["response"] = train_data.image_columns[1]
