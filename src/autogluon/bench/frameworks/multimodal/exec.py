@@ -192,7 +192,7 @@ def run(
         "label": label_column,
         "problem_type": train_data.problem_type,
         "presets": params.pop("presets", None),
-        "path": os.path.join(benchmark_dir, "models")
+        "path": os.path.join(benchmark_dir, "models"),
     }
 
     if val_data is not None:
