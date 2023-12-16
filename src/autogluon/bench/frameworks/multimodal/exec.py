@@ -192,9 +192,14 @@ def run(
         "label": label_column,
         "problem_type": train_data.problem_type,
         "presets": params.pop("presets", None),
-        "path": os.path.join(benchmark_dir, "models"),
-        "eval_metric": val_data.metric,
+        "path": os.path.join(benchmark_dir, "models")
     }
+
+    if val_data is not None:
+        predictor_args["eval_metric"] = val_data.metric
+
+    if val_data is not None:
+        predictor_args["eval_metric"] = val_data.metric
     if train_data.problem_type == IMAGE_SIMILARITY:
         predictor_args["query"] = train_data.image_columns[0]
         predictor_args["response"] = train_data.image_columns[1]
