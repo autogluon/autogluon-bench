@@ -256,8 +256,12 @@ def run(
             framework, version = framework, ag_version
 
         metric_name = test_data.metric if metrics_func is None else metrics_func.name
+        if hasattr(train_data, "id"):
+            id = f"id/{train_data.id}"
+        else:
+            id = "id/0"  # dummy id to make it align with amlb benchmark output
         metrics = {
-            "id": "id/0",  # dummy id to make it align with amlb benchmark output
+            "id": id,
             "task": dataset_name,
             "framework": framework,
             "constraint": constraint,
