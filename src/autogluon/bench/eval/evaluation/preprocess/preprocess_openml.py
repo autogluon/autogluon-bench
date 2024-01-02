@@ -33,7 +33,20 @@ def preprocess_openml_input(
             raw_input[FRAMEWORK] = [framework[0] + framework_suffix for framework in zip(raw_input[FRAMEWORK])]
 
     # TODO: This is a hack and won't work for all metrics, metric_error should ideally be calculated prior to preprocessing
-    metric_list = ["auc", "acc", "accuracy", "balacc", "map", "roc_auc", "r2", "coverage", "f1", "f1_macro", "f1_micro", "quadratic_kappa"]
+    metric_list = [
+        "auc",
+        "acc",
+        "accuracy",
+        "balacc",
+        "map",
+        "roc_auc",
+        "r2",
+        "coverage",
+        "f1",
+        "f1_macro",
+        "f1_micro",
+        "quadratic_kappa",
+    ]
     raw_input[METRIC_ERROR] = [
         1 - score if metric in metric_list else -score
         for score, metric in zip(raw_input[METRIC_SCORE], raw_input["metric"])
