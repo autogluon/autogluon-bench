@@ -48,7 +48,7 @@ def preprocess_openml_input(
         "quadratic_kappa",
     ]
     raw_input[METRIC_ERROR] = [
-        1 - score if metric in metric_list else -score
+        1 - score if metric in metric_list else float(score) if metric == "rmse" else -score
         for score, metric in zip(raw_input[METRIC_SCORE], raw_input["metric"])
     ]
 
