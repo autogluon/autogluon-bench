@@ -321,9 +321,7 @@ class OutputSuiteContext:
         num_paths = len(results_lst)
         aggregated_pred_proba = {}
         aggregated_ground_truth = {}
-        for i, (zeroshot_metadata, scores) in enumerate(
-                zip(zeroshot_metadata_list, results_lst)
-        ):
+        for i, (zeroshot_metadata, scores) in enumerate(zip(zeroshot_metadata_list, results_lst)):
             id = scores["id"][0]
             fold = scores.iloc[0]["fold"]
             task_name = scores.iloc[0]["task"]

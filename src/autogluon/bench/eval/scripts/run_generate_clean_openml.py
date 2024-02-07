@@ -8,7 +8,16 @@ import pandas as pd
 import typer
 from typing_extensions import Annotated
 
-from autogluon.bench.eval.evaluation.constants import DATASET, FOLD, FRAMEWORK, TIME_TRAIN_S, TIME_INFER_S, METRIC_ERROR, METRIC, PROBLEM_TYPE
+from autogluon.bench.eval.evaluation.constants import (
+    DATASET,
+    FOLD,
+    FRAMEWORK,
+    TIME_TRAIN_S,
+    TIME_INFER_S,
+    METRIC_ERROR,
+    METRIC,
+    PROBLEM_TYPE,
+)
 from autogluon.bench.eval.evaluation.preprocess import preprocess_openml
 from autogluon.common.savers import save_pd
 
@@ -121,7 +130,9 @@ def clean_and_save_results(
     ]
 
     results_raw_columns = list(results_raw.columns)
-    results_raw_columns = [c for c in results_raw_columns if c in minimal_columns] + [c for c in results_raw_columns if c not in minimal_columns]
+    results_raw_columns = [c for c in results_raw_columns if c in minimal_columns] + [
+        c for c in results_raw_columns if c not in minimal_columns
+    ]
     results_raw = results_raw[results_raw_columns]
 
     if save:

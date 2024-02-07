@@ -284,15 +284,17 @@ class BenchmarkEvaluator:
         if f"infer_batch_size_df_{infer_batch_size}" in results_raw.columns:
             # The new infer time column in AMLB Nov 2023 results
             if f"infer_batch_size_file_{infer_batch_size}" in results_raw.columns:
-                results_raw[f"infer_batch_size_df_{infer_batch_size}"] = results_raw[f"infer_batch_size_df_{infer_batch_size}"].fillna(
-                    results_raw[f"infer_batch_size_file_{infer_batch_size}"]
-                )
+                results_raw[f"infer_batch_size_df_{infer_batch_size}"] = results_raw[
+                    f"infer_batch_size_df_{infer_batch_size}"
+                ].fillna(results_raw[f"infer_batch_size_file_{infer_batch_size}"])
             results_raw["time_infer_s"] = results_raw[f"infer_batch_size_df_{infer_batch_size}"].fillna(
                 results_raw["time_infer_s"]
             )
             # FIXME: Divide by infer_batch_size?
             if infer_batch_size != 1:
-                raise AssertionError(f"Debug this logic before working with batch_sizes other than 1 to make sure it is working as intended.")
+                raise AssertionError(
+                    f"Debug this logic before working with batch_sizes other than 1 to make sure it is working as intended."
+                )
         elif f"infer_batch_size_file_{infer_batch_size}" in results_raw.columns:
             # The new infer time column in AMLB Nov 2023 results
             tmp = results_raw[f"infer_batch_size_file_{infer_batch_size}"] / infer_batch_size
