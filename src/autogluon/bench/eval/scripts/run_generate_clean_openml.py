@@ -12,11 +12,11 @@ from autogluon.bench.eval.evaluation.constants import (
     DATASET,
     FOLD,
     FRAMEWORK,
-    TIME_TRAIN_S,
-    TIME_INFER_S,
-    METRIC_ERROR,
     METRIC,
+    METRIC_ERROR,
     PROBLEM_TYPE,
+    TIME_INFER_S,
+    TIME_TRAIN_S,
 )
 from autogluon.bench.eval.evaluation.preprocess import preprocess_openml
 from autogluon.common.savers import save_pd
