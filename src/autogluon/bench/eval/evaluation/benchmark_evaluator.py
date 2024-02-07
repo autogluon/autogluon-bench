@@ -7,6 +7,7 @@ from typing import List, Optional
 
 import pandas as pd
 
+from autogluon.common.loaders import load_pd
 from autogluon.common.utils.s3_utils import is_s3_url
 
 from .constants import DATASET, FOLD, FRAMEWORK, METRIC, METRIC_ERROR, PROBLEM_TYPE, TIME_INFER_S, TIME_TRAIN_S
@@ -164,7 +165,7 @@ class BenchmarkEvaluator:
 
     def load_results_raw(self, paths: list) -> pd.DataFrame:
         paths = [path if is_s3_url(path) else self.results_dir_input + path for path in paths]
-        return pd.concat([pd.read_csv(path) for path in paths], ignore_index=True, sort=True)
+        return pd.concat([load_pd.load(path) for path in paths], ignore_index=True, sort=True)
 
     def _check_results_valid(self, results_raw: pd.DataFrame):
         if results_raw[METRIC_ERROR].min() < 0:
@@ -271,13 +272,31 @@ class BenchmarkEvaluator:
     def _update_infer_batch_size(self, results_raw: pd.DataFrame, infer_batch_size: int):
         # Update infer time
         if f"pred_time_test_with_transform_batch_size_{infer_batch_size}" in results_raw.columns:
+            # AutoGluon specific infer time column
             results_raw["time_infer_s"] = results_raw[
                 f"pred_time_test_with_transform_batch_size_{infer_batch_size}"
             ].fillna(results_raw["time_infer_s"])
         if f"pred_time_test_with_transform_{infer_batch_size}" in results_raw.columns:
+            # AutoGluon specific infer time column
             results_raw["time_infer_s"] = results_raw[f"pred_time_test_with_transform_{infer_batch_size}"].fillna(
                 results_raw["time_infer_s"]
             )
+        if f"infer_batch_size_df_{infer_batch_size}" in results_raw.columns:
+            # The new infer time column in AMLB Nov 2023 results
+            if f"infer_batch_size_file_{infer_batch_size}" in results_raw.columns:
+                results_raw[f"infer_batch_size_df_{infer_batch_size}"] = results_raw[f"infer_batch_size_df_{infer_batch_size}"].fillna(
+                    results_raw[f"infer_batch_size_file_{infer_batch_size}"]
+                )
+            results_raw["time_infer_s"] = results_raw[f"infer_batch_size_df_{infer_batch_size}"].fillna(
+                results_raw["time_infer_s"]
+            )
+            # FIXME: Divide by infer_batch_size?
+            if infer_batch_size != 1:
+                raise AssertionError(f"Debug this logic before working with batch_sizes other than 1 to make sure it is working as intended.")
+        elif f"infer_batch_size_file_{infer_batch_size}" in results_raw.columns:
+            # The new infer time column in AMLB Nov 2023 results
+            tmp = results_raw[f"infer_batch_size_file_{infer_batch_size}"] / infer_batch_size
+            results_raw["time_infer_s"] = tmp.fillna(results_raw["time_infer_s"])
         return results_raw
 
     def filter_errors(self, results_raw: pd.DataFrame, folds, frameworks: list = None):

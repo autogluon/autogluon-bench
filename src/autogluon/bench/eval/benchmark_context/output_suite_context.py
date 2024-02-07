@@ -33,6 +33,7 @@ class OutputSuiteContext:
     def __init__(
         self,
         path: str,
+        paths_extra: List[str] = None,
         contains: Optional[str] = None,
         allowed_tids: Optional[Set[int]] = None,
         columns_to_keep: Optional[List[str]] = None,
@@ -47,6 +48,9 @@ class OutputSuiteContext:
         path : str
             The S3 path to the output folder of an AMLB run
             Example: "s3://automl-benchmark-ag/ec2/2023_02_27_zs/"
+        paths_extra: List[str], default = None
+            A list of additional paths to use when generating `self.output_contexts`.
+            Additional output contexts will be identified in the same way as done with `path`.
         contains : Optional[str], default = None
             Can be specified to limit the returned outputs.
             For example, by specifying the constraint, such as ".1h8c."
@@ -77,7 +81,7 @@ class OutputSuiteContext:
             assert isinstance(self.allowed_tids, set)
             for tid in self.allowed_tids:
                 assert isinstance(tid, int)
-        self.output_contexts = self.get_output_contexts(contains=self.contains)
+        self.output_contexts = self.get_output_contexts(contains=self.contains, paths_extra=paths_extra)
         if len(self.output_contexts) == 0:
             print(f"WARNING: No output contexts found via path={self._path}, contains={self.contains}")
         self.include_infer_speed = include_infer_speed
@@ -91,7 +95,24 @@ class OutputSuiteContext:
             columns_to_keep = [c for c in columns_to_keep if c != "params"]
         self.columns_to_keep = columns_to_keep
 
-    def get_output_contexts(self, contains: str = None) -> List[OutputContext]:
+    def get_output_contexts(self, contains: str = None, paths_extra: List[str] = None) -> List[OutputContext]:
+        """
+        Parameters
+        ----------
+        contains : str, default = None
+            Can be specified to limit the returned outputs.
+            For example, by specifying the constraint, such as ".1h8c."
+        paths_extra : List[str], default = None
+            An optional list of paths to get additional contexts.
+        """
+        output_contexts = self._get_output_contexts(path=self.path, contains=contains)
+        if paths_extra is not None:
+            for path in paths_extra:
+                output_contexts += self._get_output_contexts(path=path, contains=contains)
+        return output_contexts
+
+    @staticmethod
+    def _get_output_contexts(path: str, contains: str = None) -> List[OutputContext]:
         """
         Parameters
         ----------
@@ -99,7 +120,7 @@ class OutputSuiteContext:
             Can be specified to limit the returned outputs.
             For example, by specifying the constraint, such as ".1h8c."
         """
-        paths_to_results = get_s3_paths(self.path, contains=contains, suffix="scores/results.csv")
+        paths_to_results = get_s3_paths(path, contains=contains, suffix="scores/results.csv")
         output_contexts = [OutputContext.from_results_path(path=results_path) for results_path in paths_to_results]
         return output_contexts
 
@@ -293,18 +314,21 @@ class OutputSuiteContext:
             results_lst = self.load_results()
         if zeroshot_metadata_list is None:
             zeroshot_metadata_list = self.load_zeroshot_metadata()
-        output_contexts = self.output_contexts
-        num_paths = len(output_contexts)
+        return self._construct_zs_dict(results_lst=results_lst, zeroshot_metadata_list=zeroshot_metadata_list)
+
+    @classmethod
+    def _construct_zs_dict(cls, results_lst, zeroshot_metadata_list):
+        num_paths = len(results_lst)
         aggregated_pred_proba = {}
         aggregated_ground_truth = {}
-        for i, (output_context, zeroshot_metadata, scores) in enumerate(
-            zip(output_contexts, zeroshot_metadata_list, results_lst)
+        for i, (zeroshot_metadata, scores) in enumerate(
+                zip(zeroshot_metadata_list, results_lst)
         ):
             id = scores["id"][0]
             fold = scores.iloc[0]["fold"]
             task_name = scores.iloc[0]["task"]
             fold = int(fold)
-            print(f"{i + 1}/{num_paths} | {task_name} | {fold} | {output_context.path}")
+            print(f"{i + 1}/{num_paths} | {task_name} | {fold}")
 
             if task_name not in aggregated_ground_truth:
                 aggregated_ground_truth[task_name] = {}

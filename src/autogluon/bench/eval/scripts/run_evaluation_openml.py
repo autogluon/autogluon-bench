@@ -256,7 +256,7 @@ def evaluate(
     if len(frameworks_compare_vs_all) == 0:
         frameworks_compare_vs_all = [frameworks_run[0]]
 
-    print("[")
+    print("frameworks = [")
     for i in range(len(frameworks_run)):
         print(f'\t"{frameworks_run[i]}",')
     print("]")

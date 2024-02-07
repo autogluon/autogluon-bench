@@ -8,7 +8,7 @@ import pandas as pd
 import typer
 from typing_extensions import Annotated
 
-from autogluon.bench.eval.evaluation.constants import FRAMEWORK
+from autogluon.bench.eval.evaluation.constants import DATASET, FOLD, FRAMEWORK, TIME_TRAIN_S, TIME_INFER_S, METRIC_ERROR, METRIC, PROBLEM_TYPE
 from autogluon.bench.eval.evaluation.preprocess import preprocess_openml
 from autogluon.common.savers import save_pd
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @app.command()
 def clean_amlb_results(
     benchmark_name: str = typer.Argument(
-        help="Benchmark name populated by benchmark run, in format <benchmark_name>_<timestamp>"
+        None, help="Benchmark name populated by benchmark run, in format <benchmark_name>_<timestamp>"
     ),
     results_dir: str = typer.Option("data/results/", help="Root directory of raw and prepared results."),
     results_dir_input: str = typer.Option(
@@ -72,6 +72,7 @@ def clean_and_save_results(
     run_name_in_input_path: bool = True,
     run_name_in_output_path: bool = True,
     save: bool = True,
+    save_minimal: bool = True,
     constraints: List[str] | None = None,
     out_path_prefix: str = "openml_ag_",
     out_path_suffix: str = "",
@@ -106,13 +107,42 @@ def clean_and_save_results(
     else:
         results_raw[FRAMEWORK] = results_raw[FRAMEWORK] + "_" + run_name
 
+    minimal_columns = [
+        DATASET,
+        FOLD,
+        FRAMEWORK,
+        "constraint",
+        METRIC,
+        METRIC_ERROR,
+        TIME_TRAIN_S,
+        TIME_INFER_S,
+        PROBLEM_TYPE,
+        "tid",
+    ]
+
+    results_raw_columns = list(results_raw.columns)
+    results_raw_columns = [c for c in results_raw_columns if c in minimal_columns] + [c for c in results_raw_columns if c not in minimal_columns]
+    results_raw = results_raw[results_raw_columns]
+
     if save:
         if run_name_in_output_path:
-            save_path = os.path.join(results_dir_output, f"{out_path_prefix}{run_name}{out_path_suffix}.csv")
+            save_path = os.path.join(results_dir_output, f"{out_path_prefix}{run_name}{out_path_suffix}")
         else:
-            save_path = os.path.join(results_dir_output, f"{out_path_prefix}{out_path_suffix}.csv")
-        save_pd.save(path=save_path, df=results_raw)
-        logger.log(30, f"Cleaned results are saved in file: {save_path}")
+            save_path = os.path.join(results_dir_output, f"{out_path_prefix}{out_path_suffix}")
+        save_path_file = f"{save_path}.csv"
+
+        save_pd.save(path=save_path_file, df=results_raw)
+        logger.log(30, f"Cleaned results are saved in file: {save_path_file}")
+        save_path_file_pq = f"{save_path}.parquet"
+        save_pd.save(path=save_path_file_pq, df=results_raw)
+        if save_minimal:
+            results_raw_minimal = results_raw[minimal_columns]
+
+            save_path_file_minimum = f"{save_path}_min.csv"
+            save_pd.save(path=save_path_file_minimum, df=results_raw_minimal)
+            logger.log(30, f"Cleaned results (minimum) are saved in file: {save_path_file_minimum}")
+            save_path_file_minimum_pq = f"{save_path}_min.parquet"
+            save_pd.save(path=save_path_file_minimum_pq, df=results_raw_minimal)
     return results_raw
 
 
