@@ -203,7 +203,7 @@ class OutputContext:
                     best_weighted,
                     # best_compressed,
                     # best_distilled,
-                    best_nonweighted,
+                    # best_nonweighted,
                 ],
                 ignore_index=True,
             )
