@@ -37,7 +37,7 @@ def fill_missing_results_with_default(framework_nan_fill: str, frameworks_to_fil
         frameworks_to_fill = [f for f in frameworks_valid if f != frameworks_valid]
 
     results_nan_fill = results_raw[results_raw["framework"] == framework_nan_fill]
-    results_nan_fill = results_nan_fill[["dataset", "fold", "metric_error", "problem_type"]]
+    results_nan_fill = results_nan_fill[["dataset", "fold", "metric_error", "metric", "problem_type"]]
     results_nan_fill["time_train_s"] = np.nan
     results_nan_fill["time_infer_s"] = np.nan
 
