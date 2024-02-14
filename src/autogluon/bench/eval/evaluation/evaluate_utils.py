@@ -34,9 +34,11 @@ def compare_frameworks(
             frameworks_to_try = []
             unique_counts = results_raw.value_counts(FRAMEWORK)
             valid_frameworks_to_try = [f for f in unique_counts.index if f in frameworks]
-            print(f"Error! No results after filtering! "
-                  f"Iteratively adding frameworks starting from most successes to least successes to identify problematic frameworks.\n"
-                  f"+ (Newest Added Framework): (Number of successful tasks)")
+            print(
+                f"Error! No results after filtering! "
+                f"Iteratively adding frameworks starting from most successes to least successes to identify problematic frameworks.\n"
+                f"+ (Newest Added Framework): (Number of successful tasks)"
+            )
             max_successful_frameworks = []
             for f in valid_frameworks_to_try:
                 frameworks_to_try.append(f)
@@ -53,10 +55,8 @@ def compare_frameworks(
                     print_suffix = ""
                     max_successful_frameworks = copy.deepcopy(frameworks_to_try)
                 print(f"+ {f}: {num_successes}{print_suffix}")
-            print(f"Valid Frameworks Prior to Reaching 0 Successes:\n"
-                  f"\t{max_successful_frameworks}")
-            raise AssertionError(f"No results exist after filtering errors!\n"
-                                 f"Unique Counts:\n{unique_counts}")
+            print(f"Valid Frameworks Prior to Reaching 0 Successes:\n" f"\t{max_successful_frameworks}")
+            raise AssertionError(f"No results exist after filtering errors!\n" f"Unique Counts:\n{unique_counts}")
     else:
         results = results_raw.copy()
 

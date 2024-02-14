@@ -77,11 +77,15 @@ def clean_results_df(
     framework_suffix: str = None,
     framework_suffix_column: str = None,
 ) -> pd.DataFrame:
-    df_processed = preprocess_openml.preprocess_openml_input(
-        df=df_raw,
-        framework_suffix=framework_suffix,
-        framework_suffix_column=framework_suffix_column,
-    ).sort_values(by=[DATASET, FOLD, FRAMEWORK]).reset_index(drop=True)
+    df_processed = (
+        preprocess_openml.preprocess_openml_input(
+            df=df_raw,
+            framework_suffix=framework_suffix,
+            framework_suffix_column=framework_suffix_column,
+        )
+        .sort_values(by=[DATASET, FOLD, FRAMEWORK])
+        .reset_index(drop=True)
+    )
 
     minimal_columns = [
         DATASET,
@@ -134,7 +138,9 @@ def clean_and_save_results(
     for constraint in constraints:
         constraint_str = f"_{constraint}" if constraint is not None else ""
         for prefix in file_prefix:
-            results_raw_orig = pd.read_csv(os.path.join(results_dir_input, f"{prefix}{constraint_str}{run_name_str}.csv"))
+            results_raw_orig = pd.read_csv(
+                os.path.join(results_dir_input, f"{prefix}{constraint_str}{run_name_str}.csv")
+            )
             results = preprocess_openml.preprocess_openml_input(
                 df=results_raw_orig,
                 framework_suffix=constraint_str,

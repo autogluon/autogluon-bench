@@ -51,9 +51,17 @@ def preprocess_openml_input(
     else:
         framework_parent_to_zip = [None] * len(raw_input)
 
-    updated_names_and_parent = [_update_framework_name(
-        name=name, parent=parent, name_suffix_1=name_suffix_1, name_suffix_2=framework_suffix,
-    ) for (name, parent, name_suffix_1) in zip(raw_input[FRAMEWORK], framework_parent_to_zip, framework_suffix_column_to_zip)]
+    updated_names_and_parent = [
+        _update_framework_name(
+            name=name,
+            parent=parent,
+            name_suffix_1=name_suffix_1,
+            name_suffix_2=framework_suffix,
+        )
+        for (name, parent, name_suffix_1) in zip(
+            raw_input[FRAMEWORK], framework_parent_to_zip, framework_suffix_column_to_zip
+        )
+    ]
 
     updated_names = [name for name, parent in updated_names_and_parent]
     updated_parents = [parent for name, parent in updated_names_and_parent]
@@ -78,9 +86,13 @@ def preprocess_openml_input(
     else:
         framework_parent_to_zip = [None] * len(raw_input)
 
-    raw_input[FRAMEWORK] = [_parent_rename(
-        parent=parent, name=name,
-    ) for (parent, name) in zip(framework_parent_to_zip, raw_input[FRAMEWORK])]
+    raw_input[FRAMEWORK] = [
+        _parent_rename(
+            parent=parent,
+            name=name,
+        )
+        for (parent, name) in zip(framework_parent_to_zip, raw_input[FRAMEWORK])
+    ]
 
     # TODO: This is a hack and won't work for all metrics, metric_error should ideally be calculated prior to preprocessing
     metric_list = [
