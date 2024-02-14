@@ -14,6 +14,8 @@ from .preprocess import preprocess_utils
 
 logger = logging.getLogger(__name__)
 
+WINRATE = "Winrate"
+
 
 def compute_vs_diff(
     results_ranked_by_dataset: pd.DataFrame, framework_1: str, framework_2: str
@@ -195,15 +197,15 @@ def evaluate(
     time_infer_s_rescaled = TIME_INFER_S + "_rescaled"
 
     all_results_pairs = {}
-    for framework_2 in frameworks_compare_vs_all:
-        print(f"Computing comparison vs '{framework_2}'")
+    for framework_1 in frameworks_compare_vs_all:
+        print(f"Computing comparison vs '{framework_1}'")
         results_list = []
 
-        for framework_1 in total_frameworks:
-            if framework_1 == framework_2:
+        for framework_2 in total_frameworks:
+            if framework_2 == framework_1:
                 results_ranked, results_ranked_by_dataset = evaluate_utils.compare_frameworks(
                     results_raw=results_raw,
-                    frameworks=[framework_2],
+                    frameworks=[framework_1],
                     banned_datasets=banned_datasets,
                     folds_to_keep=folds_to_keep,
                     columns_to_agg_extra=columns_to_agg_extra,
@@ -219,7 +221,7 @@ def evaluate(
 
             results_ranked, results_ranked_by_dataset = evaluate_utils.compare_frameworks(
                 results_raw=results_raw,
-                frameworks=[framework_1, framework_2],
+                frameworks=[framework_2, framework_1],
                 banned_datasets=banned_datasets,
                 folds_to_keep=folds_to_keep,
                 columns_to_agg_extra=columns_to_agg_extra,
@@ -254,13 +256,13 @@ def evaluate(
                     )
 
                 if calc_inf_diff:
-                    inf_1 = results_isolated[results_isolated[FRAMEWORK] == framework_1][time_infer_s_rescaled].iloc[0]
                     inf_2 = results_isolated[results_isolated[FRAMEWORK] == framework_2][time_infer_s_rescaled].iloc[0]
+                    inf_1 = results_isolated[results_isolated[FRAMEWORK] == framework_1][time_infer_s_rescaled].iloc[0]
 
-                    if inf_1 > inf_2:
-                        avg_inf_diff = -(inf_1 - 1)
+                    if inf_2 > inf_1:
+                        avg_inf_diff = -(inf_2 - 1)
                     else:
-                        avg_inf_diff = inf_2 - 1
+                        avg_inf_diff = inf_1 - 1
                     avg_inf_diffs += avg_inf_diff
 
                 results_isolated = results_isolated[results_isolated[FRAMEWORK] == framework_1]
@@ -275,16 +277,16 @@ def evaluate(
                     raise AssertionError("Rank not valid: %s" % results_isolated_rank)
             winrate = (framework_1_wins + 0.5 * ties) / (framework_1_wins + framework_2_wins + ties)
 
-            out = [framework_1, winrate, framework_1_wins, framework_2_wins, ties, mean_diff, median_diff]
+            out = [framework_2, winrate, framework_1_wins, framework_2_wins, ties, mean_diff, median_diff]
             if calc_inf_diff:
                 avg_inf_diffs = avg_inf_diffs / len(datasets_pair)
                 out.append(avg_inf_diffs)
             results_list.append(out)
-        out_col_names = [FRAMEWORK, "winrate", ">", "<", "=", "% Less Avg. Errors", "% Less Errors (median)"]
+        out_col_names = [FRAMEWORK, WINRATE, ">", "<", "=", "% Loss Reduction", "% Loss Reduction (median)"]
         if calc_inf_diff:
             out_col_names.append("Avg Inf Speed Diff")
         results_pairs = pd.DataFrame(data=results_list, columns=out_col_names)
-        all_results_pairs[framework_2] = results_pairs
+        all_results_pairs[framework_1] = results_pairs
 
     results_pairs_merged_dict = {}
     for framework in frameworks_compare_vs_all:
