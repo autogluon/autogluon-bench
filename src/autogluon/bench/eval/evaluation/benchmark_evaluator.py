@@ -210,7 +210,7 @@ class BenchmarkEvaluator:
         if valid_datasets is not None:
             results_raw = results_raw[results_raw[DATASET].isin(valid_datasets)]
         if self._use_tid_as_dataset_name:
-            results_raw[DATASET] = results_raw["tid"].astype(int).astype(str)
+            results_raw.loc[:, DATASET] = results_raw["tid"].astype(int).astype(str)
             if banned_datasets is not None:
                 results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         if infer_batch_size is not None:
@@ -234,7 +234,7 @@ class BenchmarkEvaluator:
                 raise AssertionError(f"Difference in expected frameworks present: {diff}")
         # Round error
         if self.round_error_decimals is not None:
-            results_raw[METRIC_ERROR] = results_raw[METRIC_ERROR].round(decimals=self.round_error_decimals)
+            results_raw.loc[:, METRIC_ERROR] = results_raw[METRIC_ERROR].round(decimals=self.round_error_decimals)
 
         if self._columns_to_keep:
             results_raw = results_raw[self._columns_to_keep]
