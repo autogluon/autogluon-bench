@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import re
 
+import numpy as np
 import pandas as pd
 
 from ..constants import *
@@ -7,9 +10,14 @@ from . import preprocess_utils
 
 
 def preprocess_openml_input(
-    path, framework_suffix=None, framework_rename_dict=None, folds_to_keep=None, framework_suffix_column=None
+    df: pd.DataFrame,
+    framework_suffix=None,
+    framework_rename_dict=None,
+    folds_to_keep=None,
+    framework_suffix_column=None,
 ):
-    raw_input = pd.read_csv(path)
+    raw_input = df.copy()
+    assert len(raw_input.columns) == len(set(raw_input.columns))
     raw_input = _rename_openml_columns(raw_input)
     raw_input = raw_input[raw_input[FRAMEWORK].notnull()]
     if framework_rename_dict is not None:
@@ -18,19 +26,61 @@ def preprocess_openml_input(
                 framework_rename_dict[key] if framework[0] == key else framework[0]
                 for framework in zip(raw_input[FRAMEWORK])
             ]
-    if framework_suffix_column is not None:
-        if "framework_parent" in raw_input.columns:
-            raw_input["framework_parent"] = raw_input["framework_parent"] + "_" + raw_input[framework_suffix_column]
-        else:
-            raw_input[FRAMEWORK] = raw_input[FRAMEWORK] + "_" + raw_input[framework_suffix_column]
 
-    elif framework_suffix is not None:
-        if "framework_parent" in raw_input.columns:
-            raw_input["framework_parent"] = [
-                framework[0] + framework_suffix for framework in zip(raw_input["framework_parent"])
-            ]
+    def _update_framework_name(name: str, parent: str, name_suffix_1: str, name_suffix_2: str):
+        is_valid_parent = parent and isinstance(parent, str)
+        if is_valid_parent:
+            name_new = parent
         else:
-            raw_input[FRAMEWORK] = [framework[0] + framework_suffix for framework in zip(raw_input[FRAMEWORK])]
+            name_new = name
+        if name_suffix_1:
+            name_new = name_new + "_" + name_suffix_1
+        if name_suffix_2:
+            name_new = name_new + "_" + name_suffix_2
+        if is_valid_parent:
+            return name, name_new
+        else:
+            return name_new, parent
+
+    if framework_suffix_column:
+        framework_suffix_column_to_zip = [f for f in raw_input[framework_suffix_column]]
+    else:
+        framework_suffix_column_to_zip = [None] * len(raw_input)
+    if "framework_parent" in raw_input.columns:
+        framework_parent_to_zip = [f for f in raw_input["framework_parent"]]
+    else:
+        framework_parent_to_zip = [None] * len(raw_input)
+
+    updated_names_and_parent = [_update_framework_name(
+        name=name, parent=parent, name_suffix_1=name_suffix_1, name_suffix_2=framework_suffix,
+    ) for (name, parent, name_suffix_1) in zip(raw_input[FRAMEWORK], framework_parent_to_zip, framework_suffix_column_to_zip)]
+
+    updated_names = [name for name, parent in updated_names_and_parent]
+    updated_parents = [parent for name, parent in updated_names_and_parent]
+
+    raw_input[FRAMEWORK] = updated_names
+    if "framework_parent" in raw_input.columns:
+        raw_input["framework_parent"] = updated_parents
+
+    if "framework_parent" in raw_input:
+        # raw_input["framework_child"] = raw_input[FRAMEWORK]
+        raw_input["framework_child"] = np.where(raw_input["framework_parent"].isnull(), np.nan, raw_input[FRAMEWORK])
+
+    def _parent_rename(parent: str | None, name: str):
+        if parent and isinstance(parent, str):
+            rename = parent + "_" + name
+        else:
+            rename = name
+        return rename
+
+    if "framework_parent" in raw_input:
+        framework_parent_to_zip = [f for f in raw_input["framework_parent"]]
+    else:
+        framework_parent_to_zip = [None] * len(raw_input)
+
+    raw_input[FRAMEWORK] = [_parent_rename(
+        parent=parent, name=name,
+    ) for (parent, name) in zip(framework_parent_to_zip, raw_input[FRAMEWORK])]
 
     # TODO: This is a hack and won't work for all metrics, metric_error should ideally be calculated prior to preprocessing
     metric_list = [
@@ -80,7 +130,7 @@ def preprocess_openml_input(
 
     """
     Update tid to the new ones in case the runs are old
-    
+
     Name                | oldtid | newtid
 
     KDDCup09-Upselling  | 360115 | 360975
@@ -103,25 +153,28 @@ def preprocess_openml_input(
     return cleaned_input
 
 
-def _rename_openml_columns(result_df):
-    renamed_df = result_df.rename(
-        columns={
-            "type": PROBLEM_TYPE,
-            TASK: DATASET,
-            FRAMEWORK: FRAMEWORK,
-            RESULT: METRIC_SCORE,
-            DURATION: TIME_TRAIN_S,
-            PREDICT_DURATION: TIME_INFER_S,
-        }
-    )
-    if "training_duration" in renamed_df.columns:
-        renamed_df[TIME_TRAIN_S] = renamed_df["training_duration"]
-        renamed_df = renamed_df.drop(columns=["training_duration"])
-    if "score_test" in renamed_df.columns:
-        print(
-            f"score_test found in columns! Treating result as AG leaderboard format. score_test will be mapped to {METRIC_SCORE}, pred_time_test will be mapped to {TIME_INFER_S}."
-        )
-        renamed_df = renamed_df.rename(columns={"score_test": METRIC_SCORE})
-        renamed_df = renamed_df.rename(columns={"pred_time_test": TIME_INFER_S})
+def _update_and_drop_column(df: pd.DataFrame, col_to_update: str, col_to_drop: str) -> pd.DataFrame:
+    if col_to_drop in df:
+        if col_to_update in df:
+            df[col_to_update] = df[col_to_drop].fillna(df[col_to_update])
+            df = df.drop(columns=[col_to_drop])
+        else:
+            df = df.rename(columns={col_to_drop: col_to_update})
+    return df
 
+
+def _rename_openml_columns(result_df):
+    rename_order = [
+        ("type", PROBLEM_TYPE),
+        (TASK, DATASET),
+        (RESULT, METRIC_SCORE),
+        (DURATION, TIME_TRAIN_S),
+        (PREDICT_DURATION, TIME_INFER_S),
+        ("training_duration", TIME_TRAIN_S),
+        ("score_test", METRIC_SCORE),
+        ("pred_time_test", TIME_INFER_S),
+    ]
+    renamed_df = result_df.copy()
+    for col_to_drop, col_to_update in rename_order:
+        renamed_df = _update_and_drop_column(renamed_df, col_to_update=col_to_update, col_to_drop=col_to_drop)
     return renamed_df

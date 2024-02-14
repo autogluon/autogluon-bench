@@ -72,6 +72,38 @@ def clean_amlb_results(
     )
 
 
+def clean_results_df(
+    df_raw: pd.DataFrame,
+    framework_suffix: str = None,
+    framework_suffix_column: str = None,
+) -> pd.DataFrame:
+    df_processed = preprocess_openml.preprocess_openml_input(
+        df=df_raw,
+        framework_suffix=framework_suffix,
+        framework_suffix_column=framework_suffix_column,
+    ).sort_values(by=[DATASET, FOLD, FRAMEWORK]).reset_index(drop=True)
+
+    minimal_columns = [
+        DATASET,
+        FOLD,
+        FRAMEWORK,
+        "constraint",
+        METRIC,
+        METRIC_ERROR,
+        TIME_TRAIN_S,
+        TIME_INFER_S,
+        PROBLEM_TYPE,
+        "tid",
+    ]
+
+    df_processed_columns = list(df_processed.columns)
+    df_processed_columns = [c for c in df_processed_columns if c in minimal_columns] + [
+        c for c in df_processed_columns if c not in minimal_columns
+    ]
+    df_processed = df_processed[df_processed_columns]
+    return df_processed
+
+
 def clean_and_save_results(
     run_name: str,
     results_dir: str = "data/results/",
@@ -102,8 +134,9 @@ def clean_and_save_results(
     for constraint in constraints:
         constraint_str = f"_{constraint}" if constraint is not None else ""
         for prefix in file_prefix:
+            results_raw_orig = pd.read_csv(os.path.join(results_dir_input, f"{prefix}{constraint_str}{run_name_str}.csv"))
             results = preprocess_openml.preprocess_openml_input(
-                path=os.path.join(results_dir_input, f"{prefix}{constraint_str}{run_name_str}.csv"),
+                df=results_raw_orig,
                 framework_suffix=constraint_str,
                 framework_suffix_column=framework_suffix_column,
             )
