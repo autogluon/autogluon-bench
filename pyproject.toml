@@ -33,7 +33,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Image Recognition"
 ]
 dependencies = [
-    "autogluon.common >=0.7,<1.0",
+    "autogluon.common >=1, <2",
     "aws-cdk-lib >=2.0.0,<2.70.0",
     "aws-cdk.aws-batch-alpha >=2.0.0a1,<2.70.0a0",
     "awscliv2 >=2.2.0,<2.3.0",
