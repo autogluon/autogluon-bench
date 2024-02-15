@@ -40,15 +40,15 @@ dependencies = [
     "boto3 >=1.26.0,<1.28.0",
     "constructs >=10.0.0,<10.1.289",
     "fsspec >=2023.5.0,<=2023.6.0",
-    "matplotlib >=3.4,<3.7",
+    "matplotlib >=3.4,<3.8",
     "pandas >=1.4.1,<2.2.0",
     "pydantic>=1.10.4,<2.0", # https://github.com/ray-project/ray/issues/36990
-    "pyyaml >=5.4,<=6.0",
+    "pyyaml >=5.4,<7",
     "ray[default] >=2.6.3,<2.7",
     "s3fs >=2023.5.0,<=2023.6.0",
-    "tqdm >=4.64.0,<=4.65.0",
+    "tqdm >=4.64.0,<=5",
     "typer >=0.9.0,<1.0.0",
-    "wheel >0.38.0,<=0.40.0",
+    "wheel >0.38.0,<0.43",
 ]
 
 [project.optional-dependencies]
