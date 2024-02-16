@@ -115,7 +115,6 @@ def preprocess_openml_input(
     ]
 
     if raw_input[METRIC_ERROR].min() < 0:
-        # TODO: update values below 0 to 0
         eps = -1 / 1e8
         num_negative = len(raw_input[raw_input[METRIC_ERROR] < 0])
 
@@ -162,6 +161,34 @@ def preprocess_openml_input(
         )
         .fillna(cleaned_input["tid"])
     )
+
+    # add_if_missing = [
+    #     TIME_TRAIN_S,
+    #     TIME_INFER_S,
+    # ]
+    # add_missing = [c for c in add_if_missing if c not in cleaned_input.columns]
+    # if add_missing:
+    #     cleaned_input[add_missing] = np.nan
+
+    required_output_columns = [
+        DATASET,
+        FOLD,
+        FRAMEWORK,
+        METRIC_ERROR,
+        METRIC,
+        PROBLEM_TYPE,
+        TIME_TRAIN_S,
+        TIME_INFER_S,
+        "tid",
+    ]
+    actual_columns = list(cleaned_input.columns)
+    missing_columns = [c for c in required_output_columns if c not in actual_columns]
+    if missing_columns:
+        raise AssertionError(f"Missing expected output columns: {missing_columns}")
+
+    reordered_columns = required_output_columns + [c for c in actual_columns if c not in required_output_columns]
+    cleaned_input = cleaned_input[reordered_columns]
+
     return cleaned_input
 
 

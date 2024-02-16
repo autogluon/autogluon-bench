@@ -122,7 +122,7 @@ def evaluate(
     banned_datasets: List[str] | None = None,
     infer_batch_size: int | None = None,
     clean_data: bool = True,
-    use_tid_as_dataset_name: bool = True,
+    use_tid_as_dataset_name: bool = False,
     filter_errors: bool = False,
     task_metadata: str = None,
 ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, pd.DataFrame]):
