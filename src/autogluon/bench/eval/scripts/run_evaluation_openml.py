@@ -274,11 +274,18 @@ def evaluate(
 
     if len(frameworks_run) > 1:
         win_rate_per_dataset_df = compute_win_rate_per_dataset(
-            f1=frameworks_run[0], f2=frameworks_run[1], results_raw=results_raw, folds=folds_to_keep, verbose=verbose,
+            f1=frameworks_run[0],
+            f2=frameworks_run[1],
+            results_raw=results_raw,
+            folds=folds_to_keep,
+            verbose=verbose,
         )
     if compute_z_score and len(frameworks_run) > 1 and len(folds_to_keep) > 1:
         z_stat_df = compute_stderr_z_stat_bulk(
-            framework=frameworks_run[0], frameworks_to_compare=frameworks_run[1:], results_raw=results_raw, verbose=verbose,
+            framework=frameworks_run[0],
+            frameworks_to_compare=frameworks_run[1:],
+            results_raw=results_raw,
+            verbose=verbose,
         )
         z_stat_series = compute_stderr_z_stat(
             results_raw, f1=frameworks_run[0], f2=frameworks_run[1], folds=folds_to_keep, verbose=False
