@@ -533,8 +533,9 @@ def compute_win_rate_per_dataset(
 
     out_df = pd.DataFrame(out_dict).T
     out_df = out_df.sort_values(by=["winrate", "bestdiff", "folds", "tierate"], ascending=[False, False, False, True])
-    print(f"winrate {f1} vs {f2}")
-    print(out_df)
+    if verbose:
+        print(f"winrate {f1} vs {f2}")
+        print(out_df)
     return out_df
 
 

@@ -109,10 +109,11 @@ def evaluate(
     *,
     paths: List[str] | pd.DataFrame,
     frameworks_run: List[str] | None = None,
+    frameworks_compare_vs_all: List[str] | str | None = "auto",
     results_dir: str = "data/results/",
     results_dir_input: str = None,
     results_dir_output: str = None,
-    output_suffix: str | None = "ag_full_v5/1h8c",
+    output_suffix: str | None = None,
     frameworks_rename: dict | None = None,
     framework_nan_fill: str | None = None,
     problem_type: List[str] | str | None = None,
@@ -125,6 +126,7 @@ def evaluate(
     use_tid_as_dataset_name: bool = False,
     filter_errors: bool = False,
     task_metadata: str = None,
+    verbose: bool = True,
 ) -> (pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, pd.DataFrame]):
     """
     # TODO: Add description
@@ -133,6 +135,9 @@ def evaluate(
     frameworks_run : List[str]
         The list of frameworks to compare.
         These frameworks must be present in the "frameworks" column of the loaded input files listed in the `paths` arg.
+    frameworks_compare_vs_all : List[str] | str | None, default = "auto"
+        List of frameworks to compare all other frameworks to in a dedicated table.
+        If "auto" sets to [frameworks_run[0]].
     paths : List[str]
         The list of file paths to load the input data from.
         The resulting input DataFrame will be the concatenation of all files listed in `paths`.
@@ -252,29 +257,34 @@ def evaluate(
         results_raw["framework"] = results_raw["framework"].map(frameworks_rename).fillna(results_raw["framework"])
         frameworks_run = [frameworks_rename.get(f, f) for f in frameworks_run]
 
-    frameworks_compare_vs_all = []
-    if len(frameworks_compare_vs_all) == 0:
+    if isinstance(frameworks_compare_vs_all, str) and frameworks_compare_vs_all == "auto":
         frameworks_compare_vs_all = [frameworks_run[0]]
+    elif frameworks_compare_vs_all is None:
+        frameworks_compare_vs_all = []
+    if not isinstance(frameworks_compare_vs_all, list):
+        raise ValueError(f"Unexpected value for frameworks_compare_vs_all: {frameworks_compare_vs_all}")
 
-    print("frameworks = [")
-    for i in range(len(frameworks_run)):
-        print(f'\t"{frameworks_run[i]}",')
-    print("]")
+    if verbose:
+        print("frameworks = [")
+        for i in range(len(frameworks_run)):
+            print(f'\t"{frameworks_run[i]}",')
+        print("]")
 
     folds_to_keep = sorted(results_raw["fold"].unique())
 
     if len(frameworks_run) > 1:
         win_rate_per_dataset_df = compute_win_rate_per_dataset(
-            f1=frameworks_run[0], f2=frameworks_run[1], results_raw=results_raw, folds=folds_to_keep
+            f1=frameworks_run[0], f2=frameworks_run[1], results_raw=results_raw, folds=folds_to_keep, verbose=verbose,
         )
     if compute_z_score and len(frameworks_run) > 1 and len(folds_to_keep) > 1:
         z_stat_df = compute_stderr_z_stat_bulk(
-            framework=frameworks_run[0], frameworks_to_compare=frameworks_run[1:], results_raw=results_raw
+            framework=frameworks_run[0], frameworks_to_compare=frameworks_run[1:], results_raw=results_raw, verbose=verbose,
         )
         z_stat_series = compute_stderr_z_stat(
             results_raw, f1=frameworks_run[0], f2=frameworks_run[1], folds=folds_to_keep, verbose=False
         )
-        graph_vs(results_df=results_raw, f1=frameworks_run[0], f2=frameworks_run[1], z_stats=z_stat_series)
+        if verbose:
+            graph_vs(results_df=results_raw, f1=frameworks_run[0], f2=frameworks_run[1], z_stats=z_stat_series)
 
     (
         results_ranked,
@@ -290,6 +300,7 @@ def evaluate(
         ],
         frameworks_compare_vs_all=frameworks_compare_vs_all,
         output_dir=benchmark_evaluator.results_dir_output,
+        verbose=verbose,
     )
 
     if treat_folds_as_datasets:
