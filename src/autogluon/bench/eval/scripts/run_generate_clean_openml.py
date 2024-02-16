@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 import typer
@@ -84,12 +84,14 @@ def clean_results_df(
     df_raw: pd.DataFrame,
     framework_suffix: str = None,
     framework_suffix_column: str = None,
+    framework_rename_dict: Dict[str, str] = None,
 ) -> pd.DataFrame:
     df_processed = (
         preprocess_openml.preprocess_openml_input(
             df=df_raw,
             framework_suffix=framework_suffix,
             framework_suffix_column=framework_suffix_column,
+            framework_rename_dict=framework_rename_dict,
         )
         .sort_values(by=[DATASET, FOLD, FRAMEWORK])
         .reset_index(drop=True)
