@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 import typer
@@ -24,6 +24,19 @@ from autogluon.common.savers import save_pd
 app = typer.Typer()
 logger = logging.getLogger(__name__)
 
+MINIMAL_COLUMNS = [
+    DATASET,
+    FOLD,
+    FRAMEWORK,
+    "constraint",
+    METRIC,
+    METRIC_ERROR,
+    TIME_TRAIN_S,
+    TIME_INFER_S,
+    PROBLEM_TYPE,
+    "tid",
+]
+
 
 @app.command()
 def clean_amlb_results(
@@ -42,10 +55,6 @@ def clean_amlb_results(
     file_prefix: str = typer.Option("results_automlbenchmark", help="File prefix of the input results files."),
     benchmark_name_in_input_path: bool = False,
     benchmark_name_in_output_path: bool = True,
-    constraints: Optional[List[str]] = typer.Option(
-        None,
-        help="List of AMLB constraints, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml",
-    ),
     out_path_prefix: str = typer.Option("openml_ag_", help="Prefix of result file."),
     out_path_suffix: str = typer.Option("", help="suffix of result file."),
     framework_suffix_column: str = typer.Option("constraint", help="Framework suffix column."),
@@ -65,11 +74,35 @@ def clean_amlb_results(
         run_name_in_input_path=benchmark_name_in_input_path,
         run_name_in_output_path=benchmark_name_in_output_path,
         save=True,
-        constraints=constraints if constraints else None,
         out_path_prefix=out_path_prefix,
         out_path_suffix=out_path_suffix,
         framework_suffix_column=framework_suffix_column,
     )
+
+
+def clean_results_df(
+    df_raw: pd.DataFrame,
+    framework_suffix: str = None,
+    framework_suffix_column: str = None,
+    framework_rename_dict: Dict[str, str] = None,
+) -> pd.DataFrame:
+    df_processed = (
+        preprocess_openml.preprocess_openml_input(
+            df=df_raw,
+            framework_suffix=framework_suffix,
+            framework_suffix_column=framework_suffix_column,
+            framework_rename_dict=framework_rename_dict,
+        )
+        .sort_values(by=[DATASET, FOLD, FRAMEWORK])
+        .reset_index(drop=True)
+    )
+
+    df_processed_columns = list(df_processed.columns)
+    df_processed_columns = [c for c in df_processed_columns if c in MINIMAL_COLUMNS] + [
+        c for c in df_processed_columns if c not in MINIMAL_COLUMNS
+    ]
+    df_processed = df_processed[df_processed_columns]
+    return df_processed
 
 
 def clean_and_save_results(
@@ -82,7 +115,6 @@ def clean_and_save_results(
     run_name_in_output_path: bool = True,
     save: bool = True,
     save_minimal: bool = True,
-    constraints: List[str] | None = None,
     out_path_prefix: str = "openml_ag_",
     out_path_suffix: str = "",
     framework_suffix_column: str = "constraint",
@@ -97,43 +129,15 @@ def clean_and_save_results(
         file_prefix = [file_prefix]
 
     results_list = []
-    if constraints is None:
-        constraints = [None]
-    for constraint in constraints:
-        constraint_str = f"_{constraint}" if constraint is not None else ""
-        for prefix in file_prefix:
-            results = preprocess_openml.preprocess_openml_input(
-                path=os.path.join(results_dir_input, f"{prefix}{constraint_str}{run_name_str}.csv"),
-                framework_suffix=constraint_str,
-                framework_suffix_column=framework_suffix_column,
-            )
-            results_list.append(results)
-
+    for prefix in file_prefix:
+        results_raw_orig = pd.read_csv(os.path.join(results_dir_input, f"{prefix}{run_name_str}.csv"))
+        results = clean_results_df(
+            df_raw=results_raw_orig,
+            framework_suffix=run_name,
+            framework_suffix_column=framework_suffix_column,
+        )
+        results_list.append(results)
     results_raw = pd.concat(results_list, ignore_index=True, sort=True)
-
-    if "framework_parent" in results_raw.columns:
-        results_raw[FRAMEWORK] = results_raw["framework_parent"] + "_" + run_name + "_" + results_raw[FRAMEWORK]
-    else:
-        results_raw[FRAMEWORK] = results_raw[FRAMEWORK] + "_" + run_name
-
-    minimal_columns = [
-        DATASET,
-        FOLD,
-        FRAMEWORK,
-        "constraint",
-        METRIC,
-        METRIC_ERROR,
-        TIME_TRAIN_S,
-        TIME_INFER_S,
-        PROBLEM_TYPE,
-        "tid",
-    ]
-
-    results_raw_columns = list(results_raw.columns)
-    results_raw_columns = [c for c in results_raw_columns if c in minimal_columns] + [
-        c for c in results_raw_columns if c not in minimal_columns
-    ]
-    results_raw = results_raw[results_raw_columns]
 
     if save:
         if run_name_in_output_path:
@@ -147,7 +151,7 @@ def clean_and_save_results(
         save_path_file_pq = f"{save_path}.parquet"
         save_pd.save(path=save_path_file_pq, df=results_raw)
         if save_minimal:
-            results_raw_minimal = results_raw[minimal_columns]
+            results_raw_minimal = results_raw[MINIMAL_COLUMNS]
 
             save_path_file_minimum = f"{save_path}_min.csv"
             save_pd.save(path=save_path_file_minimum, df=results_raw_minimal)
