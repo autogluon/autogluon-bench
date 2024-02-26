@@ -9,6 +9,30 @@ from ..constants import *
 from . import preprocess_utils
 
 
+def _update_framework_name(name: str, parent: str, name_suffix_1: str, name_suffix_2: str):
+    is_valid_parent = parent and isinstance(parent, str)
+    if is_valid_parent:
+        name_new = parent
+    else:
+        name_new = name
+    if name_suffix_1:
+        name_new = name_new + "_" + name_suffix_1
+    if name_suffix_2:
+        name_new = name_new + "_" + name_suffix_2
+    if is_valid_parent:
+        return name, name_new
+    else:
+        return name_new, parent
+
+
+def _parent_rename(parent: str | None, name: str):
+    if parent and isinstance(parent, str):
+        rename = parent + "_" + name
+    else:
+        rename = name
+    return rename
+
+
 def preprocess_openml_input(
     df: pd.DataFrame,
     framework_suffix=None,
@@ -26,21 +50,6 @@ def preprocess_openml_input(
                 framework_rename_dict[key] if framework[0] == key else framework[0]
                 for framework in zip(raw_input[FRAMEWORK])
             ]
-
-    def _update_framework_name(name: str, parent: str, name_suffix_1: str, name_suffix_2: str):
-        is_valid_parent = parent and isinstance(parent, str)
-        if is_valid_parent:
-            name_new = parent
-        else:
-            name_new = name
-        if name_suffix_1:
-            name_new = name_new + "_" + name_suffix_1
-        if name_suffix_2:
-            name_new = name_new + "_" + name_suffix_2
-        if is_valid_parent:
-            return name, name_new
-        else:
-            return name_new, parent
 
     if framework_suffix_column:
         framework_suffix_column_to_zip = [f for f in raw_input[framework_suffix_column]]
@@ -73,13 +82,6 @@ def preprocess_openml_input(
     if "framework_parent" in raw_input:
         # raw_input["framework_child"] = raw_input[FRAMEWORK]
         raw_input["framework_child"] = np.where(raw_input["framework_parent"].isnull(), np.nan, raw_input[FRAMEWORK])
-
-    def _parent_rename(parent: str | None, name: str):
-        if parent and isinstance(parent, str):
-            rename = parent + "_" + name
-        else:
-            rename = name
-        return rename
 
     if "framework_parent" in raw_input:
         framework_parent_to_zip = [f for f in raw_input["framework_parent"]]
