@@ -62,7 +62,7 @@ RUN chmod +x entrypoint.sh \
         else \
             bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AMLB_FRAMEWORK; \
         fi; \
-    elif echo "$FRAMEWORK_PATH" | grep -q "multimodal"; then \
+    elif echo "$FRAMEWORK_PATH" | grep -q -E "multimodal|autokeras"; then \
         bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AG_BENCH_VERSION; \
     fi \
     && echo "CDK_DEPLOY_REGION=$CDK_DEPLOY_REGION" >> /etc/environment

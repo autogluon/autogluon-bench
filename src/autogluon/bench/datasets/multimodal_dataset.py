@@ -33,7 +33,6 @@ __all__ = [
     "AEPricePrediction",
     "IMDBGenrePrediction",
     "JCPennyCategory",
-    "NewsPopularity",
     "NewsChannel",
 ]
 
@@ -633,56 +632,6 @@ class JCPennyCategory(BaseMultiModalDataset):
     @property
     def label_columns(self):
         return ["sale_price"]
-
-    @property
-    def label_types(self):
-        return [_NUMERICAL]
-
-    @property
-    def feature_columns(self):
-        return [col for col in list(self.data.columns) if col not in self.label_columns]
-
-    @property
-    def metric(self):
-        return "r2"
-
-    @property
-    def problem_type(self):
-        return _REGRESSION
-
-
-class NewsPopularity(BaseMultiModalDataset):
-    _SOURCE = "https://archive.ics.uci.edu/ml/datasets/online+news+popularity"
-    _INFO = {
-        "train": {
-            "url": get_repo_url() + "news_popularity2/train.csv",
-            "sha1sum": "390b15e77fa77a2722ce2d459a977034a9565f46",
-        },
-        "test": {
-            "url": get_repo_url() + "news_popularity2/test.csv",
-            "sha1sum": "297253bdca18f6aafbaee0262be430126c1f9044",
-        },
-    }
-    _registry_name = "news_popularity"
-
-    def __init__(self, split="train"):
-        super().__init__(split=split, dataset_name=self._registry_name, data_info=self._INFO)
-
-    @property
-    def data(self):
-        return self._data
-
-    @classmethod
-    def splits(cls):
-        return cls._INFO.keys()
-
-    @property
-    def data(self):
-        return self._data
-
-    @property
-    def label_columns(self):
-        return ["log_shares"]
 
     @property
     def label_types(self):

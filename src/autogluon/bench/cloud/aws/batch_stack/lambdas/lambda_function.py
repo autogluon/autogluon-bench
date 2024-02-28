@@ -216,10 +216,10 @@ def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_
     job_configs = []
     if config["module"] in AMLB_DEPENDENT_MODULES:
         job_configs = generate_amlb_module_config_combinations(config)
-    elif config["module"] == "multimodal":
+    elif config["module"] in ["multimodal", "autokeras"]:
         job_configs = generate_multimodal_config_combinations(config)
     else:
-        raise ValueError("Invalid module. Choose either 'tabular', 'timeseries', or 'multimodal'.")
+        raise ValueError("Invalid module. Choose either 'tabular', 'timeseries', 'autokeras', or 'multimodal'.")
 
     if len(job_configs) == 0:
         return {parent_job_id: "No job submitted"}

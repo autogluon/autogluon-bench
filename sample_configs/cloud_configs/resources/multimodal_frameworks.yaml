@@ -13,7 +13,6 @@ AutoGluon_best_master:
   version: master
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
-    time_limit: 90
 
 ablation_greedy_soup:
   repo: https://github.com/autogluon/autogluon.git
@@ -55,7 +54,7 @@ ablation_weight_decay:
     hyperparameters:
       optimization.weight_decay: 0.0
 
-ablation_cosine_decay:
+ablation_lr_decay:
   repo: https://github.com/autogluon/autogluon.git
   version: master
   params:  # MultimodalPredictor.fit(params)
@@ -64,5 +63,7 @@ ablation_cosine_decay:
       optimization.lr_decay: 0.0 
 
 
-AutoKeras:
-
+autokeras_master:
+  repo: https://github.com/keras-team/keras-tuner.git 
+  version: master
+  

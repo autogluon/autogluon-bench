@@ -1,0 +1,90 @@
+base: &base
+  url: s3://zs-models/{name}/{split}.csv
+  test_split_name: test
+  splits:
+    - train
+    - test
+  image_columns:
+  text_columns:
+  columns_to_drop:
+  label_columns:
+    - LabelName
+  metric: acc
+  problem_type: multiclass
+  
+
+airbnb:
+  <<: *base
+  url: s3://automl-mm-bench/airbnb_melbourne/{split}.pq
+  text_columns:
+    - summary
+    - amenities
+  label_columns:
+    - price_label
+  columns_to_drop:
+    - id
+    - listing_url
+    - scrape_id
+    - last_scraped
+    - picture_url
+    - host_id
+    - host_url
+    - host_name
+    - host_thumbnail_url
+    - host_picture_url
+    - calendar_last_scraped
+
+
+kick_start:
+  <<: *base
+  url: s3://automl-mm-bench/kick_starter_funding/{split}.csv
+  text_columns:
+    - name
+    - desc
+    - keywords
+  label_columns:
+    - final_status
+  metric: roc_auc
+  problem_type: binary
+
+
+cloth_review:
+  <<: *base
+  url: s3://automl-mm-bench/women_clothing_review/{split}.pq
+  text_columns:
+    - Title
+    - Review Text
+  label_columns:
+    - Rating
+  metric: rmse
+  problem_type: regression
+
+
+news_popularity:
+  <<: *base
+  url: s3://automl-mm-bench/news_popularity2/{split}.csv
+  text_columns: 
+    - article_title
+  label_columns:
+    - log_shares
+  image_columns:
+  metric: rmse
+  problem_type: regression
+
+
+cal_house:
+  <<: *base
+  url: s3://automl-mm-bench/kaggle-california-house-prices/{split}.csv
+  text_columns:
+    - Summary
+    - Appliances included
+    - Laundry features
+    - Parking features
+    - Flooring
+    - Elementary School
+    - Middle School
+    - High School
+  label_columns:
+    - Sold Price
+  metric: rmse
+  problem_type: regression

@@ -10,6 +10,10 @@ class Benchmark(ABC):
     def __init__(self, benchmark_name: str, benchmark_dir: str):
         self.benchmark_name = benchmark_name
         self.benchmark_dir = benchmark_dir
+        # self.benchmark_name = "ag_bench_image_20240225T084239"
+        # self.benchmark_dir = "ag_bench_runs/multimodal/ag_bench_image_20240225T084239"
+        # self.benchmark_name = "ag_bench_text_tabular_20240227T144413"
+        # self.benchmark_dir = "ag_bench_runs/autokeras/ag_bench_text_tabular_20240227T144413"
         self.metrics_dir = os.path.join(self.benchmark_dir, "results")
         self.benchmark_dir_s3 = None
 

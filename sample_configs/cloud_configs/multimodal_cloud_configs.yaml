@@ -1,0 +1,36 @@
+# Infra configurations
+cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
+  CDK_DEPLOY_ACCOUNT: dummy  # required, update with your AWS account
+  CDK_DEPLOY_REGION: dummy  # required, update with your desired region
+  PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
+  METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
+  # DATA_BUCKET: existing-s3-bucket  # optional, S3 bucket to download your private datasets
+  # MAX_MACHINE_NUM: 20   # optional, default 20
+  # BLOCK_DEVICE_VOLUME: 100   # optional, default 100GB
+  # RESERVED_MEMORY_SIZE: 15000  # optional, default 15000MB
+  # VPC_NAME: existing-vpc-name  # optional
+
+module: multimodal  # required
+mode: aws  # required
+benchmark_name: ag_bench  # required
+root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
+
+constraint: test  # configurations will override cdk_context, options can be found at resources/multimodal_constraints.yaml, custom constraint is also supported, default: test
+framework: AutoGluon_stable  # framework options can be found at resources/multimodal_frameworks.yaml, custom framework is also supported.
+dataset_name:  # required
+  - shopee
+  - melbourne_airbnb
+
+### Customizations ####
+# custom_resource_dir: sample_configs/resources/  # path to custom multimodal_constraints.yaml and multimodal_frameworks.yaml
+# custom_dataloader:
+#     dataloader_file: sample_configs/dataloaders/vision_dataloader.py   # relative path to WORKDIR
+#     class_name: VisionDataLoader
+#     dataset_config_file: sample_configs/dataloaders/vision_datasets.yaml 
+
+# custom_metrics:
+#     metrics_path: sample_configs/custom_metrics/sample_metrics.py
+#     function_name: f1_score
+#     # Other optional parameters can be set, ref: https://auto.gluon.ai/stable/tutorials/tabular/advanced/tabular-custom-metric.html
+#     optimum: 1
+#     greater_is_better: true

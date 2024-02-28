@@ -265,7 +265,7 @@ def evaluate(
         raise ValueError(f"Unexpected value for frameworks_compare_vs_all: {frameworks_compare_vs_all}")
 
     if verbose:
-        print("frameworks = [")
+        print("frameworks = frameworks = [")
         for i in range(len(frameworks_run)):
             print(f'\t"{frameworks_run[i]}",')
         print("]")

@@ -1,0 +1,24 @@
+# Benchmark configurations
+module: multimodal  # required
+mode: local  # required
+benchmark_name: ag_bench  # required
+root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
+# METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
+
+# Multimodal specific
+framework: AutoGluon_stable  # required
+dataset_name:  # required
+  melbourne_airbnb  
+
+#### Customizations ####
+# custom_resource_dir: sample_configs/resources/  # path to custom multimodal_frameworks.yaml and multimodal_constraints.yaml
+# custom_dataloader:
+#     dataloader_file: sample_configs/dataloaders/vision_dataloader.py   # relative path to WORKDIR
+#     class_name: VisionDataLoader
+#     dataset_config_file: sample_configs/dataloaders/vision_datasets.yaml 
+# custom_metrics:
+#     metrics_path: sample_configs/custom_metrics/sample_metrics.py
+#     function_name: f1_score
+#     # Other optional parameters can be set, ref: https://auto.gluon.ai/stable/tutorials/tabular/advanced/tabular-custom-metric.html
+#     optimum: 1
+#     greater_is_better: true

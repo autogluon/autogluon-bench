@@ -1,0 +1,123 @@
+# supports both regular and fewshot datasets
+# for fewshot:
+# custom_dataloader:
+#     dataloader_file: sample_configs/text_dataset.py   # relative path to WORKDIR
+#     class_name: TextDataset
+#     lang: en
+#     fewshot: True
+#     shot: 10
+#     seed: 8
+#     dataset_config_file: test/automm_text_datasets.yaml
+# 
+# When running in AWS mode, DATA_BUCKET: <dataset_bucket> needs to be specified in the run config
+
+base: &base
+  url: s3://automl-mm-bench/comprehend_benchmarks/{name}/{lang}/{subsample_path}{split}.csv
+  splits:
+    - train
+    - validation
+    - test
+  langs:
+    - en
+    - de
+    - es
+    - fr
+    - it
+
+  data_columns:
+    - label
+    - text
+  image_columns:
+  text_columns:
+    - text
+  label_columns:
+    - label
+  columns_to_drop:
+  data_sep: ","
+  metric: acc
+  problem_type: multiclass
+  subsample_path: subsampling/{shot}_shot/seed{seed}/
+  subsample_splits:
+    - train
+    - validation
+  shots:
+    - 1
+    - 5
+    - 10
+    - 20
+    - 50
+    - 100
+    - 500
+    - 1000
+  seeds:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+
+
+financial_news:
+  <<: *base
+  url: s3://zs-models/datasets/financial_news/{lang}/{split}.csv
+  splits:
+    - train
+  langs:
+    - en
+
+MLDoc-11000:
+  <<: *base
+
+MultiATIS-5000:
+  <<: *base
+  langs:
+    - en
+    - es
+    - fr
+    - pt
+
+amazon_reviews:
+  <<: *base
+  langs:
+    - en
+  problem_type: binary
+  metric: roc_auc
+
+
+gnad10:
+  <<: *base
+  langs:
+    - de
+
+fb_dialog:
+  <<: *base
+  langs:
+    - en
+    - es
+
+yahoo_anwsers:
+  <<: *base
+  langs:
+    - en
+
+french_tweets_sentiment:
+  <<: *base
+  langs:
+    - fr
+  problem_type: binary
+  metric: roc_auc
+
+ag_news:
+  <<: *base
+  langs:
+    - en
+
+SNIPS:
+  <<: *base
+  langs:
+    - en

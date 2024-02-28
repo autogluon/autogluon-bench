@@ -1,22 +1,21 @@
 import argparse
 import csv
-import copy
 import importlib
 import json
 import logging
 import os
 import time
-import random
-import numpy as np
 from datetime import datetime
 from typing import Optional, Union
-
-from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
-from autogluon.core.metrics import make_scorer
-from autogluon.multimodal import MultiModalPredictor
-from autogluon.multimodal import __version__ as ag_version
-from autogluon.multimodal.constants import IMAGE_SIMILARITY, IMAGE_TEXT_SIMILARITY, OBJECT_DETECTION, TEXT_SIMILARITY
+import autokeras as ak
+from PIL import Image
+import numpy as np
 from sklearn.model_selection import train_test_split
+from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
+import pandas as pd
+
+import tensorflow as tf
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -86,36 +85,6 @@ def load_dataset(dataset_name: str, custom_dataloader: dict = None):  # dataset 
     return data.values()
 
 
-def load_custom_metrics(custom_metrics: dict):
-    """Loads a custom metrics and convert it to AutoGluon Scorer.
-
-    Args:
-        custom_metrics (dict): A dictionary containing information about a custom metrics to use. Defaults to None.
-
-    Returns:
-        scorer (Scorer)
-            scorer: An AutoGluon Scorer object to pass to MultimodalPredictor.
-    """
-
-    try:
-        custom_metrics_path = custom_metrics.pop("metrics_path")
-        func_name = custom_metrics.pop("function_name")
-        spec = importlib.util.spec_from_file_location(func_name, custom_metrics_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        score_func = getattr(module, func_name)
-
-        scorer = make_scorer(
-            name=func_name,
-            score_func=score_func,
-            **custom_metrics,  # https://auto.gluon.ai/stable/tutorials/tabular/advanced/tabular-custom-metric.html
-        )
-    except:
-        raise ModuleNotFoundError(f"Unable to load custom metrics function {func_name} from {custom_metrics_path}.")
-
-    return scorer
-
-
 def save_metrics(metrics_path: str, metrics: dict):
     """Saves evaluation metrics to a JSON file.
 
@@ -143,11 +112,60 @@ def save_metrics(metrics_path: str, metrics: dict):
     logger.info("Metrics saved to %s.", file)
     f.close()
 
-def set_seed(seed):
-    import torch as th
-    th.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
+
+def load_image(image_path, target_size=(224, 224)):
+    try:
+        with Image.open(image_path) as img:
+            img = img.convert("RGB")
+            #img = img.resize(target_size)
+            return np.array(img)
+    except Exception as e:
+        print(f"Error loading image {image_path}: {e}")
+        return np.zeros((target_size[0], target_size[1], 3), dtype=np.uint8)  # Placeholder for an invalid image
+
+def create_zero_image(target_size=(224, 224)):
+    # Create a zero (blank) image
+    return np.zeros((target_size[0], target_size[1], 3), dtype=np.uint8)
+
+def average_images(image_paths, target_size=(224, 224)):
+    images = [load_image(path, target_size) for path in image_paths[:2]]  # Load the first two images
+    # Calculate the average of the images
+    average_img = np.mean(images, axis=0).astype(np.uint8)
+    return average_img
+
+
+def preprocess_data(features, image_columns, text_columns):
+    # Process image data
+    image_data = None
+    if image_columns is not None and len(image_columns) > 0:
+        image_data = []
+        features.loc[:, image_columns[0]] = features[image_columns[0]].apply(lambda x: x.split(';')[0] if pd.notnull(x) else x)
+        image_paths = features[image_columns[0]].values
+        for path in image_paths:
+            img = load_image(path)
+            image_data.append(img)
+    
+        # Convert column image data to a NumPy array and normalize
+        image_data = np.array(image_data)
+
+    # Process text data
+    text_data = None
+    if text_columns is not None and len(text_columns) > 0:
+        text_data = features.apply(lambda row: " ".join((str(row[col]) if row[col] is not None else "") for col in text_columns), axis=1) 
+        text_data = text_data.to_numpy(dtype=str)
+        print("Text data is: ", text_data)
+    
+    # Process tabular data
+    tabular_data = None
+    all_image_text_columns = image_columns or [] + text_columns or [] 
+    tabular_columns = features.columns.difference(all_image_text_columns)
+    print("tabular column is: ", tabular_columns) 
+    if len(tabular_columns) > 0:
+        tabular_data = features[tabular_columns].to_numpy()
+        print(tabular_data[0])
+
+    return image_data, tabular_data, text_data
+
 
 def run(
     dataset_name: Union[str, dict],
@@ -155,7 +173,7 @@ def run(
     benchmark_dir: str,
     metrics_dir: str,
     constraint: Optional[str] = None,
-    params: Optional[dict] = {},
+    params: Optional[dict] = None,
     custom_dataloader: Optional[dict] = None,
     custom_metrics: Optional[dict] = None,
 ):
@@ -190,112 +208,111 @@ def run(
     Returns:
         None
     """
-    seed = params.get("seed", 42)
-    set_seed(seed)
-
     train_data, val_data, test_data = load_dataset(dataset_name=dataset_name, custom_dataloader=custom_dataloader)
+    image_columns = train_data.image_columns
+    text_columns = train_data.text_columns
+    tabular_columns = list(set(train_data.data.columns) - set(image_columns) - set(text_columns) - set(train_data.columns_to_drop) - set(train_data.label_columns))
+    feature_columns = tabular_columns + image_columns + text_columns
+    print("Label column: ", train_data.label_columns, train_data.data[train_data.label_columns])
+
+    features_train, labels_train = train_data.data[feature_columns], train_data.data[train_data.label_columns]
     if test_data.data is None:
         print("No test data found, splitting test data from train data")
-        train_set, test_set = train_test_split(train_data.data, test_size=0.2, random_state=seed)
-        train_data.data = train_set
-        test_data.data = test_set
-    try:
-        label_column = train_data.label_columns[0]
-    except (AttributeError, IndexError):  # Object Detection does not have label columns
-        label_column = None
+        features_train, features_test, labels_train, labels_test = train_test_split(features_train, labels_train, test_size=0.2, random_state=42)
+    else:
+        features_test, labels_test = test_data.data[feature_columns], test_data.data[train_data.label_columns]
 
-    print("train_data: ", train_data, train_data.problem_type)
+    features_val, labels_val = None, None 
+    if val_data.data is not None:
+        features_val, labels_val = val_data.data[feature_columns], val_data.data[train_data.label_columns]
 
-    predictor_args = {
-        "label": label_column,
-        "problem_type": train_data.problem_type,
-        "presets": params.pop("presets", None),
-        "path": os.path.join(benchmark_dir, "models"),
-    }
+    image_data_train, tabular_data_train, text_data_train = preprocess_data(features_train, image_columns, text_columns)
+    image_data_test, tabular_data_test, text_data_test = preprocess_data(features_test, image_columns, text_columns)
 
-    if val_data is not None:
-        predictor_args["eval_metric"] = val_data.metric
+    image_data_val, tabular_data_val, text_data_val = (None, None, None)
+    
+    if features_val is not None and labels_val is not None:
+        image_data_val, tabular_data_val, text_data_val = preprocess_data(features_val, image_columns, text_columns)
 
-    if train_data.problem_type == IMAGE_SIMILARITY:
-        predictor_args["query"] = train_data.image_columns[0]
-        predictor_args["response"] = train_data.image_columns[1]
-        predictor_args["match_label"] = train_data.match_label
-    elif train_data.problem_type == IMAGE_TEXT_SIMILARITY:
-        predictor_args["query"] = train_data.text_columns[0]
-        predictor_args["response"] = train_data.image_columns[0]
-        del predictor_args["label"]
-    elif train_data.problem_type == TEXT_SIMILARITY:
-        predictor_args["query"] = train_data.text_columns[0]
-        predictor_args["response"] = train_data.text_columns[1]
-        predictor_args["match_label"] = train_data.match_label
-    elif train_data.problem_type == OBJECT_DETECTION:
-        predictor_args["sample_data_path"] = train_data.data
 
-    metrics_func = None
-    if custom_metrics is not None and custom_metrics["function_name"] == train_data.metric:
-        metrics_func = load_custom_metrics(custom_metrics=custom_metrics)
+    inputs = []
+    if image_data_train is not None:
+        print("has image_data")
+        inputs.append(ak.ImageInput())
+    if tabular_data_train is not None:
+        print("has tabular_data")
+        inputs.append(ak.StructuredDataInput())
+    if text_data_train is not None:
+        print("has text_data")
+        inputs.append(ak.TextInput())
+    
+    import tensorflow as tf
+    if train_data.problem_type == "regression":
+        output_node = ak.RegressionHead(metrics=[tf.keras.metrics.RootMeanSquaredError()])
+    elif train_data.problem_type in ["multiclass", "classification"]:
+        output_node = ak.ClassificationHead(loss="categorical_crossentropy",metrics=[tf.keras.metrics.Accuracy()])
+    elif train_data.problem_type == "binary":
+        output_node = ak.ClassificationHead(loss="binary_crossentropy",metrics=[tf.keras.metrics.AUC(curve="ROC")])
+    else:
+        print("Warning: problem type unknown").
 
-    print("predictor args: !!! ", predictor_args)
-    predictor = MultiModalPredictor(**predictor_args)
+    # Combine the data into a list for the model
+    train_data_list = [data for data in [image_data_train, tabular_data_train, text_data_train] if data is not None]
 
-    fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
+    # Combine the data into a list for the model
+    test_data_list = [data for data in [image_data_test, tabular_data_test, text_data_test] if data is not None]
+
+
+    auto_model = ak.AutoModel(
+        inputs=inputs,
+        outputs=output_node,
+        overwrite=True,
+    )
 
     utc_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     start_time = time.time()
-    predictor.fit(**fit_args)
+    if features_val is not None and labels_val is not None:
+        # Combine the data into a list for the model
+        val_data_list = [data for data in [image_data_val, tabular_data_val, text_data_val] if data is not None]
+
+        auto_model.fit(
+            train_data_list,
+            labels_train,
+            validation_data=(val_data_list, labels_val),
+        )
+    else:
+        auto_model.fit(
+            train_data_list,
+            labels_train,
+        )
     end_time = time.time()
     training_duration = round(end_time - start_time, 1)
 
-    if isinstance(test_data.data, dict):  # multiple test datasets
-        test_data_dict = test_data.data
+    start_time = time.time()
+    metrics = auto_model.evaluate(test_data_list, labels_test)
+    end_time = time.time()
+    predict_duration = round(end_time - start_time, 1)
 
-    else:
-        test_data_dict = {dataset_name: test_data}
-
-    for dataset_name, test_data in test_data_dict.items():
-        evaluate_args = {
-            "data": test_data.data,
-            "label": label_column,
-            "metrics": test_data.metric if metrics_func is None else metrics_func,
-        }
-
-        if test_data.problem_type == IMAGE_TEXT_SIMILARITY:
-            evaluate_args["query_data"] = test_data.data[test_data.text_columns[0]].unique().tolist()
-            evaluate_args["response_data"] = test_data.data[test_data.image_columns[0]].unique().tolist()
-            evaluate_args["cutoffs"] = [1, 5, 10]
-
-        start_time = time.time()
-        scores = predictor.evaluate(**evaluate_args)
-        end_time = time.time()
-        predict_duration = round(end_time - start_time, 1)
-
-        if "#" in framework:
-            framework, version = framework.split("#")
-        else:
-            framework, version = framework, ag_version
-
-        metric_name = test_data.metric if metrics_func is None else metrics_func.name
-        if hasattr(train_data, "id"):
-            id = f"id/{train_data.id}"
-        else:
-            id = "id/0"  # dummy id to make it align with amlb benchmark output
-        metrics = {
-            "id": id,
-            "task": dataset_name,
-            "framework": framework,
-            "constraint": constraint,
-            "version": version,
-            "fold": 0,
-            "type": predictor.problem_type,
-            "metric": metric_name,
-            "utc": utc_time,
-            "training_duration": training_duration,
-            "predict_duration": predict_duration,
-            "scores": scores,
-        }
-        subdir = f"{framework}.{dataset_name}.{constraint}.local"
-        save_metrics(os.path.join(metrics_dir, subdir, "scores"), metrics)
-
+    metric_name = train_data.metric
+    version = "master"
+    metrics = {
+        "id": "id/0",  # dummy id to make it align with amlb benchmark output
+        "task": dataset_name,
+        "framework": framework,
+        "constraint": constraint,
+        "version": version,
+        "fold": 0,
+        "type": train_data.problem_type,
+        "result": metrics[1],
+        "metric": metric_name,
+        "utc": utc_time,
+        "training_duration": training_duration,
+        "predict_duration": predict_duration,
+        "scores": metrics[1],
+    }
+    subdir = f"{framework}.{dataset_name}.{constraint}.local"
+    save_metrics(os.path.join(metrics_dir, subdir, "scores"), metrics)
+    
 
 if __name__ == "__main__":
     args = get_args()
@@ -316,3 +333,4 @@ if __name__ == "__main__":
         custom_dataloader=args.custom_dataloader,
         custom_metrics=args.custom_metrics,
     )
+
