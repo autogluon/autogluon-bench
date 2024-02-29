@@ -320,7 +320,7 @@ def run(
     elif train_data.problem_type in ["multiclass", "classification"]:
         output_node = ak.ClassificationHead(metrics=["accuracy"])#metrics=[tf.keras.metrics.Accuracy()])
     elif train_data.problem_type == "binary":
-        output_node = ak.ClassificationHead(metrics=["auc"])#[tf.keras.metrics.AUC(curve="ROC")])
+        output_node = ak.ClassificationHead(metrics=["AUC"])#[tf.keras.metrics.AUC(curve="ROC")])
 
     # Combine the data into a list for the model
     train_data_list = [data for data in [image_data_train, tabular_data_train, text_data_train] if data is not None]
