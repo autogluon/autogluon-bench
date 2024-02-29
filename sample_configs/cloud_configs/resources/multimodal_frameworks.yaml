@@ -13,6 +13,8 @@ AutoGluon_best_master:
   version: master
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
+    # hyperparameters:
+    #         optimization.gradient_clip_val: 0.1
 
 ablation_greedy_soup:
   repo: https://github.com/autogluon/autogluon.git
@@ -20,7 +22,8 @@ ablation_greedy_soup:
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
-      optimization.top_k_average_method: best
+        optimization.top_k_average_method: best
+        #    optimization.gradient_clip_val: 0.1
 
 ablation_gradient_clip:
   repo: https://github.com/autogluon/autogluon.git
@@ -28,7 +31,7 @@ ablation_gradient_clip:
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
-      optimization.gradient_clip_algorithm: value
+      optimization.gradient_clip_val: 10000
 
 ablation_warmup_steps:
   repo: https://github.com/autogluon/autogluon.git
@@ -37,6 +40,7 @@ ablation_warmup_steps:
     presets: best_quality
     hyperparameters:
       optimization.warmup_steps: 0.0
+      # optimization.gradient_clip_val: 0.1
 
 ablation_cosine_decay:
   repo: https://github.com/autogluon/autogluon.git
@@ -45,6 +49,7 @@ ablation_cosine_decay:
     presets: best_quality
     hyperparameters:
       optimization.lr_schedule: polynomial_decay
+      # optimization.gradient_clip_val: 0.1
 
 ablation_weight_decay:
   repo: https://github.com/autogluon/autogluon.git
@@ -53,6 +58,7 @@ ablation_weight_decay:
     presets: best_quality
     hyperparameters:
       optimization.weight_decay: 0.0
+      # optimization.gradient_clip_val: 0.1
 
 ablation_lr_decay:
   repo: https://github.com/autogluon/autogluon.git
@@ -61,6 +67,7 @@ ablation_lr_decay:
     presets: best_quality
     hyperparameters:
       optimization.lr_decay: 0.0 
+      optimization.gradient_clip_val: 0.1
 
 
 autokeras_master:
