@@ -9,14 +9,14 @@ AutoGluon_branch:
       optimization.learning_rate: 0.005
 
 AutoGluon_best_master:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git 
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
 
 ablation_base:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
@@ -29,8 +29,8 @@ ablation_base:
 
 
 ablation_greedy_soup:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
@@ -41,8 +41,8 @@ ablation_greedy_soup:
         optimization.lr_decay: 0
 
 ablation_gradient_clip:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
@@ -52,8 +52,8 @@ ablation_gradient_clip:
         optimization.lr_decay: 0
 
 ablation_warmup_steps:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
@@ -62,8 +62,8 @@ ablation_warmup_steps:
         optimization.lr_decay: 0
 
 ablation_cosine_decay:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
@@ -72,8 +72,8 @@ ablation_cosine_decay:
 
 
 ablation_weight_decay:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
     hyperparameters:
@@ -81,8 +81,8 @@ ablation_weight_decay:
 
 
 ablation_lr_decay:
-  repo: https://github.com/autogluon/autogluon.git
-  version: master
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
   params:  # MultimodalPredictor.fit(params)
     presets: best_quality
 
