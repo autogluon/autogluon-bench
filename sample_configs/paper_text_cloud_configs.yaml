@@ -1,4 +1,4 @@
-# Infra configurations
+sample_configs/paper_text_# Infra configurations
 cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
   CDK_DEPLOY_ACCOUNT: 097403188315  # required, update with your AWS account
   CDK_DEPLOY_REGION: us-east-1  # required, update with your desired region
@@ -10,19 +10,22 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
   # RESERVED_MEMORY_SIZE: 60000  # optional, default 15000MB
   # VPC_NAME: existing-vpc-name  # optional
 
-module: multimodal  # required
+module: multimodal  # required, choise of 'multimodal' pr 'autokeras'
 mode: aws  # required
 benchmark_name: ag_bench_text  # required
 root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
 constraint: g4_12x  # configurations will override cdk_context, options can be found at resources/multimodal_constraints.yaml, custom constraint is also supported, default: test
 framework:   # framework options can be found at resources/multimodal_frameworks.yaml, custom framework is also supported.
-  # AutoGluon_medium_master
-  # AutoGluon_high_master
   AutoGluon_best_master
-  # torch_compile_medium
-  # torch_compile_high
-  # torch_compile_best
+  # autokeras_master
+  # ablation_base
+  # ablation_greedy_soup
+  # ablation_gradient_clip
+  # ablation_warmup_steps
+  # ablation_cosine_decay
+  # ablation_weight_decay
+  # ablation_lr_decay
 dataset_name:
     - financial_news
     - MLDoc-11000

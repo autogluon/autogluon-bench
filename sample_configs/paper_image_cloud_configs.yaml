@@ -1,37 +1,55 @@
 # Infra configurations
+# Infra configurations
 cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
   CDK_DEPLOY_ACCOUNT: 097403188315  # required, update with your AWS account
   CDK_DEPLOY_REGION: us-east-1  # required, update with your desired region
   PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
   METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
-  DATA_BUCKET: automl-mm-bench  # optional, S3 bucket to download your private datasets
+  DATA_BUCKET: zs-models  # optional, S3 bucket to download your private datasets
   MAX_MACHINE_NUM: 1000   # optional, default 20
   # BLOCK_DEVICE_VOLUME: 300   # optional, default 100GB
   # RESERVED_MEMORY_SIZE: 60000  # optional, default 15000MB
   # VPC_NAME: existing-vpc-name  # optional
 
-module: multimodal  # required
+module: multimodal  # required, choise of 'multimodal' pr 'autokeras'
 mode: aws  # required
-benchmark_name: ag_bench_text_tabular  # required
+benchmark_name: ag_bench_image  # required
 root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
 constraint: g4_12x  # configurations will override cdk_context, options can be found at resources/multimodal_constraints.yaml, custom constraint is also supported, default: test
 framework:   # framework options can be found at resources/multimodal_frameworks.yaml, custom framework is also supported.
-  # torch_compile_medium
-  # torch_compile_high
-  # torch_compile_best
-  # AutoGluon_medium_master
-  # AutoGluon_high_master
   AutoGluon_best_master
-dataset_name:
-        - airbnb
-        - kick_start
-        - cloth_review
-        - news_popularity
-        - cal_house
+  # autokeras_master
+  # ablation_base
+  # ablation_greedy_soup
+  # ablation_gradient_clip
+  # ablation_warmup_steps
+  # ablation_cosine_decay
+  # ablation_weight_decay
+  # ablation_lr_decay
+
+dataset_name: 
+  # image
+   - fashion_mnist
+   - casting
+   - food101
+   - stanfordcars
+   - magnetictiledefects
+   - europeanflooddepth
+   - oxfordflowers
+   - OxfordIIITPet
+  # image-tabular
+   - ham10000
+   - cd18
+  # image-text
+   - hateful_meme
+  # image-text-tabular
+   - petfinder
+   - memotion
+## Customizations ####
 custom_dataloader:
-    dataloader_file: sample_configs/dataloaders/text_tabular_dataloader.py   # relative path to WORKDIR
-    class_name: TextTabularDataLoader
-    dataset_config_file: sample_configs/dataloaders/paper_text_tabular_datasets.yaml 
+    dataloader_file: sample_configs/dataloaders/image_dataloader.py   # relative path to WORKDIR
+    class_name: ImageDataLoader
+    dataset_config_file: sample_configs/dataloaders/paper_image_datasets.yaml 
 custom_resource_dir: sample_configs/resources/
 

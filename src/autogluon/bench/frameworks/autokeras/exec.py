@@ -144,23 +144,6 @@ def find_average_image_size(image_paths, max_size=(224, 224), min_size=(32, 32))
     
     return (target_width, target_height)
 
-def resize_images_to_target_size(image_paths, target_size, mode='RGB'):
-    """
-    Resizes images to a specified target size.
-    """
-    resized_images = []
-    
-    for path in image_paths:
-        try:
-            with Image.open(path) as img:
-                img = img.convert(mode)
-                img = img.resize(target_size)
-                resized_images.append(np.array(img))
-        except Exception as e:
-            print(f"Error processing image {path}: {e}")
-            resized_images.append(np.zeros(target_size + (3,), dtype=np.uint8))  # Assuming RGB mode
-            
-    return np.array(resized_images)
 
 def load_image(image_path, target_size=(224, 224)):
     try:
@@ -172,28 +155,6 @@ def load_image(image_path, target_size=(224, 224)):
         print(f"Error loading image {image_path}: {e}")
         return np.zeros((target_size[0], target_size[1], 3), dtype=np.uint8)  # Placeholder for an invalid image
 
-def create_zero_image(target_size=(224, 224)):
-    # Create a zero (blank) image
-    return np.zeros((target_size[0], target_size[1], 3), dtype=np.uint8)
-
-def average_images(image_paths, target_size=(224, 224)):
-    images = [load_image(path, target_size) for path in image_paths[:2]]  # Load the first two images
-    # Calculate the average of the images
-    average_img = np.mean(images, axis=0).astype(np.uint8)
-    return average_img
-
-
-def decode_img(img):
-    # Convert the compressed string to a 3D uint8 tensor
-    img = tf.image.decode_jpeg(img, channels=3)
-    # Use `convert_image_dtype` to convert to floats in the [0,1] range.
-    return tf.image.convert_image_dtype(img, tf.float32)
-
-def process_path(file_path):
-    # Load the raw data from the file as a string
-    img = tf.io.read_file(file_path)
-    img = decode_img(img)
-    return img
 
 def preprocess_data(features, image_columns, text_columns, target_size):
     # Process image data
@@ -316,11 +277,11 @@ def run(
     
  
     if train_data.problem_type == "regression":
-        output_node = ak.RegressionHead(metrics=[tf.keras.metrics.RootMeanSquaredError()])#metrics=[tf.keras.metrics.RootMeanSquaredError()])
+        output_node = ak.RegressionHead(metrics=[tf.keras.metrics.RootMeanSquaredError()])
     elif train_data.problem_type in ["multiclass", "classification"]:
-        output_node = ak.ClassificationHead(metrics=["accuracy"])#metrics=[tf.keras.metrics.Accuracy()])
+        output_node = ak.ClassificationHead(metrics=["accuracy"])
     elif train_data.problem_type == "binary":
-        output_node = ak.ClassificationHead(metrics=["AUC"])#[tf.keras.metrics.AUC(curve="ROC")])
+        output_node = ak.ClassificationHead(metrics=["AUC"])
 
     # Combine the data into a list for the model
     train_data_list = [data for data in [image_data_train, tabular_data_train, text_data_train] if data is not None]
