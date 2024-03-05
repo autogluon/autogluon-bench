@@ -4,17 +4,12 @@ seeds = []
 for i in range(n_experiments):
     seeds.append(random.randint(0, 100))
 
-seeds = [22, 92, 54, 86, 41]
+# seeds = [22, 92, 54, 86, 41]
 
 config_paths = [
     "sample_configs/paper_text_tabular_local_configs.yaml",
     "sample_configs/paper_text_local_configs.yaml",
     "sample_configs/paper_image_local_configs.yaml",
-    # "sample_configs/multimodal_cloud_text_configs.yaml",
-    # "sample_configs/multimodal_cloud_text_fs_configs.yaml",
-    # "sample_configs/multimodal_cloud_text_tabular_configs.yaml",
-    # "sample_configs/multimodal_cloud_text_tabular_image_configs.yaml",
-    # "sample_configs/multimodal_cloud_text_tabular_image_standard_configs.yaml"
 ]
 frameworks = [
     # "AutoGluon_best_master",
@@ -26,27 +21,9 @@ frameworks = [
     "ablation_weight_decay",
     # "ablation_lr_decay",
     # "autokeras_master",
-    # "torch_compile_best",
-    # "AutoGluon_best_master",
-    # "AutoGluon_high_master",
-    # "AutoGluon_medium_master",
-    # "AutoGluon_high_vitlarge",
-    # "AutoGluon_medium_vitlarge",
-    # "AutoGluon_best_vitlarge",
-    # "AutoGluon_best_caformer",
-    # "AutoGluon_best_beit",
-    # "AutoGluon_best_swinv2"
-    # "AutoGluon_high_0_8",
-    # "AutoGluon_medium_0_8",
-    # "AutoGluon_best_0_8",
 ]
 constraints = [
     "g4_12x"
-]
-fs = [
-    1,
-    5,
-    10
 ]
 # module = "autokeras"
 module = "multimodal"

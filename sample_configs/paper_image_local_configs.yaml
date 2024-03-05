@@ -1,11 +1,11 @@
-module: multimodal  # required, choise of 'multimodal' pr 'autokeras'
+module: autokeras  # required, choise of 'multimodal' pr 'autokeras'
 mode: local  # required
 benchmark_name: ag_bench_image  # required
 root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 
 framework:   # framework options can be found at resources/multimodal_frameworks.yaml, custom framework is also supported.
-  AutoGluon_best_master
-  # autokeras_master
+  # AutoGluon_best_master
+  autokeras_master
   # ablation_base
   # ablation_greedy_soup
   # ablation_gradient_clip
