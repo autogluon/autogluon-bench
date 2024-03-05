@@ -4,22 +4,21 @@ seeds = []
 for i in range(n_experiments):
     seeds.append(random.randint(0, 100))
 
-# seeds = [22, 92, 54, 86, 41]
+seeds = [22, 92, 54, 86, 41]
 
 config_paths = [
-    "sample_configs/paper_text_tabular_local_configs.yaml",
-    "sample_configs/paper_text_local_configs.yaml",
-    "sample_configs/paper_image_local_configs.yaml",
+    "sample_configs/paper_text_tabular_cloud_configs.yaml",
+    "sample_configs/paper_text_cloud_configs.yaml",
+    "sample_configs/paper_image_cloud_configs.yaml",
 ]
 frameworks = [
-    # "AutoGluon_best_master",
-    # "ablation_base",
-    # "ablation_greedy_soup",
-    # "ablation_gradient_clip",
+    "ablation_base",
+    "ablation_greedy_soup",
+    "ablation_gradient_clip",
     "ablation_warmup_steps",
     "ablation_cosine_decay",
     "ablation_weight_decay",
-    # "ablation_lr_decay",
+    "ablation_lr_decay",
     # "autokeras_master",
 ]
 constraints = [

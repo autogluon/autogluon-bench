@@ -1,5 +1,4 @@
 # Infra configurations
-# Infra configurations
 cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
   CDK_DEPLOY_ACCOUNT: 097403188315  # required, update with your AWS account
   CDK_DEPLOY_REGION: us-east-1  # required, update with your desired region
