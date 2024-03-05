@@ -63,12 +63,13 @@ base: &base
 
 
 financial_news:
-  <<: *base
   url: s3://zs-models/datasets/financial_news/{lang}/{split}.csv
   splits:
     - train
   langs:
     - en
+  metric: accuracy
+  problem_type: classification
 
 MLDoc-11000:
   <<: *base

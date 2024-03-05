@@ -16,7 +16,7 @@ def path_expander(path, base_folder):
 logger = logging.getLogger(__name__)
 
 
-class VisionDataLoader:
+class ImageDataLoader:
     def __init__(self, dataset_name: str, dataset_config_file: str, split: str = "train"):
         with open(dataset_config_file, "r") as f:
             config = yaml.safe_load(f)

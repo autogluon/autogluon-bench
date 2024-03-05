@@ -7,19 +7,21 @@ for i in range(n_experiments):
 seeds = [22, 92, 54, 86, 41]
 
 config_paths = [
+    "sample_configs/paper_image_cloud_configs.yaml",
     "sample_configs/paper_text_tabular_cloud_configs.yaml",
     "sample_configs/paper_text_cloud_configs.yaml",
-    "sample_configs/paper_image_cloud_configs.yaml",
 ]
 frameworks = [
+    # "AutoGluon_best_master",
+    # "autokeras_master",
     "ablation_base",
     "ablation_greedy_soup",
     "ablation_gradient_clip",
     "ablation_warmup_steps",
-    "ablation_cosine_decay",
-    "ablation_weight_decay",
-    "ablation_lr_decay",
-    # "autokeras_master",
+    # "ablation_cosine_decay",
+    # "ablation_weight_decay",
+    # "ablation_lr_decay",
+    
 ]
 constraints = [
     "g4_12x"

@@ -19,6 +19,10 @@ airbnb:
   text_columns:
     - summary
     - amenities
+    - description
+    - notes
+    - name
+    - neighborhood
   label_columns:
     - price_label
   columns_to_drop:
