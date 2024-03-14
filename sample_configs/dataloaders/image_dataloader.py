@@ -16,7 +16,7 @@ def path_expander(path, base_folder):
 logger = logging.getLogger(__name__)
 
 
-class VisionDataLoaer:
+class ImageDataLoader:
     def __init__(self, dataset_name: str, dataset_config_file: str, split: str = "train"):
         with open(dataset_config_file, "r") as f:
             config = yaml.safe_load(f)
@@ -31,7 +31,9 @@ class VisionDataLoaer:
 
         self.name = dataset_name
         self.split = split
-        self.feature_columns = self.dataset_config["feature_columns"]
+        self.image_columns = self.dataset_config["image_columns"] or []
+        self.text_columns = self.dataset_config["text_columns"] or []
+        self.columns_to_drop = self.dataset_config["columns_to_drop"] or []
         self.label_columns = self.dataset_config["label_columns"]
 
         url = self.dataset_config["url"].format(name=self.name)
@@ -43,10 +45,15 @@ class VisionDataLoaer:
         image_path_pattern = self.dataset_config["image_path"]
 
         self.data = pd.read_csv(os.path.join(self.dataset_dir, annotation_filename))
-        _columns_to_drop = self.data.columns.difference(self.feature_columns + self.label_columns)
-        self.data.drop(columns=_columns_to_drop, inplace=True)
+        self.tabular_columns = self.data.columns.difference(self.image_columns + self.text_columns + self.label_columns + self.columns_to_drop)
+        print("Image columns: ", self.image_columns)
+        print("Text columns: ", self.text_columns)
+        print("Tabular columns: ", self.tabular_columns)
+        self.data.drop(columns=self.columns_to_drop, inplace=True)
+        self.data.dropna(inplace=True)
+
         image_base_path = image_path_pattern.format(name=self.name, split=self.split, value="")
-        for col in self.feature_columns:
+        for col in self.image_columns:
             self.data[col] = self.data[col].apply(
                 lambda ele: path_expander(ele, base_folder=os.path.join(self.dataset_dir, image_base_path))
             )

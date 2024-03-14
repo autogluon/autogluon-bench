@@ -1,0 +1,40 @@
+module: autokeras  # required, choise of 'multimodal' pr 'autokeras'
+mode: local  # required
+benchmark_name: ag_bench_image  # required
+root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
+
+framework:   # framework options can be found at resources/multimodal_frameworks.yaml, custom framework is also supported.
+  # AutoGluon_best_master
+  autokeras_master
+  # ablation_base
+  # ablation_greedy_soup
+  # ablation_gradient_clip
+  # ablation_warmup_steps
+  # ablation_cosine_decay
+  # ablation_weight_decay
+  # ablation_lr_decay
+dataset_name: fashion_mnist
+  # # image
+  #  - fashion_mnist
+  #  - casting
+  #  - food101
+  #  - stanfordcars
+  #  - magnetictiledefects
+  #  - europeanflooddepth
+  #  - oxfordflowers
+  #  - OxfordIIITPet
+  # # image-tabular
+  #  - ham10000
+  #  - cd18
+  # # image-text
+  #  - hateful_meme
+  # # image-text-tabular
+  #  - petfinder
+  #  - memotion
+## Customizations ####
+custom_dataloader:
+    dataloader_file: sample_configs/dataloaders/image_dataloader.py   # relative path to WORKDIR
+    class_name: ImageDataLoader
+    dataset_config_file: sample_configs/dataloaders/paper_image_datasets.yaml 
+custom_resource_dir: sample_configs/resources/
+

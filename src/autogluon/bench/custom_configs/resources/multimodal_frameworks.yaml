@@ -1,0 +1,93 @@
+AutoGluon_branch:
+  repo: https://github.com/autogluon/autogluon.git
+  version: stable_GA4_update
+  params:  # MultimodalPredictor.fit(params)
+    presets: medium_quality
+    time_limit:  90
+    hyperparameters:
+      optimization.max_epochs: 1
+      optimization.learning_rate: 0.005
+
+AutoGluon_best_master:
+  repo: https://github.com/suzhoum/autogluon.git 
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+
+ablation_base:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.top_k_average_method: best
+        optimization.gradient_clip_val: 0
+        optimization.warmup_steps: 0
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+
+ablation_greedy_soup:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.gradient_clip_val: 0
+        optimization.warmup_steps: 0
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+ablation_gradient_clip:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.warmup_steps: 0
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+ablation_warmup_steps:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+ablation_cosine_decay:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+
+ablation_weight_decay:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.lr_decay: 1
+
+
+ablation_lr_decay:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+
+
+autokeras_master:
+  repo: https://github.com/keras-team/keras-tuner.git 
+  version: master
+  

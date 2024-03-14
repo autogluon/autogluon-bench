@@ -19,6 +19,7 @@ from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.eval.hardware_metrics.hardware_metrics import get_hardware_metrics
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
+from autogluon.bench.frameworks.autokeras.autokeras_benchmark import AutoKerasBenchmark
 from autogluon.bench.frameworks.timeseries.timeseries_benchmark import TimeSeriesBenchmark
 from autogluon.bench.utils.general_utils import (
     download_dir_from_s3,
@@ -48,7 +49,7 @@ def get_kwargs(module: str, configs: dict):
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
 
-    if module == "multimodal":
+    if module in ["multimodal", "autokeras"]:
         framework_configs = get_framework_configs(configs=configs)
         return {
             "setup_kwargs": {
@@ -110,6 +111,7 @@ def run_benchmark(
         "multimodal": MultiModalBenchmark,
         "tabular": TabularBenchmark,
         "timeseries": TimeSeriesBenchmark,
+        "autokeras": AutoKerasBenchmark,
     }
     module_name = configs["module"]
 
@@ -352,6 +354,9 @@ def get_framework_configs(configs: dict):
     framework_name = configs.get("framework", "stable")
     frameworks = get_resource(configs=configs, resource_name="multimodal_frameworks")
     framework_configs = frameworks[framework_name]
+    if "params" not in framework_configs:
+        framework_configs["params"] = {}
+    framework_configs["params"]["seed"] = configs.get("seed", 42)
     return framework_configs
 
 
@@ -430,7 +435,7 @@ def run(
                         _mount_dir(orig_path=original_path, new_path=path)
                     os.environ["AMLB_USER_DIR"] = default_user_dir  # For Docker build
                     configs["amlb_user_dir"] = default_user_dir  # For Lambda job config
-            elif module == "multimodal":
+            elif module in ["multimodal", "autokeras"]:
                 if configs.get("custom_dataloader") is not None:
                     original_path, custom_dataloader_path = update_custom_dataloader(configs=configs)
                     paths.append(custom_dataloader_path)

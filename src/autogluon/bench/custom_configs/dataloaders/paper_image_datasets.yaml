@@ -1,0 +1,119 @@
+# data = custom_class(dataset_name=dataset_name, split=split, **kwargs)
+# custom_class: custom dataloader class, e.g. sample_configs/vision_dataset.py
+
+
+base: &base
+  url: s3://zs-models/datasets/{name}.zip
+  splits:
+    - train
+    - test
+  image_columns:
+    - ImageID
+  text_columns:
+  label_columns:
+    - LabelName
+  columns_to_drop:
+  annotation: "{name}_{split}_annotations.csv"
+  image_path: "{name}/{value}"
+  metric: acc
+  problem_type: multiclass
+  
+fashion_mnist:
+  <<: *base
+  image_path: "{split}/{value}"
+
+casting:
+  <<: *base
+  image_path: "{value}"
+  problem_type: binary
+  metric: roc_auc
+
+food101:
+  <<: *base
+
+oxfordflowers:
+  <<: *base
+  image_path: "{name}/{split}/{value}"
+
+OxfordIIITPet:
+  <<: *base
+  splits:
+    - train
+    - validation
+    - test
+  annotation: "{name}_{split}_anno.csv"
+  image_path: "{split}/{value}"
+
+europeanflooddepth:
+  <<: *base
+  problem_type: binary
+  metric: roc_auc
+
+magnetictiledefects:
+  <<: *base
+
+stanfordcars:
+  <<: *base
+
+cub200:
+  <<: *base
+
+
+petfinder:
+  <<: *base
+  splits:
+    - train
+  text_columns:
+    - Description 
+  label_columns:
+    - AdoptionSpeed
+  annotation: "{name}_{split}_annotations.csv"
+  image_path: "{value}"
+  metric: acc
+  problem_type: multiclass
+
+
+ham10000:
+  <<: *base
+  splits:
+    - train
+  label_columns:
+    - dx
+  image_path: "{split}/{value}"
+
+cd18:
+  <<: *base
+  splits:
+    - train
+  label_columns:
+    - Price
+  image_path: "{split}/{value}"
+  metric: rmse
+  problem_type: regression
+
+    
+hateful_meme:
+  <<: *base
+  splits:
+    - train
+  text_columns:
+    - text    
+  image_path: "{value}"
+  metric: roc_auc
+  problem_type: binary
+
+
+memotion:
+  <<: *base
+  splits:
+    - train
+  text_columns:
+    - text_corrected  
+  columns_to_drop:
+    - text_ocr
+  label_columns:
+    - overall_sentiment
+  annotation: "{name}_{split}_annotations.csv"
+  image_path: "{split}/{value}"
+  metric: acc
+  problem_type: multiclass

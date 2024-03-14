@@ -1,10 +1,13 @@
 import argparse
 import csv
+import copy
 import importlib
 import json
 import logging
 import os
 import time
+import random
+import numpy as np
 from datetime import datetime
 from typing import Optional, Union
 
@@ -13,6 +16,7 @@ from autogluon.core.metrics import make_scorer
 from autogluon.multimodal import MultiModalPredictor
 from autogluon.multimodal import __version__ as ag_version
 from autogluon.multimodal.constants import IMAGE_SIMILARITY, IMAGE_TEXT_SIMILARITY, OBJECT_DETECTION, TEXT_SIMILARITY
+from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -139,6 +143,11 @@ def save_metrics(metrics_path: str, metrics: dict):
     logger.info("Metrics saved to %s.", file)
     f.close()
 
+def set_seed(seed):
+    import torch as th
+    th.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
 def run(
     dataset_name: Union[str, dict],
@@ -146,7 +155,7 @@ def run(
     benchmark_dir: str,
     metrics_dir: str,
     constraint: Optional[str] = None,
-    params: Optional[dict] = None,
+    params: Optional[dict] = {},
     custom_dataloader: Optional[dict] = None,
     custom_metrics: Optional[dict] = None,
 ):
@@ -181,13 +190,22 @@ def run(
     Returns:
         None
     """
+    seed = params.get("seed", 42)
+    set_seed(seed)
+
     train_data, val_data, test_data = load_dataset(dataset_name=dataset_name, custom_dataloader=custom_dataloader)
+    if test_data.data is None:
+        print("No test data found, splitting test data from train data")
+        train_set, test_set = train_test_split(train_data.data, test_size=0.2, random_state=seed)
+        train_data.data = train_set
+        test_data.data = test_set
     try:
         label_column = train_data.label_columns[0]
     except (AttributeError, IndexError):  # Object Detection does not have label columns
         label_column = None
-    if params is None:
-        params = {}
+
+    print("train_data: ", train_data, train_data.problem_type)
+
     predictor_args = {
         "label": label_column,
         "problem_type": train_data.problem_type,
@@ -217,6 +235,7 @@ def run(
     if custom_metrics is not None and custom_metrics["function_name"] == train_data.metric:
         metrics_func = load_custom_metrics(custom_metrics=custom_metrics)
 
+    print("predictor args: !!! ", predictor_args)
     predictor = MultiModalPredictor(**predictor_args)
 
     fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
