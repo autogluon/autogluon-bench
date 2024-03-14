@@ -1,7 +1,7 @@
 # Infra configurations
 cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS CDK
   CDK_DEPLOY_ACCOUNT: 097403188315  # required, update with your AWS account
-  CDK_DEPLOY_REGION: us-east-1  # required, update with your desired region
+  CDK_DEPLOY_REGION: us-west-2  # required, update with your desired region
   PREFIX: ag-bench  # Used to identify infra resources created, optional, default = ag-bench
   METRICS_BUCKET: autogluon-benchmark-metrics  # required, has to be a globally unique name
   DATA_BUCKET: zs-models  # optional, S3 bucket to download your private datasets

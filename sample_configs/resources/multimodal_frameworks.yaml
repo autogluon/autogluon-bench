@@ -28,6 +28,140 @@ ablation_base:
         optimization.lr_decay: 1
 
 
+ablation_add_greedy:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.gradient_clip_val: 0
+        optimization.warmup_steps: 0
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+
+ablation_add_grad_clip:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.top_k_average_method: best
+        optimization.warmup_steps: 0
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+
+ablation_add_warmup_steps:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.top_k_average_method: best
+        optimization.gradient_clip_val: 0
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+
+
+ablation_add_cosine_decay:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.top_k_average_method: best
+        optimization.gradient_clip_val: 0
+        optimization.warmup_steps: 0
+        optimization.weight_decay: 0
+        optimization.lr_decay: 1
+
+
+ablation_add_weight_decay:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.top_k_average_method: best
+        optimization.gradient_clip_val: 0
+        optimization.warmup_steps: 0
+        optimization.lr_schedule: constant
+        optimization.lr_decay: 1
+
+
+ablation_add_lr_decay:
+  repo: https://github.com/suzhoum/autogluon.git
+  version: add_constant_lr_decay
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    hyperparameters:
+        optimization.top_k_average_method: best
+        optimization.gradient_clip_val: 0
+        optimization.warmup_steps: 0
+        optimization.lr_schedule: constant
+        optimization.weight_decay: 0
+
+
+AutoGluon_best_master:
+  repo: https://github.com/autogluon/autogluon.git
+  version: master
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+
+
+AutoGluon_del_greedy:
+  repo: https://github.com/autogluon/autogluon.git
+  version: master
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    optimization.top_k_average_method: best
+
+AutoGluon_del_grad_clip:
+  repo: https://github.com/autogluon/autogluon.git
+  version: master
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    optimization.gradient_clip_val: 0
+
+
+AutoGluon_del_warmup_steps:
+  repo: https://github.com/autogluon/autogluon.git
+  version: master
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    optimization.warmup_steps: 0
+
+
+AutoGluon_del_cosine_decay:
+  repo: https://github.com/autogluon/autogluon.git
+  version: master
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    optimization.lr_schedule: constant
+
+AutoGluon_del_weight_decay:
+  repo: https://github.com/autogluon/autogluon.git
+  version: master
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    optimization.weight_decay: 0
+
+
+
+AutoGluon_del_lr_decay:
+  repo: https://github.com/autogluon/autogluon.git
+  version: master
+  params:  # MultimodalPredictor.fit(params)
+    presets: best_quality
+    optimization.lr_decay: 1
+
+
+
 ablation_greedy_soup:
   repo: https://github.com/suzhoum/autogluon.git
   version: add_constant_lr_decay
