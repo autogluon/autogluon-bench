@@ -19,6 +19,7 @@ from autogluon.bench.cloud.aws.stack_handler import deploy_stack, destroy_stack
 from autogluon.bench.eval.hardware_metrics.hardware_metrics import get_hardware_metrics
 from autogluon.bench.frameworks.multimodal.multimodal_benchmark import MultiModalBenchmark
 from autogluon.bench.frameworks.tabular.tabular_benchmark import TabularBenchmark
+from autogluon.bench.frameworks.tabular_reg.tabular_reg_benchmark import TabularRegBenchmark
 from autogluon.bench.frameworks.timeseries.timeseries_benchmark import TimeSeriesBenchmark
 from autogluon.bench.utils.general_utils import (
     download_dir_from_s3,
@@ -48,7 +49,7 @@ def get_kwargs(module: str, configs: dict):
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
 
-    if module == "multimodal":
+    if module in ["multimodal", "tabular_reg"]:
         framework_configs = get_framework_configs(configs=configs)
         return {
             "setup_kwargs": {
@@ -108,6 +109,7 @@ def run_benchmark(
 
     module_to_benchmark = {
         "multimodal": MultiModalBenchmark,
+        "tabular_reg": TabularRegBenchmark,
         "tabular": TabularBenchmark,
         "timeseries": TimeSeriesBenchmark,
     }
@@ -342,10 +344,12 @@ def get_resource(configs: dict, resource_name: str):
 
 
 def update_resource_constraint(configs: dict):
+    # return time limit set in constraint
     constraint_name = configs.get("constraint", "test")
     constraints = get_resource(configs=configs, resource_name="multimodal_constraints")
     constraint_configs = constraints[constraint_name]
     configs["cdk_context"].update(constraint_configs)
+    return constraint_configs.get("TIME_LIMIT")
 
 
 def get_framework_configs(configs: dict):
@@ -430,7 +434,7 @@ def run(
                         _mount_dir(orig_path=original_path, new_path=path)
                     os.environ["AMLB_USER_DIR"] = default_user_dir  # For Docker build
                     configs["amlb_user_dir"] = default_user_dir  # For Lambda job config
-            elif module == "multimodal":
+            elif module in ["multimodal", "tabular_reg"]:
                 if configs.get("custom_dataloader") is not None:
                     original_path, custom_dataloader_path = update_custom_dataloader(configs=configs)
                     paths.append(custom_dataloader_path)
@@ -443,8 +447,13 @@ def run(
                     _umount_if_needed(custom_metrics_path)
                     _mount_dir(orig_path=original_path, new_path=custom_metrics_path)
 
-                update_resource_constraint(configs=configs)
+                time_limit = update_resource_constraint(configs=configs)
                 framework_configs = get_framework_configs(configs=configs)
+                if time_limit is not None:
+                    if "params" not in framework_configs:
+                        framework_configs["params"] = {}
+                    framework_configs["params"]['time_limit'] = time_limit
+                print("~!!~~~~~~~~~", framework_configs)
                 if configs.get("custom_resource_dir") is not None:
                     custom_resource_path = os.path.join(project_path, "custom_configs", "resources")
                     paths.append(custom_resource_path)

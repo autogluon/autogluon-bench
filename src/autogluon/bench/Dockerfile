@@ -56,14 +56,14 @@ RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \
     fi
 
 RUN chmod +x entrypoint.sh \
-    && if echo "$FRAMEWORK_PATH" | grep -q -E "tabular|timeseries"; then \
+    && if echo "$FRAMEWORK_PATH" | grep -q -E "multimodal|tabular_reg"; then \
+        bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AG_BENCH_VERSION; \
+    elif echo "$FRAMEWORK_PATH" | grep -q -E "tabular|timeseries"; then \
         if [ -n "$AMLB_USER_DIR" ]; then \
             bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AMLB_FRAMEWORK $AMLB_USER_DIR; \
         else \
             bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AMLB_FRAMEWORK; \
         fi; \
-    elif echo "$FRAMEWORK_PATH" | grep -q "multimodal"; then \
-        bash ${AG_BENCH_BASE_DIR}/${FRAMEWORK_PATH}/setup.sh $GIT_URI $GIT_BRANCH $VENV_BASE_DIR $AG_BENCH_VERSION; \
     fi \
     && echo "CDK_DEPLOY_REGION=$CDK_DEPLOY_REGION" >> /etc/environment
 
