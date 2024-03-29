@@ -36,5 +36,6 @@ python3 -m pip install -e core[all]
 python3 -m pip install -e features
 python3 -m pip install -e multimodal
 
-python3 -m mim install "mmcv==2.0.1"
-python3 -m pip install "mmdet==3.0.0"
+python3 -m mim install "mmcv==2.1.0"
+python3 -m pip install "mmdet==3.2.0"
+
