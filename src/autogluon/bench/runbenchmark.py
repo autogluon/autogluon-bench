@@ -32,6 +32,7 @@ app = typer.Typer()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 AMLB_DEPENDENT_MODULES = ["tabular", "timeseries"]
+INDEPENDENT_MODULES = ["multimodal"]
 
 with importlib.resources.path("autogluon.bench", "Dockerfile") as docker_file:
     project_path = os.path.join(os.path.dirname(docker_file))
@@ -48,7 +49,7 @@ def get_kwargs(module: str, configs: dict):
         A dictionary containing the keyword arguments to be used for setting up and running the benchmark.
     """
 
-    if module == "multimodal":
+    if module in INDEPENDENT_MODULES:
         framework_configs = get_framework_configs(configs=configs)
         return {
             "setup_kwargs": {
@@ -62,6 +63,7 @@ def get_kwargs(module: str, configs: dict):
                 "params": framework_configs.get("params"),
                 "custom_dataloader": configs.get("custom_dataloader"),
                 "custom_metrics": configs.get("custom_metrics"),
+                "time_limit": configs.get("time_limit"),
             },
         }
     elif module in AMLB_DEPENDENT_MODULES:
@@ -341,11 +343,11 @@ def get_resource(configs: dict, resource_name: str):
     return resources
 
 
-def update_resource_constraint(configs: dict):
+def get_resource_constraint(configs: dict):
     constraint_name = configs.get("constraint", "test")
     constraints = get_resource(configs=configs, resource_name="multimodal_constraints")
     constraint_configs = constraints[constraint_name]
-    configs["cdk_context"].update(constraint_configs)
+    return constraint_configs
 
 
 def get_framework_configs(configs: dict):
@@ -430,7 +432,7 @@ def run(
                         _mount_dir(orig_path=original_path, new_path=path)
                     os.environ["AMLB_USER_DIR"] = default_user_dir  # For Docker build
                     configs["amlb_user_dir"] = default_user_dir  # For Lambda job config
-            elif module == "multimodal":
+            elif module in INDEPENDENT_MODULES:
                 if configs.get("custom_dataloader") is not None:
                     original_path, custom_dataloader_path = update_custom_dataloader(configs=configs)
                     paths.append(custom_dataloader_path)
@@ -443,8 +445,11 @@ def run(
                     _umount_if_needed(custom_metrics_path)
                     _mount_dir(orig_path=original_path, new_path=custom_metrics_path)
 
-                update_resource_constraint(configs=configs)
+                resource_constraint = get_resource_constraint(configs=configs)
+                configs["cdk_context"].update(resource_constraint)
+
                 framework_configs = get_framework_configs(configs=configs)
+
                 if configs.get("custom_resource_dir") is not None:
                     custom_resource_path = os.path.join(project_path, "custom_configs", "resources")
                     paths.append(custom_resource_path)
@@ -532,6 +537,9 @@ def run(
             if amlb_user_dir and amlb_user_dir.startswith("s3://"):
                 tmpdir = tempfile.TemporaryDirectory()
                 configs["amlb_user_dir"] = download_dir_from_s3(s3_path=amlb_user_dir, local_path=tmpdir.name)
+        elif module in INDEPENDENT_MODULES:
+            resource_constraint = get_resource_constraint(configs=configs)
+            configs["time_limit"] = resource_constraint["TIME_LIMIT"]
 
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
 

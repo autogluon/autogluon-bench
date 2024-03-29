@@ -45,6 +45,7 @@ def get_args():
         "--custom_dataloader", type=str, default=None, help="Custom dataloader to use in the benchmark."
     )
     parser.add_argument("--custom_metrics", type=str, default=None, help="Custom metrics to use in the benchmark.")
+    parser.add_argument("--time_limit", type=int, default=None, help="Time limit used to fit the predictor.")
 
     args = parser.parse_args()
     return args
@@ -149,6 +150,7 @@ def run(
     params: Optional[dict] = None,
     custom_dataloader: Optional[dict] = None,
     custom_metrics: Optional[dict] = None,
+    time_limit: Optional[int] = None,
 ):
     """Runs the AutoGluon multimodal benchmark on a given dataset.
 
@@ -218,6 +220,11 @@ def run(
         metrics_func = load_custom_metrics(custom_metrics=custom_metrics)
 
     predictor = MultiModalPredictor(**predictor_args)
+
+    if time_limit is not None:
+        params["time_limit"] = time_limit
+        logger.warning(f"params[\"time_limit\"] is being overriden by time_limit specified in constraints.yaml. params[\"time_limit\"] = {time_limit}")
+
 
     fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
 
@@ -300,4 +307,5 @@ if __name__ == "__main__":
         params=args.params,
         custom_dataloader=args.custom_dataloader,
         custom_metrics=args.custom_metrics,
+        time_limit=args.time_limit,
     )
