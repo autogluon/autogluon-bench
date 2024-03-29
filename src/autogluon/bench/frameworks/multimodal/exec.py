@@ -256,6 +256,9 @@ def run(
             framework, version = framework, ag_version
 
         metric_name = test_data.metric if metrics_func is None else metrics_func.name
+        primary_metric = metric_name[0] if isinstance(metric_name, list) else metric_name
+        result = scores[primary_metric]
+
         if hasattr(train_data, "id"):
             id = f"id/{train_data.id}"
         else:
@@ -268,7 +271,8 @@ def run(
             "version": version,
             "fold": 0,
             "type": predictor.problem_type,
-            "metric": metric_name,
+            "metric": primary_metric,
+            "result": result,
             "utc": utc_time,
             "training_duration": training_duration,
             "predict_duration": predict_duration,
