@@ -4,14 +4,14 @@ mode: local  # required
 benchmark_name: ag_bench  # required
 root_dir: ag_bench_runs  # optional, default = "ag_bench_runs"
 # METRICS_BUCKET: autogluon-benchmark-metrics  # optional, required only if you want to upload metrics to S3
+constraint: 10m4x
 
 # Multimodal specific
-framework: AutoGluon_stable  # required
-dataset_name:  # required
-  melbourne_airbnb  
+framework: AutoGluon_branch  # required
+dataset_name: clipart
 
 #### Customizations ####
-# custom_resource_dir: sample_configs/resources/  # path to custom multimodal_frameworks.yaml and multimodal_constraints.yaml
+custom_resource_dir: sample_configs/resources/  # path to custom multimodal_frameworks.yaml and multimodal_constraints.yaml
 # custom_dataloader:
 #     dataloader_file: sample_configs/dataloaders/vision_dataloader.py   # relative path to WORKDIR
 #     class_name: VisionDataLoader
