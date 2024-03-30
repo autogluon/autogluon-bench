@@ -4,9 +4,12 @@ import importlib
 import json
 import logging
 import os
+import random
 import time
 from datetime import datetime
 from typing import Optional, Union
+
+import numpy as np
 
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
 from autogluon.core.metrics import make_scorer
@@ -26,6 +29,11 @@ def _flatten_dict(data):
         else:
             flattened[key] = value
     return flattened
+
+
+def set_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
 
 
 def get_args():
@@ -183,6 +191,9 @@ def run(
     Returns:
         None
     """
+    seed = params.get("seed", 42)
+    set_seed(seed)
+
     train_data, val_data, test_data = load_dataset(dataset_name=dataset_name, custom_dataloader=custom_dataloader)
     try:
         label_column = train_data.label_columns[0]
