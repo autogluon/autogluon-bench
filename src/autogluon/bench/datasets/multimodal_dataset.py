@@ -730,4 +730,3 @@ class NewsChannel(BaseMultiModalDataset):
     @property
     def problem_type(self):
         return _MULTICLASS
-

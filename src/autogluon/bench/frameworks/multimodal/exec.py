@@ -223,8 +223,9 @@ def run(
 
     if time_limit is not None:
         params["time_limit"] = time_limit
-        logger.warning(f"params[\"time_limit\"] is being overriden by time_limit specified in constraints.yaml. params[\"time_limit\"] = {time_limit}")
-
+        logger.warning(
+            f'params["time_limit"] is being overriden by time_limit specified in constraints.yaml. params["time_limit"] = {time_limit}'
+        )
 
     fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
 

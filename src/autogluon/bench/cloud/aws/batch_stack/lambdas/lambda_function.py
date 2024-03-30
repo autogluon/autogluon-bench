@@ -231,7 +231,9 @@ def generate_config_combinations(config, metrics_bucket, batch_job_queue, batch_
     job_type = "array" if len(job_configs) > 1 else "single"
     constraint = config.get("amlb_constraint") or config.get("constraint")
     job_name = f"{benchmark_name}-{config['module']}-{config['framework']}-{constraint}-{job_type}-job"
-    job_name = re.sub(r'(?![-_])\W', '-', job_name)[:128]  # AWS Bath Job name can only contain letters, numbers, "-" and "_"
+    job_name = re.sub(r"(?![-_])\W", "-", job_name)[
+        :128
+    ]  # AWS Bath Job name can only contain letters, numbers, "-" and "_"
 
     parent_job_id = submit_batch_job(
         env=env,
