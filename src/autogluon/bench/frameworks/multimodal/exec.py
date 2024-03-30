@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional, Union
 
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
 from autogluon.core.metrics import make_scorer
@@ -195,6 +196,12 @@ def run(
     set_seed(seed)
 
     train_data, val_data, test_data = load_dataset(dataset_name=dataset_name, custom_dataloader=custom_dataloader)
+    if test_data.data is None:
+        logger.warning("No test data found, splitting test data from train data")
+        train_set, test_set = train_test_split(train_data.data, test_size=0.2, random_state=seed)
+        train_data.data = train_set
+        test_data.data = test_set
+
     try:
         label_column = train_data.label_columns[0]
     except (AttributeError, IndexError):  # Object Detection does not have label columns
