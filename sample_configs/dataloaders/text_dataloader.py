@@ -10,7 +10,7 @@ from autogluon.common.loaders._utils import download
 logger = logging.getLogger(__name__)
 
 
-class TextDataLoaer:
+class TextDataLoader:
     def __init__(
         self,
         dataset_name: str,
