@@ -1,5 +1,5 @@
 10m4x:
-  TIME_LIMIT: 500
+  TIME_LIMIT: 100
   INSTANCE: g4dn.4xlarge
   # MAX_MACHINE_NUM: 20   # optional, default 20
   # BLOCK_DEVICE_VOLUME: 100   # optional, default 100GB

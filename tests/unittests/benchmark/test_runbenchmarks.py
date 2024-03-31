@@ -106,7 +106,7 @@ def test_get_kwargs_multimodal():
     expected_result = {
         "setup_kwargs": {
             "git_uri": "https://github.com/autogluon/autogluon.git",
-            "git_branch": "master",
+            "git_branch": "stable",
         },
         "run_kwargs": {
             "dataset_name": "dataset",
@@ -115,6 +115,7 @@ def test_get_kwargs_multimodal():
             "params": {"presets": "best_quality", "hyperparameters": {"optimization.max_epochs": 10}},
             "custom_dataloader": None,
             "custom_metrics": None,
+            "time_limit": None,
         },
     }
 

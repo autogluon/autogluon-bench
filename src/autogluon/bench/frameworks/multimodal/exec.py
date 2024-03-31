@@ -4,9 +4,13 @@ import importlib
 import json
 import logging
 import os
+import random
 import time
 from datetime import datetime
 from typing import Optional, Union
+
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 from autogluon.bench.datasets.dataset_registry import multimodal_dataset_registry
 from autogluon.core.metrics import make_scorer
@@ -28,6 +32,11 @@ def _flatten_dict(data):
     return flattened
 
 
+def set_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -45,6 +54,7 @@ def get_args():
         "--custom_dataloader", type=str, default=None, help="Custom dataloader to use in the benchmark."
     )
     parser.add_argument("--custom_metrics", type=str, default=None, help="Custom metrics to use in the benchmark.")
+    parser.add_argument("--time_limit", type=int, default=None, help="Time limit used to fit the predictor.")
 
     args = parser.parse_args()
     return args
@@ -149,6 +159,7 @@ def run(
     params: Optional[dict] = None,
     custom_dataloader: Optional[dict] = None,
     custom_metrics: Optional[dict] = None,
+    time_limit: Optional[int] = None,
 ):
     """Runs the AutoGluon multimodal benchmark on a given dataset.
 
@@ -181,7 +192,16 @@ def run(
     Returns:
         None
     """
+    seed = params.get("seed", 42)
+    set_seed(seed)
+
     train_data, val_data, test_data = load_dataset(dataset_name=dataset_name, custom_dataloader=custom_dataloader)
+    if test_data.data is None:
+        logger.warning("No test data found, splitting test data from train data")
+        train_set, test_set = train_test_split(train_data.data, test_size=0.2, random_state=seed)
+        train_data.data = train_set
+        test_data.data = test_set
+
     try:
         label_column = train_data.label_columns[0]
     except (AttributeError, IndexError):  # Object Detection does not have label columns
@@ -218,6 +238,12 @@ def run(
         metrics_func = load_custom_metrics(custom_metrics=custom_metrics)
 
     predictor = MultiModalPredictor(**predictor_args)
+
+    if time_limit is not None:
+        params["time_limit"] = time_limit
+        logger.warning(
+            f'params["time_limit"] is being overriden by time_limit specified in constraints.yaml. params["time_limit"] = {time_limit}'
+        )
 
     fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
 
@@ -256,6 +282,9 @@ def run(
             framework, version = framework, ag_version
 
         metric_name = test_data.metric if metrics_func is None else metrics_func.name
+        primary_metric = metric_name[0] if isinstance(metric_name, list) else metric_name
+        result = scores[primary_metric]
+
         if hasattr(train_data, "id"):
             id = f"id/{train_data.id}"
         else:
@@ -268,7 +297,8 @@ def run(
             "version": version,
             "fold": 0,
             "type": predictor.problem_type,
-            "metric": metric_name,
+            "metric": primary_metric,
+            "result": result,
             "utc": utc_time,
             "training_duration": training_duration,
             "predict_duration": predict_duration,
@@ -296,4 +326,5 @@ if __name__ == "__main__":
         params=args.params,
         custom_dataloader=args.custom_dataloader,
         custom_metrics=args.custom_metrics,
+        time_limit=args.time_limit,
     )

@@ -56,6 +56,7 @@ class MultiModalBenchmark(Benchmark):
         params: Optional[dict] = None,
         custom_dataloader: Optional[dict] = None,
         custom_metrics: Optional[dict] = None,
+        time_limit: Optional[int] = None,
     ):
         """
         Runs the benchmark on a given dataset.
@@ -84,6 +85,7 @@ class MultiModalBenchmark(Benchmark):
                                     metrics_path: path_to/metrics.py   # relative path to WORKDIR
                                     function_name: custom_metrics_function
                                     **kwargs (of )
+            time_limit (Optional[int], None): Time limit for predictor.fit()
 
         Returns:
             None
@@ -116,6 +118,8 @@ class MultiModalBenchmark(Benchmark):
             command += ["--custom_dataloader", json.dumps(custom_dataloader)]
         if custom_metrics is not None:
             command += ["--custom_metrics", json.dumps(custom_metrics)]
+        if time_limit is not None:
+            command += ["--time_limit", str(time_limit)]
         result = subprocess.run(command)
         if result.returncode != 0:
             sys.exit(1)

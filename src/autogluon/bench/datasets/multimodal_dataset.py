@@ -51,7 +51,7 @@ class BaseMultiModalDataset(abc.ABC):
         try:
             ext = os.path.splitext(data_info[split]["url"])[-1]
             self._path = os.path.join(get_data_home_dir(), dataset_name, f"{split}{ext}")
-            download(data_info[split]["url"], path=self._path, sha1_hash=data_info[split]["sha1sum"])
+            download(data_info[split]["url"], path=self._path)
             if ext == ".csv":
                 self._data = pd.read_csv(self._path)
             elif ext == ".pq":
@@ -119,7 +119,6 @@ class Shopee(BaseImageDataset):
     _INFO = {
         "data": {
             "url": get_repo_url() + "vision_datasets/shopee.zip",
-            "sha1sum": "59dffcfd0921cf0aa97215550dee3d1e3de656ca",
         },
     }
     _registry_name = "shopee"
@@ -127,7 +126,7 @@ class Shopee(BaseImageDataset):
     def __init__(self, split="train"):
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "shopee")
-        load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path, sha1sum=self._INFO["data"]["sha1sum"])
+        load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path)
         self._base_folder = os.path.join(self._path, "shopee")
         try:
             data_path = os.path.join(self._base_folder, f"{self._split}.csv")
@@ -175,7 +174,6 @@ class StanfordOnline(BaseMatcherDataset):
     _INFO = {
         "data": {
             "url": get_repo_url() + "Stanford_Online_Products.zip",
-            "sha1sum": "4951af1dfcceb54b9b8f2126e995668e1b139cec",
         },
     }
     _registry_name = "stanford_online"
@@ -183,7 +181,7 @@ class StanfordOnline(BaseMatcherDataset):
     def __init__(self, split="train"):
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "Stanford_Online_Products")
-        load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path, sha1sum=self._INFO["data"]["sha1sum"])
+        load_zip.unzip(self._INFO["data"]["url"], unzip_dir=self._path)
         self._base_folder = os.path.join(self._path, "Stanford_Online_Products")
         try:
             self._data = pd.read_csv(os.path.join(self._base_folder, f"{self._split}.csv"), index_col=0)
@@ -229,7 +227,7 @@ class StanfordOnline(BaseMatcherDataset):
 class Flickr30k(BaseMatcherDataset):
     _SOURCE = "https://paperswithcode.com/dataset/flickr30k"
     _INFO = {
-        "data": {"url": get_repo_url() + "flickr30k.zip", "sha1sum": "13d879429cff00022966324ab486d3317017d706"},
+        "data": {"url": get_repo_url() + "flickr30k.zip"},
     }
     _registry_name = "flickr30k"
 
@@ -293,9 +291,8 @@ class SNLI(BaseMatcherDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "snli/snli_train.csv",
-            "sha1sum": "2ebac97d99112f0817a0070dc48826f08ae2b42b",
         },
-        "test": {"url": get_repo_url() + "snli/snli_test.csv", "sha1sum": "87d304ad75b3d64f0f58e316befc7aeba4729b8f"},
+        "test": {"url": get_repo_url() + "snli/snli_test.csv"},
     }
     _registry_name = "snli"
 
@@ -303,7 +300,7 @@ class SNLI(BaseMatcherDataset):
         self._split = split
         self._path = os.path.join(get_data_home_dir(), "snli", f"{split}.csv")
         try:
-            download(self._INFO[split]["url"], path=self._path, sha1_hash=self._INFO[split]["sha1sum"])
+            download(self._INFO[split]["url"], path=self._path)
             self._data = pd.read_csv(self._path, delimiter="|")
         except Exception:
             logger.warn(f"The data split {self._split} is not available.")
@@ -344,11 +341,9 @@ class MitMovies(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "ner/mit-movies/train_v2.csv",
-            "sha1sum": "6732ddd21040ab8cd14418f4970af280b4b38a7a",
         },
         "test": {
             "url": get_repo_url() + "ner/mit-movies/test_v2.csv",
-            "sha1sum": "99040f5f9d4990f62498ad0deeebc472a97e7885",
         },
     }
     _registry_name = "mit_movies"
@@ -382,11 +377,9 @@ class WomenClothingReview(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "women_clothing_review/train.pq",
-            "sha1sum": "980023e4c063eae51adafc98482610a9a6a1878b",
         },
         "test": {
             "url": get_repo_url() + "women_clothing_review/test.pq",
-            "sha1sum": "fbc84f757b8a08210a772613ca8342f3990eb1f7",
         },
     }
     _registry_name = "women_clothing_review"
@@ -437,11 +430,9 @@ class MelBourneAirBnb(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "airbnb_melbourne/train.pq",
-            "sha1sum": "49f7d95df663d1199e6d860102d5863e48765caf",
         },
         "test": {
             "url": get_repo_url() + "airbnb_melbourne/test.pq",
-            "sha1sum": "c28611514b659295fe4b345c3995005719499946",
         },
     }
     _registry_name = "melbourne_airbnb"
@@ -506,11 +497,9 @@ class AEPricePrediction(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "ae_price_prediction/train.pq",
-            "sha1sum": "5b8a6327cc9429176d58af33ca3cc3480fe6c759",
         },
         "test": {
             "url": get_repo_url() + "ae_price_prediction/test.pq",
-            "sha1sum": "7bebcaae48410386f610fd7a9c37ba0e89602858",
         },
     }
     _registry_name = "ae_price_prediction"
@@ -556,11 +545,9 @@ class IMDBGenrePrediction(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "imdb_genre_prediction/train.csv",
-            "sha1sum": "56d2d5e3b19663d033fdfb6e33e4eb9c79c67864",
         },
         "test": {
             "url": get_repo_url() + "imdb_genre_prediction/test.csv",
-            "sha1sum": "0e435e917159542d725d21135cfa514ae936d2c1",
         },
     }
     _registry_name = "imdb_genre_prediction"
@@ -606,11 +593,9 @@ class JCPennyCategory(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "jc_penney_products/train.csv",
-            "sha1sum": "b59ce843ad05073a3fccf5ebc4840b3b0649f059",
         },
         "test": {
             "url": get_repo_url() + "jc_penney_products/test.csv",
-            "sha1sum": "23bca284354deec13a11ef7bd726d35a01eb1332",
         },
     }
     _registry_name = "jc_penney_products"
@@ -656,11 +641,9 @@ class NewsPopularity(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "news_popularity2/train.csv",
-            "sha1sum": "390b15e77fa77a2722ce2d459a977034a9565f46",
         },
         "test": {
             "url": get_repo_url() + "news_popularity2/test.csv",
-            "sha1sum": "297253bdca18f6aafbaee0262be430126c1f9044",
         },
     }
     _registry_name = "news_popularity"
@@ -706,11 +689,9 @@ class NewsChannel(BaseMultiModalDataset):
     _INFO = {
         "train": {
             "url": get_repo_url() + "news_channel/train.csv",
-            "sha1sum": "ab226210b6a878b449d01f33a195014c65c22311",
         },
         "test": {
             "url": get_repo_url() + "news_channel/test.csv",
-            "sha1sum": "a71516784ce6e168bd9933e9ec50080f65cb05fd",
         },
     }
     _registry_name = "news_channel"

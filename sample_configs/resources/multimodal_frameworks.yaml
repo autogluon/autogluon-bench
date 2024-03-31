@@ -1,9 +1,9 @@
 AutoGluon_branch:
   repo: https://github.com/autogluon/autogluon.git
-  version: stable_GA4_update
+  version: master
   params:  # MultimodalPredictor.fit(params)
     presets: medium_quality
-    time_limit:  90
+    time_limit:  500
     hyperparameters:
-      optimization.max_epochs: 1
+      optimization.max_epochs: 50
       optimization.learning_rate: 0.005
