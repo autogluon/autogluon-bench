@@ -116,6 +116,7 @@ def evaluate(
     output_suffix: str | None = None,
     frameworks_rename: dict | None = None,
     framework_nan_fill: str | None = None,
+    worst_nan_fill: bool = False,
     problem_type: List[str] | str | None = None,
     folds_to_keep: List[int] | None = None,
     compute_z_score: bool = True,
@@ -235,6 +236,7 @@ def evaluate(
         output_suffix=output_suffix,
         use_tid_as_dataset_name=use_tid_as_dataset_name,
         framework_nan_fill=framework_nan_fill,
+        worst_nan_fill=worst_nan_fill,
         filter_errors=filter_errors,
         task_metadata=task_metadata,
     )

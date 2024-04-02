@@ -24,7 +24,7 @@ def clean_result(result_df, folds_to_keep=None, remove_invalid=True):
     return results_clean_df
 
 
-def fill_missing_results_with_default(framework_nan_fill: str, frameworks_to_fill: list, results_raw: pd.DataFrame):
+def fill_missing_results_with_default(framework_nan_fill: str, frameworks_to_fill: list, results_raw: pd.DataFrame) -> pd.DataFrame:
     """
     Fill missing results with the result of `framework_nan_fill` framework.
     """
@@ -42,7 +42,30 @@ def fill_missing_results_with_default(framework_nan_fill: str, frameworks_to_fil
     results_nan_fill["time_infer_s"] = np.nan
 
     results_raw = results_raw[results_raw["framework"].isin(frameworks_to_fill)]
+    return _fill_missing(results_nan_fill=results_nan_fill, results_raw=results_raw)
 
+
+def fill_missing_results_with_worst(frameworks_to_consider: list, frameworks_to_fill: list, results_raw: pd.DataFrame) -> pd.DataFrame:
+    if frameworks_to_consider is None:
+        frameworks_to_consider = list(results_raw["framework"].unique())
+    if frameworks_to_fill is None:
+        frameworks_to_fill = list(results_raw["framework"].unique())
+    results_to_consider = results_raw[results_raw[FRAMEWORK].isin(frameworks_to_consider)]
+    task_metric_problem_type = results_to_consider[["dataset", "fold", "metric", "problem_type"]].drop_duplicates()
+
+    worst_result_per_task = results_to_consider[[DATASET, FOLD, METRIC_ERROR]].groupby([DATASET, FOLD])[METRIC_ERROR].max()
+    worst_result_per_task = worst_result_per_task.to_frame().reset_index()
+
+    results_nan_fill = pd.merge(task_metric_problem_type, worst_result_per_task)
+    results_nan_fill["time_train_s"] = np.nan
+    results_nan_fill["time_infer_s"] = np.nan
+    assert len(results_nan_fill) == len(worst_result_per_task)
+
+    results_raw = results_raw[results_raw["framework"].isin(frameworks_to_fill)]
+    return _fill_missing(results_nan_fill=results_nan_fill, results_raw=results_raw)
+
+
+def _fill_missing(results_nan_fill: pd.DataFrame, results_raw: pd.DataFrame) -> pd.DataFrame:
     frameworks = list(results_raw["framework"].unique())
     # datasets = results_nan_fill[['dataset', 'fold']].unique()
     results_nan_fill = results_nan_fill.set_index(["dataset", "fold"])
