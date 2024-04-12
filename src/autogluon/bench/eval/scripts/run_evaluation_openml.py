@@ -66,7 +66,7 @@ def evaluate_amlb_results(
     ),
     treat_folds_as_datasets: bool = typer.Option(False, help="If True, treat each fold as a separate dataset."),
     use_tid_as_dataset_name: bool = typer.Option(
-        True,
+        False,
         help="If True, replaces dataset human-readable names with unique integer IDs associated with their OpenML task ID.",
     ),
     filter_errors: bool = typer.Option(

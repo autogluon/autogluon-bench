@@ -12,7 +12,11 @@ from autogluon.common.utils.s3_utils import is_s3_url
 
 from .constants import DATASET, FOLD, FRAMEWORK, METRIC, METRIC_ERROR, PROBLEM_TYPE, TIME_INFER_S, TIME_TRAIN_S
 from .metadata.metadata_loader import load_task_metadata
-from .preprocess.preprocess_utils import convert_folds_into_separate_datasets, fill_missing_results_with_default
+from .preprocess.preprocess_utils import (
+    assert_unique_dataset_tid_pairs,
+    convert_folds_into_separate_datasets,
+    fill_missing_results_with_default,
+)
 
 
 class BenchmarkEvaluator:
@@ -156,6 +160,7 @@ class BenchmarkEvaluator:
         if banned_datasets is not None:
             results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         if self._use_tid_as_dataset_name:
+            assert_unique_dataset_tid_pairs(results_raw=results_raw)
             results_raw[DATASET] = results_raw["tid"].astype(int).astype(str)
             if banned_datasets is not None:
                 results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
@@ -209,10 +214,6 @@ class BenchmarkEvaluator:
             results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         if valid_datasets is not None:
             results_raw = results_raw[results_raw[DATASET].isin(valid_datasets)]
-        if self._use_tid_as_dataset_name:
-            results_raw.loc[:, DATASET] = results_raw["tid"].astype(int).astype(str)
-            if banned_datasets is not None:
-                results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
         if infer_batch_size is not None:
             results_raw = self._update_infer_batch_size(results_raw=results_raw, infer_batch_size=infer_batch_size)
         if self._framework_nan_fill is not None:
