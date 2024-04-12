@@ -87,3 +87,45 @@ def convert_folds_into_separate_datasets(results_raw: pd.DataFrame, folds: list 
     results_split_fold["dataset"] = results_split_fold["dataset"] + "_" + results_split_fold["fold"].astype(str)
     results_split_fold["fold"] = fold_dummy
     return results_split_fold
+
+
+def assert_unique_dataset_tid_pairs(results_raw: pd.DataFrame):
+    """
+    Raises an assertion error if datset and tid columns do not have exact unique pairs,
+    where each dataset is tied to exactly one tid and vice versa.
+
+    Parameters
+    ----------
+    results_raw: pd.DataFrame
+        A pandas DataFrame containing dataset and tid columns.
+
+    """
+    assert DATASET in results_raw.columns, f"{DATASET} must be a column in results_raw"
+    assert "tid" in results_raw.columns, f"tid must be a column in results_raw"
+    results_unique_dataset_tid_pairs = results_raw[[DATASET, "tid"]].value_counts().reset_index(drop=False)
+    unique_datasets = results_raw[DATASET].unique()
+    unique_tids = results_raw["tid"].unique()
+    if len(results_unique_dataset_tid_pairs) != len(unique_datasets) or len(results_unique_dataset_tid_pairs) != len(
+        unique_tids
+    ):
+        dataset_counts = results_unique_dataset_tid_pairs[DATASET].value_counts()
+        dataset_counts = dataset_counts[dataset_counts > 1].sort_values(ascending=False).to_frame()
+        tid_counts = results_unique_dataset_tid_pairs["tid"].value_counts()
+        tid_counts = tid_counts[tid_counts > 1].sort_values(ascending=False).to_frame()
+
+        msg_dataset_counts = ""
+        msg_tid_counts = ""
+        if len(dataset_counts) > 0:
+            msg_dataset_counts = f"\nDatasets appearing more than once:" f"\n{dataset_counts}"
+        if len(tid_counts) > 0:
+            msg_tid_counts = f"\nTIDs appearing more than once:" f"\n{tid_counts}"
+        msg = (
+            f"Error: Inconsistent pairings of dataset and tid column values! "
+            f"Each dataset should pair with a unique tid. All below values should match:"
+            f"\n\tUnique          Datasets: {len(unique_datasets)}"
+            f"\n\tUnique              TIDs: {len(unique_tids)}"
+            f"\n\tUnique Dataset/TID Pairs: {len(results_unique_dataset_tid_pairs)}"
+            f"{msg_dataset_counts}"
+            f"{msg_tid_counts}"
+        )
+        raise AssertionError(msg)
