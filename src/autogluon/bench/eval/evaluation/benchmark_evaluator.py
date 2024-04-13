@@ -16,6 +16,7 @@ from .preprocess.preprocess_utils import (
     assert_unique_dataset_tid_pairs,
     convert_folds_into_separate_datasets,
     fill_missing_results_with_default,
+    fill_missing_results_with_worst,
 )
 
 
@@ -29,6 +30,7 @@ class BenchmarkEvaluator:
         use_tid_as_dataset_name: bool = False,
         filter_errors: bool = False,
         framework_nan_fill: Optional[str] = None,
+        worst_nan_fill: bool = False,
         task_metadata: str = "task_metadata.csv",
         filter_columns: bool = True,
         convert_infer_time_to_per_row: bool = True,
@@ -67,6 +69,10 @@ class BenchmarkEvaluator:
             For example, if `framework_nan_fill='constantpredictor'`,
             framework dataset errors will be set to the `constantpredictor` framework result.
             This is aligned with how results were computed in the 2022 AMLB paper.
+            This value is ignored if `filter_errors=True`, as the errors will already be filtered prior to this logic.
+        worst_nan_fill : bool, default = False
+            If True, will fill missing results with the worst result observed on a given task.
+            Can be used as an alternative to `framework_nan_fill`.
             This value is ignored if `filter_errors=True`, as the errors will already be filtered prior to this logic.
         task_metadata: str, default = 'task_metadata_289.csv'
             The path to task metadata file.
@@ -136,6 +142,12 @@ class BenchmarkEvaluator:
         if self._filter_errors:
             framework_nan_fill = None
         self._framework_nan_fill = framework_nan_fill
+        self._worst_nan_fill = worst_nan_fill
+        if self._worst_nan_fill and self._framework_nan_fill:
+            raise AssertionError(
+                f"Only one of framework_nan_fill and worst_nan_fill can be enabled: "
+                f"(framework_nan_fill={self._framework_nan_fill}, worst_nan_fill={self._worst_nan_fill})"
+            )
         if filter_columns:
             self._columns_to_keep = columns_to_keep
         else:
@@ -220,6 +232,11 @@ class BenchmarkEvaluator:
             results_raw = fill_missing_results_with_default(
                 framework_nan_fill=self._framework_nan_fill, frameworks_to_fill=frameworks, results_raw=results_raw
             )
+        elif self._worst_nan_fill:
+            results_raw = fill_missing_results_with_worst(
+                frameworks_to_consider=frameworks, frameworks_to_fill=frameworks, results_raw=results_raw
+            )
+
         if frameworks is not None:
             results_raw = self._filter_frameworks(results_raw=results_raw, frameworks=frameworks)
         if treat_folds_as_datasets:
