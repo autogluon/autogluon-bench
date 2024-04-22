@@ -176,7 +176,14 @@ class BenchmarkEvaluator:
             results_raw[DATASET] = results_raw["tid"].astype(int).astype(str)
             if banned_datasets is not None:
                 results_raw = results_raw[~results_raw[DATASET].isin(banned_datasets)]
-        results_raw = results_raw.drop_duplicates(subset=[FRAMEWORK, DATASET, FOLD])
+        len_results = len(results_raw)
+        results_raw = results_raw.drop_duplicates(subset=[FRAMEWORK, DATASET, FOLD, METRIC])
+        len_results_post_drop = len(results_raw)
+        if len_results != len_results_post_drop:
+            print(
+                f"Note: Duplicate results detected! Dropping {len_results - len_results_post_drop} duplicate rows"
+                f" ({len_results} -> {len_results_post_drop})...",
+            )
         self._check_results_valid(results_raw=results_raw)
         return results_raw
 
@@ -185,6 +192,8 @@ class BenchmarkEvaluator:
         return pd.concat([load_pd.load(path) for path in paths], ignore_index=True, sort=True)
 
     def _check_results_valid(self, results_raw: pd.DataFrame):
+        self._assert_unique_metric(results_raw=results_raw)
+
         if results_raw[METRIC_ERROR].min() < 0:
             eps = -1 / 1e8
             num_negative = len(results_raw[results_raw[METRIC_ERROR] < 0])
@@ -351,3 +360,27 @@ class BenchmarkEvaluator:
             task_metadata = task_metadata[task_metadata["NumberOfSymbolicFeatures"] <= max_features_categorical]
 
         return list(task_metadata["name"])
+
+    @staticmethod
+    def _assert_unique_metric(results_raw: pd.DataFrame):
+        """
+        Assert that each dataset uses exactly one unique metric.
+
+        Parameters
+        ----------
+        results_raw
+
+        """
+        dataset_metric_counts = results_raw[[DATASET, METRIC]].value_counts().reset_index(drop=False)
+        num_metrics_per_dataset = dataset_metric_counts[DATASET].value_counts()
+        dataset_metric_counts["metrics_in_dataset"] = dataset_metric_counts[DATASET].map(num_metrics_per_dataset)
+        dataset_metric_counts = dataset_metric_counts[dataset_metric_counts["metrics_in_dataset"] > 1]
+        if len(dataset_metric_counts) != 0:
+            num_invalid_datasets = len(dataset_metric_counts[DATASET].unique())
+            raise AssertionError(
+                f"Found {num_invalid_datasets} datasets using multiple different metrics. This is not yet supported in BenchmarkEvaluator. "
+                f"Each dataset must map to a single metric. "
+                f"One way to avoid this error is to append the metric name to the dataset name."
+                f"\nList of invalid datasets:\n"
+                f"{dataset_metric_counts}"
+            )

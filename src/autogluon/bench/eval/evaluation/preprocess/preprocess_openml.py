@@ -16,9 +16,9 @@ def _update_framework_name(name: str, parent: str, name_suffix_1: str, name_suff
     else:
         name_new = name
     if name_suffix_1:
-        name_new = name_new + "_" + name_suffix_1
+        name_new = name_new + "_" + str(name_suffix_1)
     if name_suffix_2:
-        name_new = name_new + "_" + name_suffix_2
+        name_new = name_new + "_" + str(name_suffix_2)
     if is_valid_parent:
         return name, name_new
     else:
@@ -111,10 +111,11 @@ def preprocess_openml_input(
         "f1_micro",
         "quadratic_kappa",
     ]
-    raw_input[METRIC_ERROR] = [
-        1 - score if metric in metric_list else float(score) if metric == "rmse" else -score
-        for score, metric in zip(raw_input[METRIC_SCORE], raw_input["metric"])
-    ]
+    if METRIC_ERROR not in raw_input:
+        raw_input[METRIC_ERROR] = [
+            1 - score if metric in metric_list else float(score) if metric == "rmse" else -score
+            for score, metric in zip(raw_input[METRIC_SCORE], raw_input["metric"])
+        ]
 
     if raw_input[METRIC_ERROR].min() < 0:
         eps = -1 / 1e8
