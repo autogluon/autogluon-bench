@@ -147,9 +147,9 @@ def preprocess_openml_input(
     if "tid" in cleaned_input:
         """
         Update tid to the new ones in case the runs are old
-    
+
         Name                | oldtid | newtid
-    
+
         KDDCup09-Upselling  | 360115 | 360975
         MIP-2016-regression | 359947 | 360945
         QSAR-TID-10980      |  14097 | 360933
