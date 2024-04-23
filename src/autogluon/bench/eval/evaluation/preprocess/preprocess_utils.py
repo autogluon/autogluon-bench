@@ -130,7 +130,7 @@ def assert_unique_dataset_tid_pairs(results_raw: pd.DataFrame):
 
     """
     assert DATASET in results_raw.columns, f"{DATASET} must be a column in results_raw"
-    assert "tid" in results_raw.columns, f"tid must be a column in results_raw"
+    assert "tid" in results_raw.columns, f"tid must be a column in results_raw when `use_tid_as_dataset_name=True`"
     results_unique_dataset_tid_pairs = results_raw[[DATASET, "tid"]].value_counts().reset_index(drop=False)
     unique_datasets = results_raw[DATASET].unique()
     unique_tids = results_raw["tid"].unique()

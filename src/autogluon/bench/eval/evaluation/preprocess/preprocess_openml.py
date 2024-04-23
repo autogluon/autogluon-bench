@@ -16,9 +16,9 @@ def _update_framework_name(name: str, parent: str, name_suffix_1: str, name_suff
     else:
         name_new = name
     if name_suffix_1:
-        name_new = name_new + "_" + name_suffix_1
+        name_new = name_new + "_" + str(name_suffix_1)
     if name_suffix_2:
-        name_new = name_new + "_" + name_suffix_2
+        name_new = name_new + "_" + str(name_suffix_2)
     if is_valid_parent:
         return name, name_new
     else:
@@ -111,10 +111,11 @@ def preprocess_openml_input(
         "f1_micro",
         "quadratic_kappa",
     ]
-    raw_input[METRIC_ERROR] = [
-        1 - score if metric in metric_list else float(score) if metric == "rmse" else -score
-        for score, metric in zip(raw_input[METRIC_SCORE], raw_input["metric"])
-    ]
+    if METRIC_ERROR not in raw_input:
+        raw_input[METRIC_ERROR] = [
+            1 - score if metric in metric_list else float(score) if metric == "rmse" else -score
+            for score, metric in zip(raw_input[METRIC_SCORE], raw_input["metric"])
+        ]
 
     if raw_input[METRIC_ERROR].min() < 0:
         eps = -1 / 1e8
@@ -137,40 +138,35 @@ def preprocess_openml_input(
 
     cleaned_input = preprocess_utils.clean_result(raw_input, folds_to_keep=folds_to_keep, remove_invalid=False)
 
-    cleaned_input["tid"] = [
-        int(part) for x in cleaned_input["id"] for part in re.split(r"[/_]", x)[-1:] if part.isdigit()
-    ]
+    if "tid" not in cleaned_input:
+        if "id" in cleaned_input:
+            cleaned_input["tid"] = [
+                int(part) for x in cleaned_input["id"] for part in re.split(r"[/_]", x)[-1:] if part.isdigit()
+            ]
 
-    """
-    Update tid to the new ones in case the runs are old
+    if "tid" in cleaned_input:
+        """
+        Update tid to the new ones in case the runs are old
 
-    Name                | oldtid | newtid
+        Name                | oldtid | newtid
 
-    KDDCup09-Upselling  | 360115 | 360975
-    MIP-2016-regression | 359947 | 360945
-    QSAR-TID-10980      |  14097 | 360933
-    QSAR-TID-11         |  13854 | 360932
-    """
-    cleaned_input["tid"] = (
-        cleaned_input["tid"]
-        .map(
-            {
-                360115: 360975,
-                359947: 360945,
-                14097: 360933,
-                13854: 360932,
-            }
+        KDDCup09-Upselling  | 360115 | 360975
+        MIP-2016-regression | 359947 | 360945
+        QSAR-TID-10980      |  14097 | 360933
+        QSAR-TID-11         |  13854 | 360932
+        """
+        cleaned_input["tid"] = (
+            cleaned_input["tid"]
+            .map(
+                {
+                    360115: 360975,
+                    359947: 360945,
+                    14097: 360933,
+                    13854: 360932,
+                }
+            )
+            .fillna(cleaned_input["tid"])
         )
-        .fillna(cleaned_input["tid"])
-    )
-
-    # add_if_missing = [
-    #     TIME_TRAIN_S,
-    #     TIME_INFER_S,
-    # ]
-    # add_missing = [c for c in add_if_missing if c not in cleaned_input.columns]
-    # if add_missing:
-    #     cleaned_input[add_missing] = np.nan
 
     required_output_columns = [
         DATASET,
@@ -181,7 +177,6 @@ def preprocess_openml_input(
         PROBLEM_TYPE,
         TIME_TRAIN_S,
         TIME_INFER_S,
-        "tid",
     ]
     actual_columns = list(cleaned_input.columns)
     missing_columns = [c for c in required_output_columns if c not in actual_columns]

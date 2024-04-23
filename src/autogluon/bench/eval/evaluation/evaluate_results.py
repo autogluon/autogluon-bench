@@ -139,6 +139,13 @@ def evaluate(
         print("num_folds:", num_folds)
         print("errors:", errors)
         print("################################################")
+
+    missing_frameworks = [f for f in frameworks_compare_vs_all if f not in total_frameworks]
+    if missing_frameworks:
+        raise AssertionError(
+            f"Missing specified comparison frameworks: {missing_frameworks}\n"
+            f"\tValid frameworks: {list(total_frameworks)}"
+        )
     for framework in total_frameworks:
         results_framework = results_raw[results_raw[FRAMEWORK] == framework]
         num_rows_framework = len(results_framework)
