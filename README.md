@@ -33,7 +33,6 @@ cd autogluon-bench
 pip install -e ".[tests]"
 ```
 
-
 ## Run benchmarks locally
 
 To run the benchmarks on your local machine, use the following command:
@@ -46,51 +45,51 @@ Check out our [sample local configuration files](https://github.com/autogluon/au
 
 The results are stored in the following directory: `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}`.
 
-
 ### Tabular and Timeseries Benchmark
 
-To perform tabular or timeseries benchmarking, set the module to 'tabular' or 'timeseries'. You must set both Benchmark Configurations and Tabular/Timeseries Specific configurations, and each should have a single value. Refer to the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml) for more details.
+To perform tabular or timeseries benchmarking, set the module to 'tabular' or 'timeseries'. You must set both Benchmark Configurations and Tabular/Timeseries Specific configurations, and each should have a single value. Refer to the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabular_local_configs.yaml) for more details.
 
 The tabular/timeseires module leverages the [AMLB](https://github.com/openml/automlbenchmark) benchmarking framework. Required and optional AMLB arguments are specified via the configuration file mentioned previously.
 
-Custom configuration is supported by providing a local directory to `amlb_user_dir` in the config, by which custom frameworks, constraints and datasets can be overriden. We have a minimum working [custom config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/amlb_configs) setup for benchmarking on a custom framework (a `AutoGluon` dev branch). In the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml), change the following field to:
+Custom configuration is supported by providing a local directory to `amlb_user_dir` in the config, by which custom frameworks, constraints and datasets can be overriden. We have a minimum working [custom config](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/amlb_configs) setup for benchmarking on a custom framework (an `AutoGluon` dev branch). In the [sample configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabular_local_configs.yaml), change the following field to:
 
 ```
 framework: AutoGluon_dev:example
-amlb_user_dir: path_to/sample_configs/amlb_configs 
+amlb_user_dir: path_to/sample_configs/amlb_configs
 ```
 
-For more customizations, please follow the [example custom configuration folder](https://github.com/openml/automlbenchmark/tree/master/examples/custom) provided by AMLB and their [documentation](https://github.com/openml/automlbenchmark/blob/master/docs/HOWTO.md#custom-configuration). 
-
+For more customizations, please follow the [example custom configuration folder](https://github.com/openml/automlbenchmark/tree/master/examples/custom) provided by AMLB and their [documentation](https://openml.github.io/automlbenchmark/docs/using/configuration/#custom-configurations).
 
 ### Multimodal Benchmark
 
-For multimodal benchmarking, set the module to multimodal. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular or timeseries. Please refer to the [sample multimodal local run configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/tabluar_local_configs.yaml). 
+For multimodal benchmarking, set the module to multimodal. Note that multimodal benchmarking directly calls the MultiModalPredictor, bypassing the extra layer of [AMLB](https://github.com/openml/automlbenchmark). Therefore, the required arguments are different from those for tabular or timeseries. Please refer to the [sample multimodal local run configuration file](https://github.com/autogluon/autogluon-bench/blob/master/sample_configs/multimodal_local_configs.yaml).
 
 We also support customizations on benchmarking framework, datasets, and metrics by providing `custom_resource_dir`, `custom_dataloader`, `custom_metrics`.
 
 To define custom frameworks, you can follow the [examples](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/resources/multimodal_frameworks.yaml).
+
 1. Create a folder under working directory, e.g. `custom_resources/`
 2. Create a yaml file named `multimodal_frameworks.yaml`
-3. Add an entry to the file with `repo` as the GitHub URL, `version` as the branch or tag name, `params` to be used by `MultiModalPredictor`. 
+3. Add an entry to the file with `repo` as the GitHub URL, `version` as the branch or tag name, `params` to be used by `MultiModalPredictor`.
 4. Add `custom_resource_dir: custom/resources/` in the run configuration file.
 
 To add more datasets to your benchmarking jobs. We support custom datasets with custom defined data loaders. Follow these steps:
-  1. Create a folder under the working directory, e.g. `custom_dataloader/`
-  2. Create a dataset yaml file, `custom_dataloader/datasets.yaml` which includes all required properties for your problem type, please refer to the [function](https://github.com/autogluon/autogluon-bench/blob/52eee491018f6281236416f4b1bece14b88610e8/src/autogluon/bench/frameworks/multimodal/exec.py#L100-L201).
-  3. Create a dataset loader class, `custom_dataloader/dataloader.py`, which downloads and loads the dataset as a dataframe. Please set the required properties as mentioned above.
-  4. Add `custom_dataloader` in the `agbench run` configuration, where `dataloader_file`, `class_name` and `dataset_config_file` are required. 
-  5. Make sure you have the proper permission to download the dataset. If running in `AWS mode`, we support downloading from the S3 bucket specified as `DATA_BUCKET` in the `agbench run` configuration under the same AWS Batch deployment account.
 
-  Please refer to [here](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/dataloaders) for more examples.
+1. Create a folder under the working directory, e.g. `custom_dataloader/`
+2. Create a dataset yaml file, `custom_dataloader/datasets.yaml` which includes all required properties for your problem type, please refer to the [function](https://github.com/autogluon/autogluon-bench/blob/52eee491018f6281236416f4b1bece14b88610e8/src/autogluon/bench/frameworks/multimodal/exec.py#L100-L201).
+3. Create a dataset loader class, `custom_dataloader/dataloader.py`, which downloads and loads the dataset as a dataframe. Please set the required properties as mentioned above.
+4. Add `custom_dataloader` in the `agbench run` configuration, where `dataloader_file`, `class_name` and `dataset_config_file` are required.
+5. Make sure you have the proper permission to download the dataset. If running in `AWS mode`, we support downloading from the S3 bucket specified as `DATA_BUCKET` in the `agbench run` configuration under the same AWS Batch deployment account.
+
+Please refer to [here](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/dataloaders) for more examples.
 
 Adding custom metrics is similar as adding data loaders. Internally, we convert the custom metrics into an [AutoGluon Scorer](https://auto.gluon.ai/stable/tutorials/tabular/advanced/tabular-custom-metric.html) using the `autogluon.core.metrics.make_scorer` function. Follow these steps to set up:
-  1. Create a folder under the working directory, e.g. `custom_metrics/`
-  2. Create a metrics script, `custom_metrics/metrics.py` which has a function defined that returns a metrics score.
-  4. Add `custom_metrics` in the `agbench run` configuration, where `metrics_path`, `function_name` are required. Aditional arguments can be added for the [make_scorer](https://github.com/autogluon/autogluon/blob/a33cc0e084c82cb207c6b98b13b49c1a377f3f0d/core/src/autogluon/core/metrics/__init__.py#L333-L335) function.
 
-  Please refer to [here](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/custom_metrics) for more examples.
+1. Create a folder under the working directory, e.g. `custom_metrics/`
+2. Create a metrics script, `custom_metrics/metrics.py` which has a function defined that returns a metrics score.
+3. Add `custom_metrics` in the `agbench run` configuration, where `metrics_path`, `function_name` are required. Aditional arguments can be added for the [make_scorer](https://github.com/autogluon/autogluon/blob/a33cc0e084c82cb207c6b98b13b49c1a377f3f0d/core/src/autogluon/core/metrics/__init__.py#L333-L335) function.
 
+Please refer to [here](https://github.com/autogluon/autogluon-bench/tree/master/sample_configs/custom_metrics) for more examples.
 
 ## Run benchmarks on AWS
 
@@ -101,12 +100,14 @@ To get started, install [Node.js](https://nodejs.org/) and [AWS CDK](https://doc
 1. Install [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating).
 2. Source profile or restart the terminal.
 3. Follow the `Prerequisites` section on the [AWS CDK Guide](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) and install an appropriate `Node.js` version for your system:
+
 ```bash
 nvm install $VERSION  # install Node.js
 npm install -g aws-cdk  # install aws-cdk
 cdk --version  # verify the installation, you might need to update the Node.js version depending on the log.
 ```
-4. Follow the [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) to install `awscliv2`. 
+
+4. Follow the [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) to install `awscliv2`.
 
 If it is the first time using CDK to deploy to an AWS environment (An AWS environment is a combination of an AWS account and Region), please run the following:
 
@@ -123,11 +124,13 @@ agbench generate-cloud-config --module multimodal --cdk-deploy-account <AWS_ACCO
 ```
 
 For tabular or timeseries:
+
 ```
 agbench generate-cloud-config --module <MODULE> --cdk-deploy-account <AWS_ACCOUNT_ID> --cdk-deploy-region <AWS_ACCOUNT_REGION> --prefix <PREFIX> --metrics-bucket <METRICS_BUCKET> --git-uri-branch <AMLB_GIT_URI_BRANCH> --framework <AMLB_FRAMEWORK> --amlb-benchmark <BENCHMARK1>,<BENCHMARK2> --amlb-task "BENCHMARK1:DATASET1,DATASET2;BENCHMARK2:DATASET3" --amlb-constraint <CONSTRAINT> --amlb-fold-to-run "BENCHMARK1:DATASET1:fold1/fold2,DATASET2:fold1/fold2;BENCHMARK1:DATASET3:fold1/fold2" --amlb-user-dir <AMLB_USER_DIR>
 ```
 
 For more details, you can run
+
 ```
 agbench generate-cloud-config --help
 ```
@@ -178,8 +181,8 @@ Or you can remove specific stacks by running:
 ```bash
 agbench destroy-stack --static-resource-stack STATIC_RESOURCE_STACK_NAME --batch-stack BATCH_STACK_NAME --cdk-deploy-account CDK_DEPLOY_ACCOUNT --cdk-deploy-region CDK_DEPLOY_REGION
 ```
-where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`.
 
+where you can find all argument values in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/aws_configs.yaml`.
 
 ### Configure the AWS infrastructure
 
@@ -195,6 +198,7 @@ INSTANCE: g4dn.2xlarge
 LAMBDA_FUNCTION_NAME: ag-bench-job
 
 where:
+
 - `CDK_DEPLOY_ACCOUNT` and `CDK_DEPLOY_REGION` should be overridden with your AWS account ID and desired region to create the stack.
 - `PREFIX` is used as an identifier for the stack and resources created.
 - `MAX_MACHINE_NUM` is the maximum number of EC2 instances can be started for AWS Batch.
@@ -227,17 +231,18 @@ Note that currently this command waits for all jobs to become successful to pull
 Benchmark results can be evaluated using the tools in `src/autogluon/bench/eval/`. The evaluation logic will aggregate, clean, and produce evaluation results for runs stored in S3.
 In a future release, we intend to add evaluation support for multimodal benchmark results.
 
-
 ### Evaluation Steps
 
 Begin by setting up AWS credentials for the default profile for the AWS account that has the benchmark results in S3.
 
 Step 1: Aggregate AMLB results on S3. After running the benchmark in [AWS mode](#run-benchmarks-on-aws), take note of the `benchmark_name` with timestamp in `{WORKING_DIR}/{root_dir}/{module}/{benchmark_name}_{timestamp}/{module}_cloud_configs.yaml` and run the command below:
+
 ```
 agbench aggregate-amlb-results {METRICS_BUCKET} {module} {benchmark_name} --constraint {constraint}
 ```
 
 This will create a new file on S3 with this signature:
+
 ```
 s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/results_automlbenchmark_{constraint}_{benchmark_name}.csv
 ```
@@ -245,6 +250,7 @@ s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/results_automlbenchma
 Currently, aggregation is also supported for multimodal benchmark results without the `--constratint` option.
 
 For more details, run:
+
 ```
 agbench aggregate-amlb-results --help
 ```
@@ -252,13 +258,16 @@ agbench aggregate-amlb-results --help
 Step 2: Further clean the aggregated results.
 
 If the file is still on S3 from the previous step, run:
+
 ```
-agbench clean-amlb-results {benchmark_name} --results-dir-input s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path --constraints constratint_1 --constraints constratint_2 --results-dir-output {results_dir_output} 
+agbench clean-amlb-results {benchmark_name} --results-dir-input s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path --constraints constratint_1 --constraints constratint_2 --results-dir-output {results_dir_output}
 --out-path-prefix {out_path_prefix} --out-path-suffix {out_path_suffix}
 ```
+
 where `{results_dir_input}` can also be a local directory. This will create a local file `{results_dir_output}/{out_path_prefix}{benchmark_name}{out_path_suffix}`.
 
 For more details, run:
+
 ```
 agbench clean-amlb-results --help
 ```
