@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A benchmarking tool for AutoML"
 authors = [{name = "AutoGluon Community"}]
 readme = "README.md"
-requires-python = ">=3.9, <3.11"
+requires-python = ">=3.9, <3.12"
 license = {file = "LICENSE"}
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -27,6 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Software Development",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Information Analysis",
@@ -34,20 +35,20 @@ classifiers = [
 ]
 dependencies = [
     "autogluon.common >=1, <2",
-    "aws-cdk-lib >=2.0.0,<2.70.0",
-    "aws-cdk.aws-batch-alpha >=2.0.0a1,<2.70.0a0",
-    "awscliv2 >=2.2.0,<2.3.0",
-    "boto3 >=1.26.0,<1.28.0",
-    "constructs >=10.0.0,<10.1.289",
-    "fsspec >=2023.5.0,<=2023.6.0",
-    "matplotlib >=3.4,<3.8",
-    "pandas >=2.0.0,<2.2.0",
+    "aws-cdk-lib >=2.0.0,<3",
+    "aws-cdk.aws-batch-alpha >=2.0.0a1,<2.96.0a0",
+    "awscliv2 >=2.2,<2.4",
+    "boto3 >=1.26.0,<2",
+    "constructs >=10.0.0,<10.4",
+    "fsspec >=2023.5.0,<2024.6",
+    "matplotlib >=3.4,<3.10",
+    "pandas >=2.0.0,<3",
     "pyyaml >=5.4,<7",
-    "ray[default] >=2.6.3,<2.7",
-    "s3fs >=2023.5.0,<=2023.6.0",
+    "ray[default] >=2.6.3,<3",
+    "s3fs >=2023.5.0,<=2024.6",
     "tqdm >=4.64.0,<=5",
     "typer >=0.9.0,<1.0.0",
-    "wheel >0.38.0,<0.43",
+    "wheel >0.38.0,<0.44",
 ]
 
 [project.optional-dependencies]
@@ -63,7 +64,7 @@ agbench = "autogluon.bench.main:app"
 # Testing and formatting configurations
 [tool.black]
 line-length = 119
-target-version = ['py39', 'py310']
+target-version = ['py39', 'py310', 'py311']
 
 [tool.isort]
 known_first_party = "autogluon"
@@ -82,7 +83,7 @@ profile = "black"
 legacy_tox_ini = """
     [tox]
     min_version = 4.0
-    envlist = py39, py310
+    envlist = py39, py310, py311
     isolated_build = True
 
     [testenv]
