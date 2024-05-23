@@ -299,18 +299,18 @@ def graph_vs(results_df: pd.DataFrame, f1: str, f2: str, z_stats: pd.Series = No
             label=pt,
         )
 
-    textstr = f"Win 1: {win_1}, Win 2: {win_2}, Tie: {tie}"
-    props = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
-    ax.text(0.05, 0.75, textstr, transform=ax.transAxes, fontsize=8, verticalalignment="top", bbox=props)
+        textstr = f"Win 1: {win_1}, Win 2: {win_2}, Tie: {tie}"
+        props = dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+        ax.text(0.05, 0.75, textstr, transform=ax.transAxes, fontsize=8, verticalalignment="top", bbox=props)
 
-    ax.grid()
-    # ax.set_xlim(0, 0.02)
-    # ax.set_ylim(0, 0.02)
-    # ax.set_xscale('log')
-    # ax.set_yscale('log')
-    fig.colorbar(im, ax=ax)
-    plt.legend()
-    plt.show()
+        ax.grid()
+        # ax.set_xlim(0, 0.02)
+        # ax.set_ylim(0, 0.02)
+        # ax.set_xscale('log')
+        # ax.set_yscale('log')
+        fig.colorbar(im, ax=ax)
+        plt.legend()
+        plt.show()
 
 
 # TODO: USE T-STATISTIC?
