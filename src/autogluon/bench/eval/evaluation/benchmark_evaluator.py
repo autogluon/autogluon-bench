@@ -291,10 +291,7 @@ class BenchmarkEvaluator:
 
         post_unique_tid = len(results_raw["tid"].unique())
 
-        print(
-            f"Joined with task_metadata, "
-            f"filtered task IDs: {pre_unique_tid} -> {post_unique_tid}"
-        )
+        print(f"Joined with task_metadata, filtered task IDs: {pre_unique_tid} -> {post_unique_tid}")
 
         # FIXME: TEMP
         if self.convert_infer_time_to_per_row:

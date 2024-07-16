@@ -302,12 +302,30 @@ def evaluate(
             winrate = (framework_1_wins + 0.5 * ties) / (framework_1_wins + framework_2_wins + ties)
 
             avg_fit_diffs = avg_fit_diffs / len(datasets_pair)
-            out = [framework_2, winrate, framework_1_wins, framework_2_wins, ties, mean_diff, median_diff, avg_fit_diffs]
+            out = [
+                framework_2,
+                winrate,
+                framework_1_wins,
+                framework_2_wins,
+                ties,
+                mean_diff,
+                median_diff,
+                avg_fit_diffs,
+            ]
             if calc_inf_diff:
                 avg_inf_diffs = avg_inf_diffs / len(datasets_pair)
                 out.append(avg_inf_diffs)
             results_list.append(out)
-        out_col_names = [FRAMEWORK, WINRATE, ">", "<", "=", "% Loss Reduction", "% Loss Reduction (median)", "Avg Fit Speed Diff"]
+        out_col_names = [
+            FRAMEWORK,
+            WINRATE,
+            ">",
+            "<",
+            "=",
+            "% Loss Reduction",
+            "% Loss Reduction (median)",
+            "Avg Fit Speed Diff",
+        ]
         if calc_inf_diff:
             out_col_names.append("Avg Inf Speed Diff")
         results_pairs = pd.DataFrame(data=results_list, columns=out_col_names)
