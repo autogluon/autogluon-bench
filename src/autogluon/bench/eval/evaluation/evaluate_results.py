@@ -207,6 +207,7 @@ def evaluate(
         logger.info(f"{path_ranked_by_dataset_valid} saved.")
 
     calc_inf_diff = TIME_INFER_S in columns_to_agg_extra
+    time_train_s_rescaled = TIME_TRAIN_S + "_rescaled"
     time_infer_s_rescaled = TIME_INFER_S + "_rescaled"
 
     all_results_pairs = {}
@@ -226,7 +227,7 @@ def evaluate(
                     verbose=False,
                 )
                 ties = len(results_ranked_by_dataset)
-                out = [framework_1, 0.5, 0, 0, ties, 0, 0]
+                out = [framework_1, 0.5, 0, 0, ties, 0, 0, 0]
                 if calc_inf_diff:
                     out.append(0)
                 results_list.append(out)
@@ -254,6 +255,7 @@ def evaluate(
             framework_1_wins = 0
             framework_2_wins = 0
             ties = 0
+            avg_fit_diffs = 0
             avg_inf_diffs = 0
             for dataset in datasets_pair:
                 results_isolated = results_ranked_by_dataset[results_ranked_by_dataset[DATASET] == dataset]
@@ -267,6 +269,15 @@ def evaluate(
                         f"Actual len: {len(results_isolated)} | dataset={dataset} | "
                         f"framework_1={framework_1} | framework_2={framework_2}"
                     )
+
+                fit_2 = results_isolated[results_isolated[FRAMEWORK] == framework_2][time_train_s_rescaled].iloc[0]
+                fit_1 = results_isolated[results_isolated[FRAMEWORK] == framework_1][time_train_s_rescaled].iloc[0]
+
+                if fit_2 > fit_1:
+                    avg_fit_diff = -(fit_2 - 1)
+                else:
+                    avg_fit_diff = fit_1 - 1
+                avg_fit_diffs += avg_fit_diff
 
                 if calc_inf_diff:
                     inf_2 = results_isolated[results_isolated[FRAMEWORK] == framework_2][time_infer_s_rescaled].iloc[0]
@@ -290,12 +301,31 @@ def evaluate(
                     raise AssertionError("Rank not valid: %s" % results_isolated_rank)
             winrate = (framework_1_wins + 0.5 * ties) / (framework_1_wins + framework_2_wins + ties)
 
-            out = [framework_2, winrate, framework_1_wins, framework_2_wins, ties, mean_diff, median_diff]
+            avg_fit_diffs = avg_fit_diffs / len(datasets_pair)
+            out = [
+                framework_2,
+                winrate,
+                framework_1_wins,
+                framework_2_wins,
+                ties,
+                mean_diff,
+                median_diff,
+                avg_fit_diffs,
+            ]
             if calc_inf_diff:
                 avg_inf_diffs = avg_inf_diffs / len(datasets_pair)
                 out.append(avg_inf_diffs)
             results_list.append(out)
-        out_col_names = [FRAMEWORK, WINRATE, ">", "<", "=", "% Loss Reduction", "% Loss Reduction (median)"]
+        out_col_names = [
+            FRAMEWORK,
+            WINRATE,
+            ">",
+            "<",
+            "=",
+            "% Loss Reduction",
+            "% Loss Reduction (median)",
+            "Avg Fit Speed Diff",
+        ]
         if calc_inf_diff:
             out_col_names.append("Avg Inf Speed Diff")
         results_pairs = pd.DataFrame(data=results_list, columns=out_col_names)

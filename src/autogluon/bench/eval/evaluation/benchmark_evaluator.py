@@ -31,7 +31,7 @@ class BenchmarkEvaluator:
         filter_errors: bool = False,
         framework_nan_fill: Optional[str] = None,
         worst_nan_fill: bool = False,
-        task_metadata: str = "task_metadata.csv",
+        task_metadata: str | pd.DataFrame = "task_metadata.csv",
         filter_columns: bool = True,
         convert_infer_time_to_per_row: bool = True,
         columns_to_keep: Optional[List[str]] = None,
@@ -74,8 +74,8 @@ class BenchmarkEvaluator:
             If True, will fill missing results with the worst result observed on a given task.
             Can be used as an alternative to `framework_nan_fill`.
             This value is ignored if `filter_errors=True`, as the errors will already be filtered prior to this logic.
-        task_metadata: str, default = 'task_metadata_289.csv'
-            The path to task metadata file.
+        task_metadata: str | pd.DataFrame, default = 'task_metadata_289.csv'
+            The path to task metadata file, or loaded pd.DataFrame of task metadata.
             This is only used when `clean_data=True` when calling `self.load_data`.
             This is used to filter to `tid` in `task_metadata` and join to get additional columns.
             This ensures that only datasets present in `task_metadata` will be used for analysis.
@@ -138,7 +138,7 @@ class BenchmarkEvaluator:
         )
         self._use_tid_as_dataset_name = use_tid_as_dataset_name
         self._filter_errors = filter_errors
-        self._task_metadata_path = task_metadata
+        self._task_metadata = task_metadata
         if self._filter_errors:
             framework_nan_fill = None
         self._framework_nan_fill = framework_nan_fill
@@ -267,15 +267,20 @@ class BenchmarkEvaluator:
             results_raw = results_raw[self._columns_to_keep]
         return results_raw
 
-    def _load_task_metadata(self) -> pd.DataFrame:
-        return load_task_metadata(path=self._task_metadata_path)
+    def task_metadata(self) -> pd.DataFrame | None:
+        if isinstance(self._task_metadata, pd.DataFrame):
+            return self._task_metadata
+        elif self._task_metadata is not None:
+            return load_task_metadata(path=self._task_metadata)
+        else:
+            return None
 
     def _clean_data(self, results_raw):
-        assert self._task_metadata_path is not None, (
+        assert self._task_metadata is not None, (
             f"Cannot clean data if task_metadata is None! "
             f"Either set `clean_data=False` or specify `task_metadata` during init."
         )
-        task_metadata = self._load_task_metadata()
+        task_metadata = self.task_metadata()
         task_metadata[DATASET] = task_metadata["name"]
         # FIXME: TEMP
         results_raw = results_raw.drop(columns=[DATASET])
@@ -286,10 +291,7 @@ class BenchmarkEvaluator:
 
         post_unique_tid = len(results_raw["tid"].unique())
 
-        print(
-            f"Joined with task_metadata ({self._task_metadata_path}), "
-            f"filtered task IDs: {pre_unique_tid} -> {post_unique_tid}"
-        )
+        print(f"Joined with task_metadata, filtered task IDs: {pre_unique_tid} -> {post_unique_tid}")
 
         # FIXME: TEMP
         if self.convert_infer_time_to_per_row:
@@ -348,7 +350,7 @@ class BenchmarkEvaluator:
         self, *, max_rows=None, min_rows=None, max_rows_missing_val=None, max_features_categorical=None
     ):
         # TODO: Consider having task_metadata be its own class
-        task_metadata = self._load_task_metadata()
+        task_metadata = self.task_metadata()
 
         if max_rows is not None:
             task_metadata = task_metadata[task_metadata["NumberOfInstances"] <= max_rows]
