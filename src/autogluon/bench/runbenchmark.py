@@ -130,6 +130,18 @@ def run_benchmark(
     _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
     if configs.get("METRICS_BUCKET", None):
+        framework_name = module_kwargs["run_kwargs"]["framework"].split(":")[0]
+        upload_path = []
+        if module_name == "multimodal":
+            upload_path = [framework_name, module_kwargs["run_kwargs"]["dataset_name"], 
+                           module_kwargs["run_kwargs"]["constraint"], configs.get("mode", None)]
+        else:
+            upload_path = [framework_name, module_kwargs["run_kwargs"]["benchmark"], 
+                           module_kwargs["run_kwargs"]["task"], module_kwargs["run_kwargs"]["constraint"], 
+                           configs.get("mode", None), module_kwargs["run_kwargs"]["fold"]]
+            
+        upload_path_str = '.'.join(str(part) for part in upload_path)
+        benchmark_dir_s3 += f"/{upload_path_str}" 
         benchmark.upload_metrics(s3_bucket=configs["METRICS_BUCKET"], s3_dir=benchmark_dir_s3)
 
 
