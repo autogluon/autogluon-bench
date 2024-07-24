@@ -93,11 +93,7 @@ def _get_benchmark_name(configs: dict) -> str:
 
 
 def run_benchmark(
-    benchmark_name: str,
-    benchmark_dir: str,
-    configs: dict,
-    benchmark_dir_s3: str = None,
-    skip_setup: str = False,
+    benchmark_name: str, benchmark_dir: str, configs: dict, benchmark_dir_s3: str = None, skip_setup: str = False
 ):
     """Runs a benchmark based on the provided configuration options.
 
@@ -134,23 +130,23 @@ def run_benchmark(
         upload_path = []
         if module_name == "multimodal":
             upload_path = [
-                framework_name, 
-                module_kwargs["run_kwargs"]["dataset_name"], 
-                module_kwargs["run_kwargs"]["constraint"], 
-                configs.get("mode", None)
+                framework_name,
+                module_kwargs["run_kwargs"]["dataset_name"],
+                module_kwargs["run_kwargs"]["constraint"],
+                configs.get("mode", None),
             ]
         else:
             upload_path = [
-                framework_name, 
-                module_kwargs["run_kwargs"]["benchmark"], 
-                module_kwargs["run_kwargs"]["task"], 
-                module_kwargs["run_kwargs"]["constraint"], 
-                configs.get("mode", None), 
-                module_kwargs["run_kwargs"]["fold"]
+                framework_name,
+                module_kwargs["run_kwargs"]["benchmark"],
+                module_kwargs["run_kwargs"]["task"],
+                module_kwargs["run_kwargs"]["constraint"],
+                configs.get("mode", None),
+                module_kwargs["run_kwargs"]["fold"],
             ]
-            
-        upload_path_str = '.'.join(str(part) for part in upload_path)
-        benchmark_dir_s3 += f"/{upload_path_str}" 
+
+        upload_path_str = ".".join(str(part) for part in upload_path)
+        benchmark_dir_s3 += f"/{upload_path_str}"
         benchmark.upload_metrics(s3_bucket=configs["METRICS_BUCKET"], s3_dir=benchmark_dir_s3)
 
 
@@ -494,9 +490,7 @@ def run(
 
             response = invoke_lambda(configs=infra_configs, config_file=config_s3_path)
 
-            job_configs = {
-                "job_configs": response,
-            }
+            job_configs = {"job_configs": response}
             aws_configs = {**infra_configs, **job_configs}
             logger.info(f"Saving infra configs and submitted job configs under {benchmark_dir}.")
             aws_config_path = _dump_configs(
