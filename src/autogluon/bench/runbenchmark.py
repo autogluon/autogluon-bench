@@ -130,7 +130,7 @@ def run_benchmark(
             framework_name = module_kwargs["run_kwargs"]["framework"].split(":")[0]
         else:
             framework_name = module_kwargs["run_kwargs"]["framework"]
-            
+
         upload_path = []
         if module_name == "multimodal":
             upload_path = [
