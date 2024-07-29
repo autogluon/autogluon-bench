@@ -126,23 +126,34 @@ def run_benchmark(
     _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
     if configs.get("METRICS_BUCKET", None):
-        framework_name = module_kwargs["run_kwargs"]["framework"].split(":")[0]
+        if ":" in module_kwargs["run_kwargs"]["framework"]:
+            framework_name = module_kwargs["run_kwargs"]["framework"].split(":")[0]
+        else:
+            framework_name = module_kwargs["run_kwargs"]["framework"]
+            
         upload_path = []
         if module_name == "multimodal":
             upload_path = [
                 framework_name,
-                module_kwargs["run_kwargs"]["dataset_name"],
-                module_kwargs["run_kwargs"]["constraint"],
+                module_kwargs["run_kwargs"].get(["dataset_name"], None),
+                module_kwargs["run_kwargs"].get(["constraint"], None),
                 configs.get("mode", None),
+            ]
+        elif module_name == "tabular":
+            upload_path = [
+                framework_name,
+                module_kwargs["run_kwargs"].get(["benchmark"], None),
+                module_kwargs["run_kwargs"].get(["task"], None),
+                module_kwargs["run_kwargs"].get(["constraint"], None),
+                configs.get("mode", None),
+                module_kwargs["run_kwargs"].get(["fold"], None),
             ]
         else:
             upload_path = [
                 framework_name,
-                module_kwargs["run_kwargs"]["benchmark"],
-                module_kwargs["run_kwargs"]["task"],
-                module_kwargs["run_kwargs"]["constraint"],
+                module_kwargs["run_kwargs"].get(["dataset_name"], None),
+                module_kwargs["run_kwargs"].get(["constraint"], None),
                 configs.get("mode", None),
-                module_kwargs["run_kwargs"]["fold"],
             ]
 
         upload_path_str = ".".join(str(part) for part in upload_path)
