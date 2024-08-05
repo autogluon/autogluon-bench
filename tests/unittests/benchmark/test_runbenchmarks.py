@@ -354,10 +354,9 @@ def test_run_benchmark(mocker):
     configs = {
         "module": "tabular",
         "METRICS_BUCKET": "test_bucket",
-        "framework": "AutoGluon:stable",
     }
 
-    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
+    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {"framework": "AutoGluon:stable"}})
     setup_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.setup")
     run_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.run")
     upload_metrics_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.upload_metrics")
@@ -378,10 +377,9 @@ def test_run_benchmark_skip_setup(mocker):
     configs = {
         "module": "tabular",
         "METRICS_BUCKET": "test_bucket",
-        "framework": "AutoGluon:stable",
     }
 
-    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
+    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {"framework": "AutoGluon:stable"}})
     setup_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.setup")
     run_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.run")
     upload_metrics_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.upload_metrics")
@@ -498,10 +496,9 @@ def test_run_benchmark_timeseries(mocker):
     configs = {
         "module": "timeseries",
         "METRICS_BUCKET": "test_bucket",
-        "framework": "AutoGluon:stable",
     }
 
-    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
+    mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {"framework": "AutoGluon:stable"}})
     setup_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.setup")
     run_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.run")
     upload_metrics_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.upload_metrics")
