@@ -131,24 +131,24 @@ def run_benchmark(
         if module_name == "multimodal":
             upload_path = [
                 configs.get("mode", None),
-                module_kwargs["run_kwargs"].get(["dataset_name"], None),
-                module_kwargs["run_kwargs"].get(["constraint"], None),
+                module_kwargs["run_kwargs"].get("dataset_name", None),
+                module_kwargs["run_kwargs"].get("constraint", None),
                 framework_name,
             ]
         elif module_name == "tabular":
             upload_path = [
                 configs.get("mode", None),
-                module_kwargs["run_kwargs"].get(["benchmark"], None),
-                module_kwargs["run_kwargs"].get(["constraint"], None),
-                module_kwargs["run_kwargs"].get(["task"], None),
-                module_kwargs["run_kwargs"].get(["fold"], None),
+                module_kwargs["run_kwargs"].get("benchmark", None),
+                module_kwargs["run_kwargs"].get("constraint", None),
+                module_kwargs["run_kwargs"].get("task", None),
+                module_kwargs["run_kwargs"].get("fold", None),
                 framework_name,
             ]
         else:  # ToDo: Re-order fields for specific module name if required
             upload_path = [
                 configs.get("mode", None),
-                module_kwargs["run_kwargs"].get(["dataset_name"], None),
-                module_kwargs["run_kwargs"].get(["constraint"], None),
+                module_kwargs["run_kwargs"].get("dataset_name", None),
+                module_kwargs["run_kwargs"].get("constraint", None),
                 framework_name,
             ]
 
