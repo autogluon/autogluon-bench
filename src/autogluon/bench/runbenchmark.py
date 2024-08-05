@@ -126,34 +126,30 @@ def run_benchmark(
     _dump_configs(benchmark_dir=benchmark.metrics_dir, configs=configs, file_name="configs.yaml")
 
     if configs.get("METRICS_BUCKET", None):
-        if ":" in module_kwargs["run_kwargs"]["framework"]:
-            framework_name = module_kwargs["run_kwargs"]["framework"].split(":")[0]
-        else:
-            framework_name = module_kwargs["run_kwargs"]["framework"]
-
+        framework_name = module_kwargs["run_kwargs"]["framework"].split(":")[0]
         upload_path = []
         if module_name == "multimodal":
             upload_path = [
-                framework_name,
+                configs.get("mode", None),
                 module_kwargs["run_kwargs"].get(["dataset_name"], None),
                 module_kwargs["run_kwargs"].get(["constraint"], None),
-                configs.get("mode", None),
+                framework_name,
             ]
         elif module_name == "tabular":
             upload_path = [
-                framework_name,
-                module_kwargs["run_kwargs"].get(["benchmark"], None),
-                module_kwargs["run_kwargs"].get(["task"], None),
-                module_kwargs["run_kwargs"].get(["constraint"], None),
                 configs.get("mode", None),
+                module_kwargs["run_kwargs"].get(["benchmark"], None),
+                module_kwargs["run_kwargs"].get(["constraint"], None),
+                module_kwargs["run_kwargs"].get(["task"], None),
                 module_kwargs["run_kwargs"].get(["fold"], None),
-            ]
-        else:
-            upload_path = [
                 framework_name,
+            ]
+        else:  # ToDo: Re-order fields for specific module name if required
+            upload_path = [
+                configs.get("mode", None),
                 module_kwargs["run_kwargs"].get(["dataset_name"], None),
                 module_kwargs["run_kwargs"].get(["constraint"], None),
-                configs.get("mode", None),
+                framework_name,
             ]
 
         upload_path_str = ".".join(str(part) for part in upload_path)

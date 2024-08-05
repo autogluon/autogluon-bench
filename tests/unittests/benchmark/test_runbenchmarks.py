@@ -354,6 +354,7 @@ def test_run_benchmark(mocker):
     configs = {
         "module": "tabular",
         "METRICS_BUCKET": "test_bucket",
+        "framework": "AutoGluon:stable",
     }
 
     mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
@@ -377,6 +378,7 @@ def test_run_benchmark_skip_setup(mocker):
     configs = {
         "module": "tabular",
         "METRICS_BUCKET": "test_bucket",
+        "framework": "AutoGluon:stable",
     }
 
     mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
@@ -496,6 +498,7 @@ def test_run_benchmark_timeseries(mocker):
     configs = {
         "module": "timeseries",
         "METRICS_BUCKET": "test_bucket",
+        "framework": "AutoGluon:stable",
     }
 
     mocker.patch("autogluon.bench.runbenchmark.get_kwargs", return_value={"setup_kwargs": {}, "run_kwargs": {}})
