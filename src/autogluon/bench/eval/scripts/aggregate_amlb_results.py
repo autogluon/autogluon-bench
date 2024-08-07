@@ -58,7 +58,7 @@ def aggregate_amlb_results(
             and stores all artifacts in common directory at s3://<s3_bucket>/aggregated/<module>/<benchmark_name>/
 
             Example:
-                agbench aggregate-amlb-artifacts andrew-bench-dev tabular ag_bench_learning_curves_20240802T163522 --artifact learning_curves --constraint toy
+                agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact learning_curves --constraint toy
     """
 
     aggregate(
