@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import os
+import logging
 from typing import List, Optional, Set
 
 import pandas as pd
@@ -11,6 +12,8 @@ from tqdm import tqdm
 from autogluon.bench.eval.benchmark_context.output_context import OutputContext
 from autogluon.bench.eval.benchmark_context.utils import get_s3_paths
 from autogluon.common.loaders import load_pd
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_COLUMNS_TO_KEEP = [
     "id",
@@ -175,6 +178,13 @@ class OutputSuiteContext:
             allow_exception=allow_exception,
         )
 
+    def load_learning_curves(self, save_path: str) -> list[bool]:
+        return self._loop_func(
+            func=OutputContext.load_learning_curves,
+            input_list=self.output_contexts,
+            kwargs=dict(save_path=save_path),
+        )
+
     def filter_failures(self):
         amlb_info_list = self.get_amlb_info()
         output_contexts_valid = []
@@ -205,6 +215,14 @@ class OutputSuiteContext:
             results_list = self.load_results()
         results_df = pd.concat(results_list, ignore_index=True)
         return results_df
+
+    def aggregate_learning_curves(self, save_path: str) -> str:
+        outcomes = self.load_learning_curves(save_path=save_path)
+        failures = outcomes.count(False)
+        if failures > 0:
+            logger.log(f"WARNING: {failures} of {self.num_contexts} learning_curve artifacts failed to copy successfully from {self.path} to {save_path}")
+
+        return save_path
 
     def load_leaderboards(self) -> List[pd.DataFrame]:
         if self.num_contexts == 0:
