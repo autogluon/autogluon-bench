@@ -220,7 +220,9 @@ class OutputSuiteContext:
         outcomes = self.load_learning_curves(save_path=save_path)
         failures = outcomes.count(False)
         if failures > 0:
-            logger.log(f"WARNING: {failures} of {self.num_contexts} learning_curve artifacts failed to copy successfully from {self.path} to {save_path}")
+            logger.log(
+                f"WARNING: {failures} of {self.num_contexts} learning_curve artifacts failed to copy successfully from {self.path} to {save_path}"
+            )
 
         return save_path
 

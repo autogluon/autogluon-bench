@@ -22,7 +22,7 @@ def is_s3_url(path: str) -> bool:
     bool: whether the path is a s3 uri.
     """
     if (path[:2] == "s3") and ("://" in path[:6]):
-        return True 
+        return True
     return False
 
 
@@ -47,7 +47,7 @@ def get_bucket_key(s3_uri: str) -> tuple[str, str]:
 
     parsed_uri = urlparse(s3_uri)
     bucket_name = parsed_uri.netloc
-    object_key = parsed_uri.path.lstrip('/')
+    object_key = parsed_uri.path.lstrip("/")
 
     return bucket_name, object_key
 
@@ -101,15 +101,12 @@ def copy_s3_object(origin_path: str, destination_path: str) -> bool:
     destination_bucket, destination_key = get_bucket_key(destination_path)
 
     try:
-        s3 = boto3.client('s3')
+        s3 = boto3.client("s3")
         s3.copy_object(
-            Bucket=destination_bucket,
-            CopySource={'Bucket': origin_bucket, 'Key': origin_key},
-            Key=destination_key
+            Bucket=destination_bucket, CopySource={"Bucket": origin_bucket, "Key": origin_key}, Key=destination_key
         )
         return True
     except:
         pass
 
     return False
-

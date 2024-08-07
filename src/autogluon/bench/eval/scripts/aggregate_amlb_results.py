@@ -13,8 +13,7 @@ def aggregate_amlb_results(
         help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
     ),
     artifact: str = typer.Option(
-        "results",
-        help="What should be saved, one of ['results', 'learning_curves'], default='results'"
+        "results", help="What should be saved, one of ['results', 'learning_curves'], default='results'"
     ),
     constraint: str = typer.Option(
         None,
@@ -25,7 +24,7 @@ def aggregate_amlb_results(
 ):
     """
     Aggregates objects across an agbenchmark. Functionality depends on artifact specified:
-    
+
     Params:
     -------
     s3_bucket: str

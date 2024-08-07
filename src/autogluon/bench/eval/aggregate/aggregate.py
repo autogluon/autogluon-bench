@@ -7,23 +7,24 @@ logger = logging.getLogger(__name__)
 
 
 def aggregate(
-        s3_bucket: str, 
-        module: str, 
-        benchmark_name: str, 
-        artifact: str | None = "results", 
-        constraint: str | None = None,
-        include_infer_speed: bool = False ,
-        mode: str = "ray"
-    ) -> None:
+    s3_bucket: str,
+    module: str,
+    benchmark_name: str,
+    artifact: str | None = "results",
+    constraint: str | None = None,
+    include_infer_speed: bool = False,
+    mode: str = "ray",
+) -> None:
     """
     Aggregates objects across an agbenchmark. Functionality depends on artifact specified:
-    
+
     Params:
     -------
     s3_bucket: str
         Name of the relevant s3_bucket
     module: str
-        The name of the relevant autogluon module: can be one of ['tabular', 'timeseries', 'multimodal']
+        The name of the relevant autogluon module:
+        can be one of ['tabular', 'timeseries', 'multimodal']
     benchmark_name: str
         The name of the relevant benchmark that was run
     artifact: str

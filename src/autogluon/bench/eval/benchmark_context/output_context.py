@@ -14,6 +14,7 @@ from autogluon.bench.eval.benchmark_context.utils import copy_s3_object, get_s3_
 
 logger = logging.getLogger(__name__)
 
+
 class OutputContext:
     def __init__(self, path):
         """
@@ -106,7 +107,7 @@ class OutputContext:
 
     def load_leaderboard(self) -> pd.DataFrame:
         return load_pd.load(self.path_leaderboard)
-    
+
     def load_learning_curves(self, save_path: str, suffix: str = "learning_curves.json") -> bool:
         path = self.path_learning_curves
         all_curves = get_s3_paths(path_prefix=path, suffix=suffix)
@@ -123,10 +124,12 @@ class OutputContext:
         return ok
 
     def get_dataset_fold(self, path_str: str) -> tuple[str, str]:
-        parts = path_str.rstrip('/').split('/')
-        
+        parts = path_str.rstrip("/").split("/")
+
         if len(parts) < 3:
-            raise ValueError(f"Improper folder dimensions at {path_str}. Expected following path structure: .../dataset/fold/learning_curves.json")
+            raise ValueError(
+                f"Improper folder dimensions at {path_str}. Expected following path structure: .../dataset/fold/learning_curves.json"
+            )
 
         # path pattern: .../dataset/fold/learning_curves.json
         dataset, fold, _ = parts[-3:]
