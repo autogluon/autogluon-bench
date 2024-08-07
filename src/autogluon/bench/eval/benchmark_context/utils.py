@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import boto3
-
 from urllib.parse import urlparse
+
+import boto3
 
 from autogluon.common.loaders import load_s3
 from autogluon.common.utils import s3_utils

@@ -1,16 +1,15 @@
+import logging
 import zipfile
 from io import BytesIO, TextIOWrapper
 from typing import Optional, Set, Union
 
 import boto3
-import logging
 import numpy as np
 import pandas as pd
 
+from autogluon.bench.eval.benchmark_context.utils import copy_s3_object, get_s3_paths
 from autogluon.common.loaders import load_pd, load_pkl
 from autogluon.common.utils.s3_utils import s3_path_to_bucket_prefix
-
-from autogluon.bench.eval.benchmark_context.utils import copy_s3_object, get_s3_paths
 
 logger = logging.getLogger(__name__)
 
