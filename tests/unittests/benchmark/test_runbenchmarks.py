@@ -303,7 +303,7 @@ def test_run_benchmark(mocker):
 
     setup_mock.assert_called_once_with()
     run_mock.assert_called_once_with(framework="AutoGluon:stable")
-    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir")
+    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/None.None.None.None.None.AutoGluon")
 
 
 def test_run_benchmark_skip_setup(mocker):
@@ -330,7 +330,7 @@ def test_run_benchmark_skip_setup(mocker):
 
     setup_mock.assert_not_called()
     run_mock.assert_called_once_with(framework="AutoGluon:stable")
-    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir")
+    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/None.None.None.None.None.AutoGluon")
 
 
 def test_get_job_status_with_config_file(mocker, tmp_path):
@@ -440,4 +440,4 @@ def test_run_benchmark_timeseries(mocker):
 
     setup_mock.assert_called_once_with()
     run_mock.assert_called_once_with(framework="AutoGluon:stable")
-    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir")
+    upload_metrics_mock.assert_called_once_with(s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/None.None.None.AutoGluon")
