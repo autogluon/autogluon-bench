@@ -286,11 +286,20 @@ def test_run_local_mode(mocker, tmp_path):
 def test_run_benchmark(mocker):
     benchmark_name = "test_benchmark"
     benchmark_dir = "test_dir"
-    configs = {"module": "tabular", "METRICS_BUCKET": "test_bucket"}
+    configs = {"module": "tabular", "METRICS_BUCKET": "test_bucket", "mode": "local"}
 
     mocker.patch(
         "autogluon.bench.runbenchmark.get_kwargs",
-        return_value={"setup_kwargs": {}, "run_kwargs": {"framework": "AutoGluon:stable"}},
+        return_value={
+            "setup_kwargs": {},
+            "run_kwargs": {
+                "framework": "AutoGluon:stable",
+                "benchmark": "toy",
+                "constraint": "test_constraint",
+                "task": "dummy_task",
+                "fold": 0,
+            },
+        },
     )
     setup_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.setup")
     run_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.run")
@@ -302,20 +311,31 @@ def test_run_benchmark(mocker):
     )
 
     setup_mock.assert_called_once_with()
-    run_mock.assert_called_once_with(framework="AutoGluon:stable")
+    run_mock.assert_called_once_with(
+        framework="AutoGluon:stable", benchmark="toy", constraint="test_constraint", task="dummy_task", fold=0
+    )
     upload_metrics_mock.assert_called_once_with(
-        s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/None.None.None.None.None.AutoGluon"
+        s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/local.toy.test_constraint.dummy_task.0.AutoGluon"
     )
 
 
 def test_run_benchmark_skip_setup(mocker):
     benchmark_name = "test_benchmark"
     benchmark_dir = "test_dir"
-    configs = {"module": "tabular", "METRICS_BUCKET": "test_bucket"}
+    configs = {"module": "tabular", "METRICS_BUCKET": "test_bucket", "mode": "local"}
 
     mocker.patch(
         "autogluon.bench.runbenchmark.get_kwargs",
-        return_value={"setup_kwargs": {}, "run_kwargs": {"framework": "AutoGluon:stable"}},
+        return_value={
+            "setup_kwargs": {},
+            "run_kwargs": {
+                "framework": "AutoGluon:stable",
+                "benchmark": "toy",
+                "constraint": "test_constraint",
+                "task": "dummy_task",
+                "fold": 0,
+            },
+        },
     )
     setup_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.setup")
     run_mock = mocker.patch("autogluon.bench.runbenchmark.TabularBenchmark.run")
@@ -331,9 +351,11 @@ def test_run_benchmark_skip_setup(mocker):
     )
 
     setup_mock.assert_not_called()
-    run_mock.assert_called_once_with(framework="AutoGluon:stable")
+    run_mock.assert_called_once_with(
+        framework="AutoGluon:stable", benchmark="toy", constraint="test_constraint", task="dummy_task", fold=0
+    )
     upload_metrics_mock.assert_called_once_with(
-        s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/None.None.None.None.None.AutoGluon"
+        s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/local.toy.test_constraint.dummy_task.0.AutoGluon"
     )
 
 
@@ -427,11 +449,20 @@ def test_run_aws_timeseries_user_dir(mocker, tmp_path):
 def test_run_benchmark_timeseries(mocker):
     benchmark_name = "test_benchmark"
     benchmark_dir = "test_dir"
-    configs = {"module": "timeseries", "METRICS_BUCKET": "test_bucket"}
+    configs = {"module": "timeseries", "METRICS_BUCKET": "test_bucket", "mode": "local"}
 
     mocker.patch(
         "autogluon.bench.runbenchmark.get_kwargs",
-        return_value={"setup_kwargs": {}, "run_kwargs": {"framework": "AutoGluon:stable"}},
+        return_value={
+            "setup_kwargs": {},
+            "run_kwargs": {
+                "framework": "AutoGluon:stable",
+                "benchmark": "toy",
+                "constraint": "test_constraint",
+                "task": "dummy_task",
+                "fold": 0,
+            },
+        },
     )
     setup_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.setup")
     run_mock = mocker.patch("autogluon.bench.runbenchmark.TimeSeriesBenchmark.run")
@@ -443,7 +474,9 @@ def test_run_benchmark_timeseries(mocker):
     )
 
     setup_mock.assert_called_once_with()
-    run_mock.assert_called_once_with(framework="AutoGluon:stable")
+    run_mock.assert_called_once_with(
+        framework="AutoGluon:stable", benchmark="toy", constraint="test_constraint", task="dummy_task", fold=0
+    )
     upload_metrics_mock.assert_called_once_with(
-        s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/None.None.None.AutoGluon"
+        s3_bucket=configs["METRICS_BUCKET"], s3_dir="s3_dir/local.toy.test_constraint.dummy_task.0.AutoGluon"
     )

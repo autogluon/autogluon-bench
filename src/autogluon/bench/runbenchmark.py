@@ -135,7 +135,7 @@ def run_benchmark(
                 module_kwargs["run_kwargs"].get("constraint", None),
                 framework_name,
             ]
-        elif module_name == "tabular":
+        elif module_name == "tabular" or module_name == "timeseries":
             upload_path = [
                 configs.get("mode", None),
                 module_kwargs["run_kwargs"].get("benchmark", None),
