@@ -114,7 +114,7 @@ class OutputContext:
         ok = True
         for origin_path in all_curves:
             dataset, fold = self.get_dataset_fold(origin_path)
-            destination_path = f"{save_path}/{dataset}/{fold}.json"
+            destination_path = f"{save_path}/{dataset}/{fold}/learning_curves.json"
             res = copy_s3_object(origin_path=origin_path, destination_path=destination_path)
             ok &= res
             if not res:
