@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from autogluon.bench.eval.benchmark_context.output_suite_context import OutputSuiteContext
 from autogluon.common.savers import save_pd
@@ -10,7 +11,7 @@ def aggregate(
     s3_bucket: str,
     module: str,
     benchmark_name: str,
-    artifact: str | None = "results",
+    artifacts: List[str] | None = ["results"],
     constraint: str | None = None,
     include_infer_speed: bool = False,
     mode: str = "ray",
@@ -49,16 +50,14 @@ def aggregate(
         mode=mode,
     )
 
-    if artifact == "learning_curves":
-        save_path = f"s3://{s3_bucket}/aggregated/{result_path}/{artifact}"
-        artifact_path = output_suite_context.aggregate_learning_curves(save_path=save_path)
-    else:
-        aggregated_results_name = f"results_automlbenchmark_{constraint}_{benchmark_name}.csv"
-        results_df = output_suite_context.aggregate_results()
-
-        print(results_df)
-
-        artifact_path = f"s3://{s3_bucket}/aggregated/{result_path}/{aggregated_results_name}"
-        save_pd.save(path=artifact_path, df=results_df)
+    for artifact in artifacts:
+        if artifact == "results":
+            aggregated_results_name = f"results_automlbenchmark_{constraint}_{benchmark_name}.csv"
+            results_df = output_suite_context.aggregate_results()
+            artifact_path = f"s3://{s3_bucket}/aggregated/{result_path}/{aggregated_results_name}"
+            save_pd.save(path=artifact_path, df=results_df)
+        elif artifact == "learning_curves":
+            save_path = f"s3://{s3_bucket}/aggregated/{result_path}/{artifact}"
+            artifact_path = output_suite_context.aggregate_learning_curves(save_path=save_path)
 
     logger.info(f"Aggregated output saved to {artifact_path}!")

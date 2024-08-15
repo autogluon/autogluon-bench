@@ -1,3 +1,5 @@
+from typing import List
+
 import typer
 
 from autogluon.bench.eval.aggregate.aggregate import aggregate
@@ -12,8 +14,8 @@ def aggregate_amlb_results(
     benchmark_name: str = typer.Argument(
         help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
     ),
-    artifact: str = typer.Option(
-        "results", help="What should be saved, one of ['results', 'learning_curves'], default='results'"
+    artifact: List[str] = typer.Option(
+        ["results"], help="What should be saved, can be any of ['results', 'learning_curves'], default='results'"
     ),
     constraint: str = typer.Option(
         None,
@@ -33,8 +35,8 @@ def aggregate_amlb_results(
         The name of the relevant autogluon module: can be one of ['tabular', 'timeseries', 'multimodal']
     benchmark_name: str
         The name of the relevant benchmark that was run
-    artifact: str
-        The desired artifact to be aggregatedL can be one of ['results', 'learning_curves']
+    artifact: List[str]
+        The desired artifact(s) to be aggregated can be one of ['results', 'learning_curves']
     constraint: str
         Name of constraint used in benchmark
     include_infer_speed: bool
@@ -58,13 +60,16 @@ def aggregate_amlb_results(
 
             Example:
                 agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact learning_curves --constraint toy
+
+                # to generate both
+                agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact results learning_curves --constraint toy
     """
 
     aggregate(
         s3_bucket=s3_bucket,
         module=module,
         benchmark_name=benchmark_name,
-        artifact=artifact,
+        artifacts=artifact,
         constraint=constraint,
         include_infer_speed=include_infer_speed,
         mode=mode,

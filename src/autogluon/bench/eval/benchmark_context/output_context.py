@@ -108,19 +108,32 @@ class OutputContext:
         return load_pd.load(self.path_leaderboard)
 
     def load_learning_curves(self, save_path: str, suffix: str = "learning_curves.json") -> bool:
+        """
+        Params:
+        -------
+        save_path: str
+            the path to save all learning curve artifacts
+        suffix: str
+            the suffix matching all learning curves files
+
+        Returns:
+        --------
+        Whether all learning curve artifacts located at self.path_learning_curves
+        were successfully aggregated and copied to the save_path directory.
+        """
         path = self.path_learning_curves
         all_curves = get_s3_paths(path_prefix=path, suffix=suffix)
 
-        ok = True
+        all_copied_successfully = True
         for origin_path in all_curves:
             dataset, fold = self.get_dataset_fold(origin_path)
             destination_path = f"{save_path}/{dataset}/{fold}/learning_curves.json"
-            res = copy_s3_object(origin_path=origin_path, destination_path=destination_path)
-            ok &= res
-            if not res:
+            current_copied_successfully = copy_s3_object(origin_path=origin_path, destination_path=destination_path)
+            all_copied_successfully &= current_copied_successfully
+            if not current_copied_successfully:
                 logger.log(f"Learning Curve artifact at {origin_path} could not be copied to {destination_path}")
 
-        return ok
+        return all_copied_successfully
 
     def get_dataset_fold(self, path_str: str) -> tuple[str, str]:
         parts = path_str.rstrip("/").split("/")
