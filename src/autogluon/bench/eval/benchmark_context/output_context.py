@@ -7,7 +7,7 @@ import boto3
 import numpy as np
 import pandas as pd
 
-from autogluon.bench.eval.benchmark_context.utils import copy_s3_object, get_s3_paths
+from autogluon.bench.eval.benchmark_context.utils import get_s3_paths
 from autogluon.common.loaders import load_pd, load_pkl
 from autogluon.common.utils.s3_utils import s3_path_to_bucket_prefix
 
@@ -107,7 +107,7 @@ class OutputContext:
     def load_leaderboard(self) -> pd.DataFrame:
         return load_pd.load(self.path_leaderboard)
 
-    def load_learning_curves(self, save_path: str, suffix: str = "learning_curves.json") -> bool:
+    def load_learning_curves(self, save_path: str, suffix: str = "learning_curves.json") -> None:
         """
         Params:
         -------
@@ -115,25 +115,22 @@ class OutputContext:
             the path to save all learning curve artifacts
         suffix: str
             the suffix matching all learning curves files
-
-        Returns:
-        --------
-        Whether all learning curve artifacts located at self.path_learning_curves
-        were successfully aggregated and copied to the save_path directory.
         """
+        try:
+            # copy_s3_file method not yet in stable release of autogluon
+            from autogluon.common.utils.s3_utils import copy_s3_file
+        except:
+            raise ImportError(
+                f"Install AutoGluon from source to get access to copy_s3_file from autogluon.common.utils.s3_utils"
+            )
+
         path = self.path_learning_curves
         all_curves = get_s3_paths(path_prefix=path, suffix=suffix)
 
-        all_copied_successfully = True
         for origin_path in all_curves:
             dataset, fold = self.get_dataset_fold(origin_path)
             destination_path = f"{save_path}/{dataset}/{fold}/learning_curves.json"
-            current_copied_successfully = copy_s3_object(origin_path=origin_path, destination_path=destination_path)
-            all_copied_successfully &= current_copied_successfully
-            if not current_copied_successfully:
-                logger.log(f"Learning Curve artifact at {origin_path} could not be copied to {destination_path}")
-
-        return all_copied_successfully
+            copy_s3_file(origin_path=origin_path, destination_path=destination_path)
 
     def get_dataset_fold(self, path_str: str) -> tuple[str, str]:
         parts = path_str.rstrip("/").split("/")

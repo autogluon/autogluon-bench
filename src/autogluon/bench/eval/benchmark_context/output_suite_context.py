@@ -216,15 +216,8 @@ class OutputSuiteContext:
         results_df = pd.concat(results_list, ignore_index=True)
         return results_df
 
-    def aggregate_learning_curves(self, save_path: str) -> str:
-        outcomes = self.load_learning_curves(save_path=save_path)
-        failures = outcomes.count(False)
-        if failures > 0:
-            logger.log(
-                f"WARNING: {failures} of {self.num_contexts} learning_curve artifacts failed to copy successfully from {self.path} to {save_path}"
-            )
-
-        return save_path
+    def aggregate_learning_curves(self, save_path: str):
+        self.load_learning_curves(save_path=save_path)
 
     def load_leaderboards(self) -> List[pd.DataFrame]:
         if self.num_contexts == 0:
