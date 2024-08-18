@@ -178,7 +178,7 @@ class OutputSuiteContext:
             allow_exception=allow_exception,
         )
 
-    def load_learning_curves(self, save_path: str) -> list[bool]:
+    def load_learning_curves(self, save_path: str) -> list[None]:
         return self._loop_func(
             func=OutputContext.load_learning_curves,
             input_list=self.output_contexts,
@@ -216,7 +216,7 @@ class OutputSuiteContext:
         results_df = pd.concat(results_list, ignore_index=True)
         return results_df
 
-    def aggregate_learning_curves(self, save_path: str):
+    def aggregate_learning_curves(self, save_path: str) -> None:
         self.load_learning_curves(save_path=save_path)
 
     def load_leaderboards(self) -> List[pd.DataFrame]:
