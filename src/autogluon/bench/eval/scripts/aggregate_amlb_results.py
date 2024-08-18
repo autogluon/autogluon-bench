@@ -62,7 +62,7 @@ def aggregate_amlb_results(
                 agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact learning_curves --constraint toy
 
                 # to generate both
-                agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact results learning_curves --constraint toy
+                agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact results --artifact learning_curves --constraint toy
     """
 
     aggregate(
