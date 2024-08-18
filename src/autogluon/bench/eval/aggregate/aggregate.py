@@ -55,12 +55,12 @@ def aggregate(
         results_df = output_suite_context.aggregate_results()
         artifact_path = f"s3://{s3_bucket}/aggregated/{result_path}/{aggregated_results_name}"
         save_pd.save(path=artifact_path, df=results_df)
-        logger.info(f"Aggregated output saved to {artifact_path}!")
+        logger.info(f"Aggregated results output saved to {artifact_path}!")
 
     if "learning_curves" in artifacts:
         artifact_path = f"s3://{s3_bucket}/aggregated/{result_path}/learning_curves"
         output_suite_context.aggregate_learning_curves(save_path=artifact_path)
-        logger.info(f"Aggregated output saved to {artifact_path}!")
+        logger.info(f"Aggregated learning curves output saved to {artifact_path}!")
 
     valid_artifacts = ["results", "learning_curves"]
     unknown_artifacts = [artifact for artifact in artifacts if artifact not in valid_artifacts]
