@@ -1,6 +1,8 @@
+from typing import List
+
 import typer
 
-from autogluon.bench.eval.aggregate.results import aggregate_results
+from autogluon.bench.eval.aggregate.aggregate import aggregate
 
 app = typer.Typer()
 
@@ -12,6 +14,9 @@ def aggregate_amlb_results(
     benchmark_name: str = typer.Argument(
         help="Folder name of benchmark run in which all objects with path 'scores/results.csv' get aggregated."
     ),
+    artifact: List[str] = typer.Option(
+        ["results"], help="What should be saved, can be any of ['results', 'learning_curves'], default='results'"
+    ),
     constraint: str = typer.Option(
         None,
         help="Name of constraint used in benchmark, refer to https://github.com/openml/automlbenchmark/blob/master/resources/constraints.yaml. Not applicable when `module==multimodal`",
@@ -20,17 +25,51 @@ def aggregate_amlb_results(
     mode: str = typer.Option("ray", help='Aggregation mode: "seq" or "ray".'),
 ):
     """
-    Finds "scores/results.csv" under s3://<s3_bucket>/<module>/<benchmark_name> recursively with the constraint if provided,
-    and append all results into one file at s3://<s3_bucket>/aggregated/<module>/<benchmark_name>/results_automlbenchmark_<constraint>_<benchmark_name>.csv
+    Aggregates objects across an agbenchmark. Functionality depends on artifact specified:
 
-    Example:
-        agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_tabular_20230629T140546 --constraint test
+    Params:
+    -------
+    s3_bucket: str
+        Name of the relevant s3_bucket
+    module: str
+        The name of the relevant autogluon module: can be one of ['tabular', 'timeseries', 'multimodal']
+    benchmark_name: str
+        The name of the relevant benchmark that was run
+    artifact: List[str]
+        The desired artifact(s) to be aggregated can be one of ['results', 'learning_curves']
+    constraint: str
+        Name of constraint used in benchmark
+    include_infer_speed: bool
+        Include inference speed in aggregation.
+    mode: str
+        Can be one of ['seq', 'ray'].
+        If seq, runs sequentially.
+        If ray, utilizes parallelization.
+
+    Artifact Outcomes: ['results', 'learning_curves']
+        results:
+            Finds "scores/results.csv" under s3://<s3_bucket>/<module>/<benchmark_name> recursively with the constraint if provided,
+            and append all results into one file at s3://<s3_bucket>/aggregated/<module>/<benchmark_name>/results_automlbenchmark_<constraint>_<benchmark_name>.csv
+
+            Example:
+                agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_tabular_20230629T140546 --constraint test
+
+        learning_curves:
+            Finds specified learning_curves.json files under s3://<s3_bucket>/<module>/<benchmark_name> recursively with the constraint if provided,
+            and stores all artifacts in common directory at s3://<s3_bucket>/aggregated/<module>/<benchmark_name>/
+
+            Example:
+                agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact learning_curves --constraint toy
+
+                # to generate both
+                agbench aggregate-amlb-results autogluon-benchmark-metrics tabular ag_bench_learning_curves_20240802T163522 --artifact results --artifact learning_curves --constraint toy
     """
 
-    aggregate_results(
+    aggregate(
         s3_bucket=s3_bucket,
-        s3_prefix=f"{module}/",
-        version_name=benchmark_name,
+        module=module,
+        benchmark_name=benchmark_name,
+        artifacts=artifact,
         constraint=constraint,
         include_infer_speed=include_infer_speed,
         mode=mode,
