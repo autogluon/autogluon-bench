@@ -46,13 +46,14 @@ ENV VENV_PATH="$VENV_BASE_DIR/.venv"
 RUN python3 -m venv $VENV_PATH
 ENV PATH="$VENV_PATH/bin:$PATH"
 RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install uv
 
 # check if autogluon.bench version contains "dev" tag
 RUN if echo "$AG_BENCH_VERSION" | grep -q "dev"; then \ 
         # install from local source
-        python3 -m pip install .; \
+        python3 -m uv pip install .; \
     else \
-        python3 -m pip install autogluon.bench==$AG_BENCH_VERSION; \
+        python3 -m uv pip install autogluon.bench==$AG_BENCH_VERSION; \
     fi
 
 RUN chmod +x entrypoint.sh \
