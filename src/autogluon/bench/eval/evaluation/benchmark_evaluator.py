@@ -163,9 +163,10 @@ class BenchmarkEvaluator:
         else:
             assert isinstance(paths, pd.DataFrame)
             results_raw = paths
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore")
-            results_raw.loc[results_raw[TIME_INFER_S] == 0, TIME_INFER_S] = 0.001
+        if TIME_INFER_S in results_raw:
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore")
+                results_raw.loc[results_raw[TIME_INFER_S] == 0, TIME_INFER_S] = 0.001
         if clean_data:
             # FIXME: This doesn't work on new tasks due to not comprehensive metadata
             results_raw = self._clean_data(results_raw=results_raw)
