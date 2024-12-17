@@ -240,6 +240,23 @@ class OutputSuiteContext:
             func=OutputContext.get_model_failures, input_list=self.output_contexts, allow_exception=True
         )
 
+    def load_info_file_sizes(self, sum: bool = False) -> List[pd.DataFrame]:
+        return self._loop_func(
+            func=OutputContext.get_info_file_sizes, input_list=self.output_contexts, kwargs={"sum": sum}, allow_exception=True
+        )
+
+    def aggregate_info_file_sizes(self, sum: bool = False) -> pd.DataFrame:
+        info_file_sizes_lst = self.load_info_file_sizes(sum=sum)
+        none_count = 0
+        for e in info_file_sizes_lst:
+            if e is None:
+                none_count += 1
+        if none_count == len(info_file_sizes_lst):
+            return pd.DataFrame()
+        else:
+            info_file_sizes_df = pd.concat(info_file_sizes_lst, ignore_index=True)
+            return info_file_sizes_df
+
     def aggregate_model_failures(self) -> pd.DataFrame:
         model_failures_list = self.load_model_failures()
         none_count = 0

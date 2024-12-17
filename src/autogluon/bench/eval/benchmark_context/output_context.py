@@ -96,6 +96,9 @@ class OutputContext:
                 return None
         return results
 
+    def load_info_file_sizes(self) -> pd.DataFrame:
+        return load_pd.load(self.path_info_file_sizes)
+
     def load_leaderboard(self) -> pd.DataFrame:
         return load_pd.load(self.path_leaderboard)
 
@@ -239,6 +242,29 @@ class OutputContext:
             model_failures_df["id"] = results["id"][0]
             model_failures_full_df = pd.merge(model_failures_df, results, on="id", how="left")
             return model_failures_full_df
+
+    def get_info_file_sizes(self, sum: bool = False) -> Union[pd.DataFrame, None]:
+        """
+        Load and return the model info file sizes CSV as a pandas DataFrame if it exists, else return None.
+
+        Will merge with the results to get additional information, akin to the leaderboard output.
+        """
+        results = self.load_results()
+        results = results[["id", "task", "framework", "constraint", "fold", "type", "result", "metric"]]
+        try:
+            info_file_sizes = self.load_info_file_sizes()
+        except Exception as e:
+            print(f"FAILURE:\n" f"\t{e.__class__.__name__}: {e}")
+            return None
+        else:
+            if sum:
+                total_size = info_file_sizes["size"].sum()
+                results["size"] = total_size
+                return results
+            else:
+                info_file_sizes["id"] = results["id"][0]
+                info_file_sizes_full_df = pd.merge(info_file_sizes, results, on="id", how="left")
+                return info_file_sizes_full_df
 
     def get_logs(self) -> str:
         s3_bucket, s3_prefix = s3_path_to_bucket_prefix(s3_path=self.path_logs)
