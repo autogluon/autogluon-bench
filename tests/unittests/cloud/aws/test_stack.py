@@ -19,11 +19,14 @@ def test_static_resource_stack_without_vpc():
     for key, value in context_values.items():
         app.node.set_context(key, value)
 
-    with patch.object(
-        StaticResourceStack,
-        "create_s3_resources",
-        return_value=s3.Bucket(Stack(app, "TestBucketStack"), "DummyBucket"),
-    ) as mock_s3_resources, patch.dict(os.environ, {"CDK_DEPLOY_REGION": "dummy_region"}):
+    with (
+        patch.object(
+            StaticResourceStack,
+            "create_s3_resources",
+            return_value=s3.Bucket(Stack(app, "TestBucketStack"), "DummyBucket"),
+        ) as mock_s3_resources,
+        patch.dict(os.environ, {"CDK_DEPLOY_REGION": "dummy_region"}),
+    ):
         stack = StaticResourceStack(app, "TestStaticResourceStack", env=env)
 
         mock_s3_resources.assert_called_once()
@@ -37,11 +40,14 @@ def test_static_resource_stack_with_vpc():
         app.node.set_context(key, value)
     app.node.set_context("VPC_NAME", "ProvidedVpcName")
 
-    with patch.object(
-        StaticResourceStack,
-        "create_s3_resources",
-        return_value=s3.Bucket(Stack(app, "TestBucketStack"), "DummyBucket"),
-    ) as mock_s3_resources, patch.dict(os.environ, {"CDK_DEPLOY_REGION": "dummy_region"}):
+    with (
+        patch.object(
+            StaticResourceStack,
+            "create_s3_resources",
+            return_value=s3.Bucket(Stack(app, "TestBucketStack"), "DummyBucket"),
+        ) as mock_s3_resources,
+        patch.dict(os.environ, {"CDK_DEPLOY_REGION": "dummy_region"}),
+    ):
         stack = StaticResourceStack(app, "TestStaticResourceStack", env=env)
 
         mock_s3_resources.assert_called_once()
