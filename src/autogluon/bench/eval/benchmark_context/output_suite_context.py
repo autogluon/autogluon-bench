@@ -242,7 +242,10 @@ class OutputSuiteContext:
 
     def load_info_file_sizes(self, sum: bool = False) -> List[pd.DataFrame]:
         return self._loop_func(
-            func=OutputContext.get_info_file_sizes, input_list=self.output_contexts, kwargs={"sum": sum}, allow_exception=True
+            func=OutputContext.get_info_file_sizes,
+            input_list=self.output_contexts,
+            kwargs={"sum": sum},
+            allow_exception=True,
         )
 
     def aggregate_info_file_sizes(self, sum: bool = False) -> pd.DataFrame:
