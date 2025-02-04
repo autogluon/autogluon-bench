@@ -561,7 +561,7 @@ def run(
                 configs["amlb_user_dir"] = download_dir_from_s3(s3_path=amlb_user_dir, local_path=tmpdir.name)
         elif module in INDEPENDENT_MODULES:
             resource_constraint = get_resource_constraint(configs=configs)
-            configs["time_limit"] = resource_constraint["TIME_LIMIT"]
+            configs["time_limit"] = resource_constraint.get("TIME_LIMIT")
 
         logger.info(f"Running benchmark {benchmark_name} at {benchmark_dir}.")
 
