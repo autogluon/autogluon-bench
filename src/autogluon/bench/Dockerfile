@@ -4,23 +4,26 @@ FROM $AG_BENCH_BASE_IMAGE
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNING_IN_DOCKER=true
 
-# Install essential packages and Python 3.9
+# Update package list and install necessary dependencies
 RUN apt-get update && \
-    apt-get install -y software-properties-common build-essential && \
+    apt-get install -y --no-install-recommends \
+        software-properties-common build-essential curl unzip git pciutils && \
     add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt-get install -y python3.9 python3.9-dev python3.9-distutils python3.9-venv && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
+    apt-get install -y --no-install-recommends \
+        python3.11 python3.11-dev python3.11-distutils python3.11-venv && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
+    update-alternatives --set python3 /usr/bin/python3.11 && \
+    rm -rf /var/lib/apt/lists/* 
 
-# Install utilities and AWS CLI
-RUN apt-get install -y python3-pip unzip curl git pciutils && \
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+# Install pip
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 && \
+    rm -rf /root/.cache
+
+# Install AWS CLI
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip -q awscliv2.zip && \
     ./aws/install && \
-    rm awscliv2.zip && \
-    python3 -m pip install --upgrade pip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /usr/local/aws
+    rm -rf awscliv2.zip aws /var/lib/apt/lists/*
 
 # Application-specific steps
 ARG AG_BENCH_VERSION
