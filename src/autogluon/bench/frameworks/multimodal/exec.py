@@ -214,6 +214,7 @@ def run(
         "presets": params.pop("presets", None),
         "path": os.path.join(benchmark_dir, "models"),
     }
+    predictor_args.update(params.pop("predictor_args", {}))
 
     if val_data is not None:
         predictor_args["eval_metric"] = val_data.metric
