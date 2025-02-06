@@ -42,6 +42,7 @@ dependencies = [
     "fsspec >=2023.5.0,<2025.3",
     "matplotlib >=3.4,<3.11",
     "pandas >=2.0.0,<3",
+    "pyarrow >=19.0.0,<20",
     "pyyaml >=5.4,<7",
     "ray[default] >=2.6.3,<3",
     "s3fs >=2023.5.0,<2025.3",
