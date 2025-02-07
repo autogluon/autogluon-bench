@@ -6,16 +6,14 @@ import os
 
 import aws_cdk as core
 import boto3
-from aws_cdk import aws_batch_alpha as batch
+from aws_cdk import aws_batch as batch
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecr_assets as ecr_assets
-from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
 from autogluon.bench.cloud.aws.batch_stack.constructs.batch_lambda_function import BatchLambdaFunction
-from autogluon.bench.cloud.aws.batch_stack.constructs.instance_profile import InstanceProfile
 
 """
 Sample CDK code for creating the required infrastructure for running a AWS Batch job.
@@ -140,17 +138,13 @@ class BatchJobStack(core.Stack):
         block_device_volume = self.node.try_get_context("BLOCK_DEVICE_VOLUME")
         lambda_function_name = self.node.try_get_context("LAMBDA_FUNCTION_NAME") + "-" + prefix
 
-        instances = []
-        for instance in instance_types:
-            instances.append(ec2.InstanceType(instance))
-
         vpc = static_stack.vpc
 
         if vpc is None:
             vpc = ec2.Vpc(
                 self,
                 f"{prefix}-vpc",
-                max_azs=2,  # You can increase this number for high availability
+                max_azs=2,  # This number can be increased for high availability
                 nat_gateways=1,
                 subnet_configuration=[
                     ec2.SubnetConfiguration(
@@ -181,9 +175,10 @@ class BatchJobStack(core.Stack):
         # TODO: use https://github.com/cdklabs/cdk-docker-image-deployment
 
         logger.info(f"Building Dockerfile at {docker_path} with context at {project_root}")
+        image_name = f"{prefix}-ecr-docker-image-asset"
         docker_image_asset = ecr_assets.DockerImageAsset(
             self,
-            f"{prefix}-ecr-docker-image-asset",
+            image_name,
             directory=project_root,
             file=docker_path,
             follow_symlinks=core.SymlinkFollowMode.ALWAYS,
@@ -200,41 +195,45 @@ class BatchJobStack(core.Stack):
             },
         )
 
-        docker_container_image = ecs.ContainerImage.from_docker_image_asset(docker_image_asset)
-
-        container = batch.JobDefinitionContainer(
-            image=docker_container_image,
-            gpu_count=container_gpu,
-            vcpus=container_vcpu,
-            memory_limit_mib=container_memory,
-            # Bug that this parameter is not rending in the CF stack under cdk.out
-            # https://github.com/aws/aws-cdk/issues/13023
-            linux_params=ecs.LinuxParameters(self, f"{prefix}-linux_params", shared_memory_size=container_memory),
-        )
-
-        job_definition = batch.JobDefinition(
-            self,
-            "job-definition",
-            container=container,
-            retry_attempts=3,
-            timeout=core.Duration.minutes(time_limit),
-        )
-
-        # LaunchTemplate.launch_template_name returns Null https://github.com/aws/aws-cdk/issues/19405
-        # so we are defining the name here instead of tagging
-        batch_launch_template_name = f"{prefix}-launch-template"
-        launch_template = ec2.LaunchTemplate(
-            self,
-            f"{prefix}-launch-template",
-            launch_template_name=batch_launch_template_name,
-            block_devices=[
-                ec2.BlockDevice(
-                    device_name="/dev/xvda",
-                    volume=ec2.BlockDeviceVolume.ebs(block_device_volume),
-                )
+        container_properties = batch.CfnJobDefinition.ContainerPropertiesProperty(
+            image=docker_image_asset.image_uri,
+            resource_requirements=[
+                batch.CfnJobDefinition.ResourceRequirementProperty(type="GPU", value=str(container_gpu)),
+                batch.CfnJobDefinition.ResourceRequirementProperty(type="VCPU", value=str(container_vcpu)),
+                batch.CfnJobDefinition.ResourceRequirementProperty(type="MEMORY", value=str(container_memory)),
             ],
-            http_tokens=ec2.LaunchTemplateHttpTokens.REQUIRED,
-            require_imdsv2=True,
+            linux_parameters=batch.CfnJobDefinition.LinuxParametersProperty(shared_memory_size=container_memory),
+        )
+
+        job_definition_name = f"{prefix}-job-definition"
+        job_definition = batch.CfnJobDefinition(
+            self,
+            job_definition_name,
+            type="container",
+            container_properties=container_properties,
+            job_definition_name=job_definition_name,
+            retry_strategy=batch.CfnJobDefinition.RetryStrategyProperty(attempts=3),
+            timeout=batch.CfnJobDefinition.TimeoutProperty(attempt_duration_seconds=time_limit),
+        )
+
+        batch_launch_template_name = f"{prefix}-launch-template"
+        launch_template = ec2.CfnLaunchTemplate(
+            self,
+            batch_launch_template_name,
+            launch_template_name=batch_launch_template_name,
+            launch_template_data={
+                "blockDeviceMappings": [
+                    {
+                        "deviceName": "/dev/xvda",
+                        "ebs": {
+                            "volumeSize": block_device_volume,  # Ensure block_device_volume is defined
+                            "volumeType": "gp3",
+                            "deleteOnTermination": True,
+                        },
+                    }
+                ],
+                "metadataOptions": {"httpTokens": "required", "httpEndpoint": "enabled"},
+            },
         )
 
         cloudwatch_policy = iam.Policy(
@@ -249,6 +248,14 @@ class BatchJobStack(core.Stack):
                 )
             ],
         )
+
+        batch_service_role = iam.Role(
+            self,
+            f"{prefix}-batch-service-role",
+            assumed_by=iam.ServicePrincipal("batch.amazonaws.com"),
+            managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSBatchServiceRole")],
+        )
+
         batch_instance_role = iam.Role(
             self,
             f"{prefix}-instance-role",
@@ -269,34 +276,40 @@ class BatchJobStack(core.Stack):
             data_bucket.grant_read(batch_instance_role)
         metrics_bucket.grant_read_write(batch_instance_role)
 
-        batch_instance_profile = InstanceProfile(self, f"{prefix}-instance-profile", prefix=prefix)
-        batch_instance_profile.attach_role(batch_instance_role)
+        batch_instance_profile = iam.CfnInstanceProfile(
+            self, f"{prefix}-instance-profile", roles=[batch_instance_role.role_name]
+        )
 
-        compute_environment = batch.ComputeEnvironment(
+        compute_environment = batch.CfnComputeEnvironment(
             self,
             f"{prefix}-compute-environment",
-            compute_resources=batch.ComputeResources(
-                allocation_strategy=batch.AllocationStrategy.BEST_FIT_PROGRESSIVE,
-                vpc=vpc,
-                vpc_subnets=ec2.SubnetSelection(subnets=vpc.private_subnets),
-                # vpc_subnets=ec2.SubnetSelection(subnets=vpc.public_subnets),  # use public subnet for ssh
+            type="MANAGED",
+            service_role=batch_service_role.role_arn,
+            compute_resources=batch.CfnComputeEnvironment.ComputeResourcesProperty(
+                type="EC2",
                 maxv_cpus=compute_env_maxv_cpus,
-                instance_role=batch_instance_profile.profile_arn,
-                instance_types=instances,
-                security_groups=[sg],
-                type=batch.ComputeResourceType.ON_DEMAND,
+                minv_cpus=0,
+                subnets=[subnet.subnet_id for subnet in vpc.private_subnets],
+                # subnets=[subnet.subnet_id for subnet in vpc.public_subnets],  # use public subnet for ssh
                 # ec2_key_pair=f"{prefix}-perm-key", # set this if you need ssh into instance
-                launch_template=batch.LaunchTemplateSpecification(
-                    launch_template_name=batch_launch_template_name  # LaunchTemplate.launch_template_name returns None
+                allocation_strategy="BEST_FIT_PROGRESSIVE",
+                instance_role=batch_instance_profile.attr_arn,
+                instance_types=instance_types,
+                security_group_ids=[sg.security_group_id],
+                launch_template=batch.CfnComputeEnvironment.LaunchTemplateSpecificationProperty(
+                    launch_template_name=batch_launch_template_name,
                 ),
             ),
         )
 
-        job_queue = batch.JobQueue(
+        job_queue = batch.CfnJobQueue(
             self,
             f"{prefix}-job-queue",
             priority=1,
-            compute_environments=[batch.JobQueueComputeEnvironment(compute_environment=compute_environment, order=1)],
+            compute_environment_order=[
+                batch.CfnJobQueue.ComputeEnvironmentOrderProperty(compute_environment=compute_environment.ref, order=1)
+            ],
+            state="ENABLED",
         )
 
         lambda_function = BatchLambdaFunction(
@@ -307,8 +320,8 @@ class BatchJobStack(core.Stack):
             function_name=lambda_function_name,
             code_path=lambda_script_dir,
             environment={
-                "BATCH_JOB_QUEUE": job_queue.job_queue_name,
-                "BATCH_JOB_DEFINITION": job_definition.job_definition_name,
+                "BATCH_JOB_QUEUE": job_queue.ref,
+                "BATCH_JOB_DEFINITION": job_definition.ref,
                 "METRICS_BUCKET": metrics_bucket.bucket_name,
                 "STACK_NAME_PREFIX": prefix,
             },
@@ -319,10 +332,10 @@ class BatchJobStack(core.Stack):
         core.CfnOutput(
             self,
             "ComputeEnvironmentARN",
-            value=compute_environment.compute_environment_arn,
+            value=compute_environment.ref,
         )
-        core.CfnOutput(self, "JobQueueARN", value=job_queue.job_queue_arn)
-        core.CfnOutput(self, "JobDefinitionARN", value=job_definition.job_definition_arn)
+        core.CfnOutput(self, "JobQueueARN", value=job_queue.ref)
+        core.CfnOutput(self, "JobDefinitionARN", value=job_definition.ref)
         core.CfnOutput(
             self,
             "EcrRepositoryName",

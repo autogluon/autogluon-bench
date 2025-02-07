@@ -2,7 +2,7 @@
 
 import os
 
-import aws_cdk as core
+import aws_cdk as cdk
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as _lambda
 from constructs import Construct
@@ -35,7 +35,7 @@ class BatchLambdaFunction(Construct):
 
         self._lambda_function_role = iam.Role(
             self,
-            "lambda-function-role",
+            f"{prefix}-lambda-role",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
@@ -62,13 +62,13 @@ class BatchLambdaFunction(Construct):
 
         self._lambda_function = _lambda.Function(
             self,
-            id,
+            f"{prefix}-lambda",
             function_name=function_name,
             runtime=_lambda.Runtime.PYTHON_3_8,
             environment=environment,
             code=_lambda.Code.from_asset(
                 code_path,
-                bundling=core.BundlingOptions(
+                bundling=cdk.BundlingOptions(
                     image=_lambda.Runtime.PYTHON_3_8.bundling_image,
                     command=[
                         "bash",
@@ -78,6 +78,6 @@ class BatchLambdaFunction(Construct):
                 ),
             ),
             handler="lambda_function.handler",
-            timeout=core.Duration.seconds(timeout),
+            timeout=cdk.Duration.seconds(timeout),
             role=self._lambda_function_role,
         )
