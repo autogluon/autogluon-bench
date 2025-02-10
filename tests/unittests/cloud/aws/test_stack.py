@@ -4,13 +4,13 @@ from unittest.mock import patch
 import aws_cdk.aws_ec2 as ec2
 import aws_cdk.aws_s3 as s3
 from aws_cdk import App, Stack
-from aws_cdk.aws_batch_alpha import ComputeEnvironment, JobDefinition, JobQueue
+from aws_cdk.aws_batch import CfnComputeEnvironment, CfnJobDefinition, CfnJobQueue
+from aws_cdk.aws_ec2 import CfnLaunchTemplate
 from aws_cdk.aws_ecr_assets import DockerImageAsset
-from aws_cdk.aws_iam import Role
+from aws_cdk.aws_iam import CfnInstanceProfile, Role
 from conftest import context_values, env
 
 from autogluon.bench.cloud.aws.batch_stack.constructs.batch_lambda_function import BatchLambdaFunction
-from autogluon.bench.cloud.aws.batch_stack.constructs.instance_profile import InstanceProfile
 from autogluon.bench.cloud.aws.batch_stack.stack import BatchJobStack, StaticResourceStack
 
 
@@ -85,12 +85,12 @@ def test_batch_job_stack():
         constructs = [
             (f"{prefix}-security-group", ec2.SecurityGroup),
             (f"{prefix}-ecr-docker-image-asset", DockerImageAsset),
-            ("job-definition", JobDefinition),
-            (f"{prefix}-launch-template", ec2.LaunchTemplate),
+            (f"{prefix}-job-definition", CfnJobDefinition),
+            (f"{prefix}-launch-template", CfnLaunchTemplate),
             (f"{prefix}-instance-role", Role),
-            (f"{prefix}-instance-profile", InstanceProfile),
-            (f"{prefix}-compute-environment", ComputeEnvironment),
-            (f"{prefix}-job-queue", JobQueue),
+            (f"{prefix}-instance-profile", CfnInstanceProfile),
+            (f"{prefix}-compute-environment", CfnComputeEnvironment),
+            (f"{prefix}-job-queue", CfnJobQueue),
             (f"{lambda_function_name}-{prefix}", BatchLambdaFunction),
             ("vpc", ec2.Vpc),
         ]
