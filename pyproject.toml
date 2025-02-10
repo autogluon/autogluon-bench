@@ -35,17 +35,16 @@ classifiers = [
 ]
 dependencies = [
     "autogluon.common >=1, <2",
-    "aws-cdk-lib >=2.0.0,<3",
-    "aws-cdk.aws-batch-alpha >=2.0.0a1,<2.70.0a0",
+    "aws-cdk-lib >=2.0.0,<2.179",
     "awscliv2 >=2.2,<2.4",
     "boto3 >=1.26.0,<2",
     "constructs >=10.0.0,<10.5",
-    "fsspec >=2023.5.0,<2024.6",
-    "matplotlib >=3.4,<3.10",
+    "fsspec >=2023.5.0,<2025.3",
+    "matplotlib >=3.4,<3.11",
     "pandas >=2.0.0,<3",
     "pyyaml >=5.4,<7",
     "ray[default] >=2.6.3,<3",
-    "s3fs >=2023.5.0,<2024.6",
+    "s3fs >=2023.5.0,<2025.3",
     "tqdm >=4.64.0,<=5",
     "typer >=0.9.0,<1.0.0",
     "wheel >0.38.0,<0.46",
@@ -94,8 +93,8 @@ legacy_tox_ini = """
 
     [testenv:lint]
     deps = 
-        black>=23.1.9, <=23.7.0
-        isort>=5.11.0, <=5.13.2
+        black>=23.1.9, <=25.1.0
+        isort>=5.11.0, <=6.0.0
     commands = 
         black --check --diff src/ tests/
         isort --check --diff src/ tests/
