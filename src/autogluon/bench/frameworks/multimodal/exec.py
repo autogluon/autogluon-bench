@@ -6,7 +6,7 @@ import logging
 import os
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Union
 
 import numpy as np
@@ -173,7 +173,7 @@ def run(
 
         benchmark_dir (str): The path to the directory where benchmarking artifacts should be saved.
         constraint (str): The resource constraint used by benchmarking during AWS mode, default: None.
-        params (str): The multimodal params, default: {}.
+        params (dict): The multimodal params, default: {}.
         custom_dataloader (dict): A dictionary containing information about a custom dataloader to use. Defaults to None.
                                 To define a custom dataloader in the config file:
 
@@ -211,7 +211,7 @@ def run(
     predictor_args = {
         "label": label_column,
         "problem_type": train_data.problem_type,
-        "presets": params.pop("presets", None),
+        "presets": params.pop("presets", None),  # backward compatible with <= v0.4.4
         "path": os.path.join(benchmark_dir, "models"),
     }
     predictor_args.update(params.pop("predictor_args", {}))
@@ -246,9 +246,11 @@ def run(
             f'params["time_limit"] is being overriden by time_limit specified in constraints.yaml. params["time_limit"] = {time_limit}'
         )
 
-    fit_args = {"train_data": train_data.data, "tuning_data": val_data.data, **params}
+    fit_args = {"train_data": train_data.data, "tuning_data": val_data.data}
+    fit_args.update(params.pop("fit_args", {}))
+    fit_args.update(**params)  # backward compatible with <= v0.4.4
 
-    utc_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+    utc_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     start_time = time.time()
     predictor.fit(**fit_args)
     end_time = time.time()
