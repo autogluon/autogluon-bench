@@ -1,9 +1,11 @@
 AutoGluon_branch:
   repo: https://github.com/autogluon/autogluon.git
   version: master
-  params:  # MultimodalPredictor.fit(params)
-    presets: medium_quality
-    time_limit:  500
-    hyperparameters:
-      optimization.max_epochs: 50
-      optimization.learning_rate: 0.005
+  params:  # MultimodalPredictor(**predictor_args).fit(**fit_args)
+    predictor_args:
+      presets: medium_quality
+    fit_args:
+      time_limit:  500
+      hyperparameters:
+        optimization.max_epochs: 50
+        optimization.learning_rate: 0.005
