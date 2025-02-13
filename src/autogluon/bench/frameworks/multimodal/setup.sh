@@ -19,7 +19,7 @@ git clone --depth 1 --single-branch --branch ${BRANCH} --recurse-submodules ${GI
 python -m venv $venv_base_dir/.venv
 source $venv_base_dir/.venv/bin/activate
 
-python -m uv pip install --upgrade pip
+python -m pip install --upgrade pip
 python -m pip install uv
 python -m uv pip install --upgrade setuptools wheel
 
