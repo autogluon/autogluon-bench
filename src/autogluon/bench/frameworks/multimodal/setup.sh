@@ -39,4 +39,3 @@ python -m uv pip install -e multimodal
 
 python -m mim install "mmcv==2.1.0"
 python -m uv pip install "mmdet==3.2.0"
-

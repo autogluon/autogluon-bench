@@ -96,6 +96,18 @@ class MultiModalBenchmark(Benchmark):
             venv_base_dir = self.benchmark_dir
         PY_EXC_PATH = os.path.join(venv_base_dir, ".venv/bin/python")
 
+        # Workaround for torch import issue with torch==2.5.x and cuda=12.x
+        # https://github.com/pytorch/pytorch/issues/111469#issuecomment-1773937884
+        site_packages_path = (
+            subprocess.check_output(
+                [PY_EXC_PATH, "-c", "import site; print(site.getsitepackages()[0] + '/nvidia/nvjitlink/lib')"]
+            )
+            .decode("utf-8")
+            .strip()
+        )
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = f"{site_packages_path}:{env.get('LD_LIBRARY_PATH', '')}"
+
         exec_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "exec.py")
         logger.info(f"Executing {exec_path} under {PY_EXC_PATH}")
         command = [
@@ -120,7 +132,7 @@ class MultiModalBenchmark(Benchmark):
             command += ["--custom_metrics", json.dumps(custom_metrics)]
         if time_limit is not None:
             command += ["--time_limit", str(time_limit)]
-        result = subprocess.run(command)
+        result = subprocess.run(command, env=env)
         if result.returncode != 0:
             sys.exit(1)
         else:
