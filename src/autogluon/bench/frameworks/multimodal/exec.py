@@ -286,7 +286,10 @@ def run(
 
         metric_name = test_data.metric if metrics_func is None else metrics_func.name
         primary_metric = metric_name[0] if isinstance(metric_name, list) else metric_name
-        result = scores[primary_metric]
+        if predictor_args.get("use_ensemble"):
+            result = scores["ensemble"]
+        else:
+            result = scores[primary_metric]
 
         if hasattr(train_data, "id"):
             id = f"id/{train_data.id}"
