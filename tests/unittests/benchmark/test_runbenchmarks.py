@@ -96,7 +96,10 @@ def test_get_kwargs_multimodal():
             "dataset_name": "dataset",
             "framework": "AutoGluon_stable",
             "constraint": None,
-            "params": {"presets": "best_quality", "hyperparameters": {"optimization.max_epochs": 10}},
+            "params": {
+                "predictor_args": {"presets": "best_quality"},
+                "fit_args": {"hyperparameters": {"optimization.max_epochs": 10}},
+            },
             "custom_dataloader": None,
             "custom_metrics": None,
             "time_limit": None,
