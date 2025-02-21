@@ -1,7 +1,9 @@
 AutoGluon_stable:
   repo: https://github.com/autogluon/autogluon.git
   version: stable
-  params:  # MultimodalPredictor.fit(params)
-    presets: best_quality
-    hyperparameters:
-      optimization.max_epochs: 10
+  params:  # MultimodalPredictor(**predictor_args).fit(**fit_args)
+    predictor_args:
+      presets: best_quality
+    fit_args:
+      hyperparameters:
+        optimization.max_epochs: 10
