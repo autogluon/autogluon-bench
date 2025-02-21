@@ -53,7 +53,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tests = ["pytest", "pytest-mock", "tox", "black>=23.1.9, <=23.7.0", "isort>=5.11.0, <=5.13.2"]
+tests = ["pytest", "pytest-mock", "tox", "black>=23.1.9, <=23.7.0", "isort>=5.11.0, <=6.0.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/autogluon/autogluon-bench"
