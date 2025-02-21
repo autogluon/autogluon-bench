@@ -97,12 +97,8 @@ def test_deploy_stack(mocker):
     mock_subprocess.assert_called_once_with(
         [
             os.path.join(module_base_dir, "deploy.sh"),
-            infra_configs_dict["STACK_NAME_PREFIX"],
-            infra_configs_dict["STACK_NAME_TAG"],
             infra_configs_dict["STATIC_RESOURCE_STACK_NAME"],
             infra_configs_dict["BATCH_STACK_NAME"],
-            str(infra_configs_dict["CONTAINER_MEMORY"]),
-            infra_configs_dict["CDK_DEPLOY_REGION"],
             temp_file.name,
         ]
     )
