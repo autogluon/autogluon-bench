@@ -260,7 +260,7 @@ Step 2: Further clean the aggregated results.
 If the file is still on S3 from the previous step, run:
 
 ```
-agbench clean-amlb-results {benchmark_name} --results-dir-input s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path --constraints constratint_1 --constraints constratint_2 --results-dir-output {results_dir_output}
+agbench clean-amlb-results {benchmark_name} --results-dir-input s3://{METRICS_BUCKET}/aggregated/{module}/{benchmark_name}/ --benchmark-name-in-input-path --results-dir-output {results_dir_output}
 --out-path-prefix {out_path_prefix} --out-path-suffix {out_path_suffix}
 ```
 
