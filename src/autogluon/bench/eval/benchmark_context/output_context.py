@@ -1,3 +1,4 @@
+import logging
 import zipfile
 from io import BytesIO, TextIOWrapper
 from typing import Optional, Set, Union
@@ -6,8 +7,11 @@ import boto3
 import numpy as np
 import pandas as pd
 
+from autogluon.bench.eval.benchmark_context.utils import get_s3_paths
 from autogluon.common.loaders import load_pd, load_pkl
 from autogluon.common.utils.s3_utils import s3_path_to_bucket_prefix
+
+logger = logging.getLogger(__name__)
 
 
 class OutputContext:
@@ -48,6 +52,10 @@ class OutputContext:
     @property
     def path_leaderboard(self):
         return self.path + "leaderboard.csv"
+
+    @property
+    def path_learning_curves(self):
+        return self.path + "learning_curves/"
 
     @property
     def path_model_failures(self):
@@ -101,6 +109,44 @@ class OutputContext:
 
     def load_leaderboard(self) -> pd.DataFrame:
         return load_pd.load(self.path_leaderboard)
+
+    def load_learning_curves(self, save_path: str, suffix: str = "learning_curves.json") -> None:
+        """
+        Params:
+        -------
+        save_path: str
+            the path to save all learning curve artifacts
+        suffix: str
+            the suffix matching all learning curves files
+        """
+        try:
+            # copy_s3_file method not yet in stable release of autogluon
+            from autogluon.common.utils.s3_utils import copy_s3_file
+        except:
+            raise ImportError(
+                f"Install AutoGluon from source to get access to copy_s3_file from autogluon.common.utils.s3_utils"
+            )
+
+        path = self.path_learning_curves
+        all_curves = get_s3_paths(path_prefix=path, suffix=suffix)
+
+        for origin_path in all_curves:
+            dataset, fold = self.get_dataset_fold(origin_path)
+            destination_path = f"{save_path}/{dataset}/{fold}/learning_curves.json"
+            copy_s3_file(origin_path=origin_path, destination_path=destination_path)
+
+    def get_dataset_fold(self, path_str: str) -> tuple[str, str]:
+        parts = path_str.rstrip("/").split("/")
+
+        if len(parts) < 3:
+            raise ValueError(
+                f"Improper folder dimensions at {path_str}. Expected following path structure: .../dataset/fold/learning_curves.json"
+            )
+
+        # path pattern: .../dataset/fold/learning_curves.json
+        dataset, fold, _ = parts[-3:]
+
+        return dataset, fold
 
     def load_model_failures(self) -> pd.DataFrame:
         """Load and return the raw model failures file"""
