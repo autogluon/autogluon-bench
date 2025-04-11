@@ -1,5 +1,5 @@
-ARG AG_BENCH_BASE_IMAGE
-FROM $AG_BENCH_BASE_IMAGE
+ARG AG_BENCH_BASE_IMAGE=nvidia/cuda:12.2.0-runtime-ubuntu20.04
+FROM ${AG_BENCH_BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNING_IN_DOCKER=true
@@ -10,7 +10,7 @@ RUN apt-get update && \
         software-properties-common build-essential curl unzip git pciutils && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get install -y --no-install-recommends \
-        python3.11 python3.11-dev python3.11-distutils python3.11-venv && \
+        python3.11 python3.11-dev python3.11-distutils python3.11-venv ffmpeg libsm6 libxext6 && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
     update-alternatives --set python3 /usr/bin/python3.11 && \
     rm -rf /var/lib/apt/lists/* 
