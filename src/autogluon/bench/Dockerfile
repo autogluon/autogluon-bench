@@ -10,7 +10,7 @@ RUN apt-get update && \
         software-properties-common build-essential curl unzip git pciutils && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get install -y --no-install-recommends \
-        python3.10 python3.10-dev python3.10-distutils python3.10-venv ffmpeg libsm6 libxext6 && \
+        python3.10 python3.10-dev python3.10-venv ffmpeg libsm6 libxext6 && \
     update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
     update-alternatives --set python3 /usr/bin/python3.10 && \
     rm -rf /var/lib/apt/lists/* 
@@ -46,9 +46,9 @@ COPY ${AG_BENCH_BASE_DIR}/entrypoint.sh .
 COPY ${AG_BENCH_BASE_DIR}/custom_configs custom_configs/
 
 ENV VENV_PATH="$VENV_BASE_DIR/.venv"
-RUN python3 -m venv $VENV_PATH
+RUN /usr/bin/python3.10 -m venv $VENV_PATH
 ENV PATH="$VENV_PATH/bin:$PATH"
-RUN python3 -m pip install --upgrade pip
+RUN python3 -m pip install --upgrade pip setuptools
 RUN python3 -m pip install uv
 
 # check if autogluon.bench version contains "dev" tag
