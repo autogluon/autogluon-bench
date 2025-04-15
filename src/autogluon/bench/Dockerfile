@@ -3,6 +3,7 @@ FROM ${AG_BENCH_BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNING_IN_DOCKER=true
+ENV SETUPTOOLS_USE_DISTUTILS=local
 
 # Update package list and install necessary dependencies
 RUN apt-get update && \
