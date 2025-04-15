@@ -195,13 +195,18 @@ class BatchJobStack(core.Stack):
             },
         )
 
+        resource_requirements = [
+            batch.CfnJobDefinition.ResourceRequirementProperty(type="VCPU", value=str(container_vcpu)),
+            batch.CfnJobDefinition.ResourceRequirementProperty(type="MEMORY", value=str(container_memory)),
+        ]
+
+        if container_gpu > 0:
+            resource_requirements.append(
+                batch.CfnJobDefinition.ResourceRequirementProperty(type="GPU", value=str(container_gpu))
+            )
         container_properties = batch.CfnJobDefinition.ContainerPropertiesProperty(
             image=docker_image_asset.image_uri,
-            resource_requirements=[
-                batch.CfnJobDefinition.ResourceRequirementProperty(type="GPU", value=str(container_gpu)),
-                batch.CfnJobDefinition.ResourceRequirementProperty(type="VCPU", value=str(container_vcpu)),
-                batch.CfnJobDefinition.ResourceRequirementProperty(type="MEMORY", value=str(container_memory)),
-            ],
+            resource_requirements=resource_requirements,
             linux_parameters=batch.CfnJobDefinition.LinuxParametersProperty(shared_memory_size=container_memory),
         )
 

@@ -1,29 +1,27 @@
-ARG AG_BENCH_BASE_IMAGE
-FROM $AG_BENCH_BASE_IMAGE
+ARG AG_BENCH_BASE_IMAGE=nvidia/cuda:12.2.0-runtime-ubuntu20.04
+FROM ${AG_BENCH_BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNING_IN_DOCKER=true
 
-# Update package list and install necessary dependencies
+# Install essential packages and Python 3.9
+# Python 3.10 and above causes issue for certain datasets https://github.com/pytorch/pytorch/issues/143288
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        software-properties-common build-essential curl unzip git pciutils && \
+    apt-get install -y software-properties-common build-essential && \
     add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get install -y --no-install-recommends \
-        python3.11 python3.11-dev python3.11-distutils python3.11-venv && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
-    update-alternatives --set python3 /usr/bin/python3.11 && \
-    rm -rf /var/lib/apt/lists/* 
+    apt-get update && \
+    apt-get install -y python3.9 python3.9-dev python3.9-distutils python3.9-venv && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1
 
-# Install pip
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 && \
-    rm -rf /root/.cache
-
-# Install AWS CLI
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+# Install utilities and AWS CLI
+RUN apt-get install -y python3-pip unzip curl git pciutils && \
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip -q awscliv2.zip && \
     ./aws/install && \
-    rm -rf awscliv2.zip aws /var/lib/apt/lists/*
+    rm awscliv2.zip && \
+    python3 -m pip install --upgrade pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /usr/local/aws
 
 # Application-specific steps
 ARG AG_BENCH_VERSION
