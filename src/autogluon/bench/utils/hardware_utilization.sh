@@ -13,8 +13,6 @@ while true; do
       GPU_UTILIZATION=$(echo $line | awk -F ', ' '{printf "%.2f", $2}')
       aws cloudwatch put-metric-data --region $CDK_DEPLOY_REGION --namespace EC2 --storage-resolution 1 --unit Percent --dimensions InstanceId=$INSTANCE_ID --metric-name GPUUtilization_$GPU_INDEX --value $GPU_UTILIZATION
     done
-  else
-    echo "GPU not detected or nvidia-smi not found. Skipping GPU metrics."
   fi
 
   CPU_UTILIZATION=$(top -bn1 | grep "Cpu(s)" | awk -F'id,' '{ split($1, vs, ","); v=vs[length(vs)]; sub("%", "", v); printf "%.2f", 100 - v }')
