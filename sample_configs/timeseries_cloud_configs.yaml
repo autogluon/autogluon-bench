@@ -9,7 +9,7 @@ cdk_context:  # AWS infra configs used to setup AWS Batch environment with AWS C
   # BLOCK_DEVICE_VOLUME: 100   # optional, default 100GB
   # RESERVED_MEMORY_SIZE: 15000  # optional, default 15000MB
   # INSTANCE: g4dn.2xlarge  # optional, default g4dn.2xlarge
-  # TIME_LIMIT: 3600  # optional, EC2 timeout, default 3600s
+  TIME_LIMIT: 86400  # 24 hours in seconds for (buffer will be added automatically for instance start, dataset download and overhead)
   # VPC_NAME: existing-vpc-name  # optional
 
 # Benchmark configurations
