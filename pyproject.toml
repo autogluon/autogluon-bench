@@ -42,7 +42,7 @@ dependencies = [
     "constructs >=10.0.0,<10.5",
     "matplotlib >=3.4,<3.11",
     "pandas >=2.0.0,<3",
-    "pyarrow >=19.0.0,<20",
+    "pyarrow >=19.0.0,<21",
     "pyyaml >=5.4,<7",
     "ray[default] >=2.6.3,<3",
     "tqdm >=4.64.0,<=5",
