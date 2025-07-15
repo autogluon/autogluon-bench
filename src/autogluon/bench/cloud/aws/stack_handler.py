@@ -66,7 +66,7 @@ def construct_context(custom_configs: dict) -> dict:
         instance_type=configs["INSTANCE"], region=configs["CDK_DEPLOY_REGION"]
     )
     configs["TIME_LIMIT"] = (
-        configs["TIME_LIMIT"] + 3600
+        int(configs["TIME_LIMIT"]) + 3600
     )  # buffer to account for instance start, dataset download and overhead
 
     context_to_parse = {
