@@ -26,9 +26,9 @@ def generate_cloud_config(
         None, help="Reserved memory size for Docker container (optional, default = 15000)"
     ),
     instance: str = typer.Option(None, help="EC2 Instance type (optional, default = 'g4dn.2xlarge')"),
-    time_limit: str = typer.Option(
+    time_limit: int = typer.Option(
         None,
-        help="AWS Batch job time out",
+        help="AWS Batch job timeout in seconds (e.g., 86400 for 24 hours)",
     ),
     vpc_name: str = typer.Option(None, help="Existing VPC name (optional, default: create a new VPC)"),
     git_uri_branch: str = typer.Option("", help="AMLB git_uri#branch"),
@@ -108,7 +108,7 @@ def generate_cloud_config(
     if instance:
         cdk_context["INSTANCE"] = instance
     if time_limit:
-        cdk_context["TIME_LIMIT"] = time_limit
+        cdk_context["TIME_LIMIT"] = int(time_limit) if isinstance(time_limit, str) else time_limit
 
     config["cdk_context"] = cdk_context
 
