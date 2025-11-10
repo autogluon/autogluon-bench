@@ -51,7 +51,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tests = ["pytest", "pytest-mock", "tox", "black>=23.1.9, <=25.1.0", "isort>=5.11.0, <=6.1.0"]
+tests = ["pytest", "pytest-mock", "tox", "black>=23.1.9, <=25.11.0", "isort>=5.11.0, <=6.1.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/autogluon/autogluon-bench"
@@ -94,7 +94,7 @@ legacy_tox_ini = """
 
     [testenv:lint]
     deps = 
-        black>=23.1.9, <=25.1.0
+        black>=23.1.9, <=25.11.0
         isort>=5.11.0, <=6.1.0
     commands = 
         black --check --diff src/ tests/
