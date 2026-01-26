@@ -47,7 +47,7 @@ dependencies = [
     "ray[default] >=2.6.3,<3",
     "tqdm >=4.64.0,<=5",
     "typer >=0.9.0,<1.0.0",
-    "wheel >0.38.0,<0.46",
+    "wheel >0.38.0,<0.47",
 ]
 
 [project.optional-dependencies]
